@@ -1,0 +1,13 @@
+import { Store } from "../services/store";
+import type { Entity } from "../models/entity";
+
+export class Controller7 {
+  private store = new Store();
+
+  handle(): void {
+    const e: Entity = { id: 7, kind: "c7" };
+    this.store.put(e);
+    const n = this.store.all().length;
+    console.log("c7:", n);
+  }
+}

@@ -1,0 +1,9 @@
+[package]
+name = "rust-mini-webserver"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "rust-mini-webserver"
+path = "src/main.rs"

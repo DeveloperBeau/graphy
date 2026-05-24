@@ -1,0 +1,8 @@
+[package]
+name = "rust-crate"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[[bin]]
+name = "rust-crate"
+path = "src/main.rs"
