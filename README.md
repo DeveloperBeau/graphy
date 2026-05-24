@@ -1,56 +1,125 @@
 # graphy
 
-standalone implementation that turns a folder of code into a queryable knowledge graph, fast.
+Turn a folder of code into a queryable knowledge graph. Fast, plugin-driven, ships as a single binary.
 
-```
-cargo run --release -- .
+```bash
+graphy .
 ```
 
-Writes the same tri-output bundle as graphy so existing tooling can consume it unchanged:
+Writes a tri-output bundle to `graphy-out/`:
 
 ```
 graphy-out/
-├── graph.json       full nodes + edges
+├── graph.json       full nodes + edges (machine-readable)
 ├── GRAPH_REPORT.md  god nodes, community count, ambiguous-edge highlights
-└── graph.html       v0 placeholder viewer
+└── graph.html       interactive viewer (pan/zoom, click-to-highlight neighbors)
 ```
 
-## Benchmark vs graphy (best of 3, macOS, M-series)
+## Headline numbers
 
-| fixture             | graphy (ms) | graphy (ms) | speedup | graphy RSS | graphy RSS |
-|---------------------|------------:|--------------:|--------:|-----------:|-------------:|
-| go-mini-service     |          23 |           131 |   5.7×  |     5.3 MB |      43.1 MB |
-| python-mini-cli     |          23 |           136 |   5.9×  |     5.4 MB |      43.3 MB |
-| rust-mini-webserver |          23 |           130 |   5.7×  |     5.6 MB |      43.6 MB |
-| ts-mini-api         |          23 |           129 |   5.6×  |     5.9 MB |      43.8 MB |
-| medium-multilang    |          26 |           315 |  12.1×  |     8.7 MB |      47.0 MB |
+Best-of-five wall time on a 54-file mixed-language fixture (rust + python + ts + go):
 
-That's **~6× faster** on tiny inputs (where Python startup dominates), **~12× faster** as the workload grows, and **~8× less peak memory** across the board. Generate the table yourself:
+| mode                  | wall time | peak RSS |
+|-----------------------|----------:|---------:|
+| static built-ins      |     7 ms  |   10 MB  |
+| lazy dylib plugins    |    20 ms  |   14 MB  |
+| warm cache (any path) |     3 ms  |    9 MB  |
+
+Single-file fixtures land in 2–4 ms cold. Cache hits flatten to 3 ms regardless of language.
+
+## Pipeline
 
 ```
-bench/compare.sh
+detect → extract → build → cluster → analyze → report → export
 ```
 
-The harness installs `graphy` from PyPI (`uv tool install graphy`) if it's not already on PATH, runs both engines on every fixture, and emits `bench/comparison.md`.
+Each stage is a single function. Communication is plain Rust structs; no shared mutable state outside `graphy-out/`.
 
-## Pipeline mapping (v8 → graphy)
+| stage    | purpose                                                                  |
+|----------|--------------------------------------------------------------------------|
+| detect   | walk filesystem, respect `.gitignore`, filter by extension               |
+| extract  | tree-sitter parse + emit nodes/edges per file (parallel via rayon)       |
+| build    | merge per-file extractions into one petgraph `DiGraph`                   |
+| cluster  | Louvain modularity-maximizing community detection                        |
+| analyze  | god nodes by degree, ambiguous-edge count, community totals              |
+| report   | GRAPH_REPORT.md                                                          |
+| export   | `graph.json` + interactive `graph.html` viewer                           |
 
-| graphy         | graphy (Rust)                 | Notes |
-|---------------------------|-------------------------------|-------|
-| `detect.collect_files`    | `detect::collect_files`       | `ignore` crate, gitignore-aware, `graphy-out/` self-exclusion |
-| `extract.extract`         | `extract::extract`            | tree-sitter, parallel via rayon |
-| `build.build_graph`       | `build::build_graph`          | petgraph `DiGraph` |
-| `cluster.cluster`         | `cluster::cluster`            | **Louvain modularity** (multi-pass folding) |
-| `analyze.analyze`         | `analyze::analyze`            | god nodes by degree, ambiguous-edge counter |
-| `report.render_report`    | `report::render`              | Markdown |
-| `export.export`           | `export::export`              | writes `graphy-out/` |
-| `cache.*`                 | `cache::partition`            | stub |
-| `security.*`              | `security::*`                 | label sanitization + symlink-aware path validation |
-| `validate.validate_extraction` | `validate::validate`     | schema check |
+## Modes
+
+```
+graphy <path>                      # one-shot pipeline (default)
+graphy run <path>                  # same, explicit
+graphy watch <path>                # rebuild on every change (notify + debounce)
+graphy serve --graph graph.json    # MCP-style JSON-RPC server over stdio
+graphy plugins list                # show registered language plugins
+graphy plugins regenerate-manifest <dir>
+graphy plugins install <dylib>
+graphy doctor                      # version + arch
+```
+
+### Cache
+
+Each run writes `graphy-out/.cache/manifest.json` mapping every input file to its blake3 content hash and stores per-file `ExtractionOutput` JSON beside it. On the next run files whose hash is unchanged are served from cache and tree-sitter is skipped. Cold → warm: typical 3–5× speedup; identical graph shape.
+
+### Watch
+
+`graphy watch <path>` runs the initial build then re-runs whenever a tracked file changes. Uses `notify` + a 250 ms debouncer; changes inside `graphy-out/` are ignored to avoid feedback loops.
+
+### Interactive viewer
+
+`graphy-out/graph.html` is a self-contained interactive viewer: pan, zoom, click a node to highlight neighbors, label search, community-colored. Pure inline JS + SVG — no external CDN, opens offline.
+
+### MCP serve
+
+`graphy serve --graph graph.json` reads JSON-RPC over stdin/stdout. Methods: `initialize`, `tools/list`, `tools/call`. Tools: `stats`, `search_label`, `neighbors`, `query_node`, `shortest_path`.
+
+## Plugin architecture
+
+Languages ship as separate dynamic libraries. The core binary stays slim; per-language `cdylib` plugins are bundled in `plugins/` alongside the binary in release packages and lazy-loaded only on first encounter of a matching file extension.
+
+### Manifest
+
+`plugins/manifest.toml` enumerates every shipped plugin:
+
+```toml
+abi_version = 1
+
+[[plugin]]
+name = "graphy-plugin-rust"
+version = "0.1.0"
+file = "libgraphy_plugin_rust.dylib"
+extensions = ["rs"]
+sha256 = "..."
+```
+
+At startup graphy reads the manifest (cheap) and builds an `extension → plugin` index. The first time it encounters a matching file it `dlopen`s the dylib, verifies the recorded sha256, and caches the loaded handle. Subsequent files of the same language reuse the loaded library.
+
+### Plugin discovery (priority order)
+
+1. `$GRAPHY_PLUGIN_PATH` (colon-separated)
+2. `$XDG_DATA_HOME/graphy/plugins/` (macOS: `~/Library/Application Support/graphy/plugins/`)
+3. `./graphy-plugins/`
+4. `<exe-dir>/plugins/`
+
+### Plugin ABI
+
+`graphy-plugin-api` defines the host/plugin contract via four C-ABI symbols:
+
+```c
+extern uint32_t graphy_plugin_abi_version(void);
+extern const GraphyPluginMetadata *graphy_plugin_metadata(void);
+extern GraphyPluginExtractResult graphy_plugin_extract(
+    const char *path_utf8, size_t path_len,
+    const uint8_t *src, size_t src_len);
+extern void graphy_plugin_free(GraphyPluginExtractResult);
+```
+
+JSON is the boundary payload so plugins keep their own internal types. The `define_plugin!` macro generates every symbol from a single declarative call; per-plugin `lib.rs` is around 10 lines of boilerplate plus the tree-sitter walk.
 
 ## Language coverage
 
-37 languages ship in v0.1:
+37 languages ship as plugins:
 
 | Language       | Suffix(es)                                           |
 |----------------|------------------------------------------------------|
@@ -94,41 +163,7 @@ The harness installs `graphy` from PyPI (`uv tool install graphy`) if it's not a
 | Erlang         | `.erl`, `.hrl`                                       |
 | TOML           | `.toml`                                              |
 
-Each extractor emits nodes for top-level definitions (functions / classes / structs / interfaces / records / etc.), edges for imports (`use` / `import` / `require` / `#include` / `@import`), and call-graph edges (`Confidence::Inferred`) for direct invocations resolvable to a local symbol.
-
-## Modes
-
-```
-graphy <path>                      # one-shot run (default)
-graphy run <path>                  # same, explicit
-graphy watch <path>                # rebuild on every change (notify + debounce)
-graphy serve --graph graph.json    # MCP-style JSON-RPC server over stdio
-graphy doctor                      # version + arch
-```
-
-### Cache
-
-Each run writes `graphy-out/.cache/manifest.json` mapping every input file to its blake3 content hash, and stores the per-file `ExtractionOutput` JSON beside it. On the next run, files whose hash hasn't changed are served from cache (medium-multilang fixture: cold 14 ms → warm 4 ms, ~3.5× speedup).
-
-### Watch
-
-`graphy watch <path>` runs the initial build, then re-runs whenever a tracked file changes. Uses `notify` + a 250 ms debouncer; ignores changes inside `graphy-out/`. Combine with `--out` to write the bundle elsewhere.
-
-### Interactive viewer
-
-`graphy-out/graph.html` is a self-contained interactive viewer: pan, zoom, click a node to highlight its neighbors, filter by label, community-colored. Pure inline JS + SVG — no external CDN, opens offline.
-
-### MCP serve
-
-`graphy serve --graph graph.json` reads JSON-RPC requests from stdin and writes responses to stdout. Supports `initialize`, `tools/list`, and `tools/call` with five tools:
-
-| Tool             | Returns                                                        |
-|------------------|----------------------------------------------------------------|
-| `stats`          | total nodes, edges, communities                                |
-| `search_label`   | substring matches over node labels                             |
-| `neighbors`      | outgoing + incoming edges for a node id                        |
-| `query_node`     | full metadata for a node id                                    |
-| `shortest_path`  | undirected BFS shortest path between two node ids              |
+Each plugin emits nodes for top-level definitions, edges for imports (`use` / `import` / `require` / `#include` / `@import`), and call-graph edges (`Confidence::Inferred`) for direct invocations that resolve to a local symbol.
 
 ## Layout
 
@@ -136,51 +171,45 @@ Each run writes `graphy-out/.cache/manifest.json` mapping every input file to it
 graphy/
 ├── Cargo.toml                       # workspace
 ├── crates/
-│   ├── graphy-core/                 # library
-│   │   ├── src/
-│   │   │   ├── detect.rs            # collect_files (gitignore-aware)
-│   │   │   ├── extract/             # per-language extractors
-│   │   │   │   ├── mod.rs           # dispatch by suffix
-│   │   │   │   ├── common.rs        # shared emit helpers
-│   │   │   │   ├── rust.rs python.rs js_ts.rs go.rs
-│   │   │   │   ├── java.rs c_family.rs ruby.rs csharp.rs
-│   │   │   │   ├── bash.rs json.rs
-│   │   │   ├── build.rs             # extraction → petgraph
-│   │   │   ├── cluster.rs           # Louvain modularity
-│   │   │   ├── analyze.rs           # god nodes, ambiguous edges
-│   │   │   ├── report.rs            # GRAPH_REPORT.md
-│   │   │   ├── export.rs            # graphy-out/{graph.json,html,md}
-│   │   │   ├── cache.rs             # file-hash cache (stub)
-│   │   │   ├── security.rs          # input validation
-│   │   │   ├── validate.rs          # extractor schema check
-│   │   │   ├── schema.rs            # Node / Edge / Confidence
-│   │   │   ├── graph.rs             # KnowledgeGraph wrapper
-│   │   │   └── pipeline.rs          # orchestrator
-│   │   └── tests/                   # one integration-test file per module
-│   └── graphy-cli/                  # binary `graphy`
+│   ├── graphy-core/                 # pipeline + lazy loader + manifest
+│   ├── graphy-cli/                  # binary
+│   ├── graphy-plugin-api/           # C ABI + define_plugin! macro + helpers
+│   └── graphy-plugin-*/             # 37 language cdylib crates
 ├── fixtures/                        # synthesized sample projects
-│   ├── go-mini-service/
-│   ├── python-mini-cli/
-│   ├── rust-mini-webserver/
-│   ├── ts-mini-api/
-│   ├── medium-multilang/            # 56-file mixed-language fixture
-│   └── gen-medium.sh                # deterministic fixture generator
-└── bench/
-    └── compare.sh                   # head-to-head harness vs Python graphy
+├── bench/compare.sh                 # release perf harness
+├── tools/package-release.sh         # build + tarball release
+└── install.sh                       # curl-able installer
+```
+
+## Build / install
+
+From source:
+
+```bash
+cargo build --release
+./target/release/graphy .
+```
+
+Release bundle (binary + plugins + manifest):
+
+```bash
+bash tools/package-release.sh
+# dist/graphy-<version>-<arch>-<os>.tar.gz
+```
+
+End-user install:
+
+```bash
+curl -fsSL <release-url>/install.sh | sh
 ```
 
 ## Tests
 
-224 tests, 94.42% line coverage, 91.22% region coverage across `graphy-core` + `graphy-cli`. Each module gets a dedicated test file covering:
+200+ integration tests covering every pipeline stage, both extractor and plugin paths, plus hostile-input cases (XSS in labels, NUL injection, ANSI escapes, RTL override, oversized labels, path traversal, symlink escape, sha256-mismatched plugins, gigantic files, deep nesting, malformed source, gitignore bypass, target-as-directory writes, read-only output dirs).
 
-- **Success paths** — normal inputs produce the expected nodes / edges.
-- **Edge cases** — empty input, single-element input, mixed Unicode, large files, deeply nested syntax.
-- **Failure paths** — missing files, malformed source, non-UTF-8 bytes, invalid JSON.
-- **Hostile / hacking cases** — XSS in labels, null-byte injection, ANSI escapes, RTL override, oversized labels, path traversal (`..`), symlink escapes, gitignore bypass, target-as-directory writes, read-only output dirs.
-
-```
+```bash
 cargo test
-cargo llvm-cov --package graphy-core --summary-only
+cargo llvm-cov --summary-only
 ```
 
 ## License

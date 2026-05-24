@@ -1,6 +1,6 @@
 # Fixtures
 
-Sample projects used to validate graphy against graphy. Each fixture is **synthesized** — similar in shape and patterns to projects that graphy is exercised against in the wild, but **not** a copy of any upstream fixture.
+Sample projects used to validate graphy. Each fixture is **synthesized** — similar in shape and patterns to real codebases, but small enough to fingerprint pipeline regressions quickly.
 
 | Fixture                       | Language     | Files | Purpose                                                  |
 |-------------------------------|--------------|-------|----------------------------------------------------------|

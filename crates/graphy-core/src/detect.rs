@@ -1,6 +1,6 @@
 //! Walk a directory and collect files of interest.
 //!
-//! Walks the directory tree, respecting `.gitignore` via
+//! Respects `.gitignore` via
 //! the `ignore` crate.
 
 use std::path::{Path, PathBuf};

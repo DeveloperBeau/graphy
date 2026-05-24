@@ -1,4 +1,4 @@
-//! Extractor output schema. schema contract.
+//! Extractor output schema: nodes + edges with explicit confidence labels.
 
 use serde::{Deserialize, Serialize};
 
