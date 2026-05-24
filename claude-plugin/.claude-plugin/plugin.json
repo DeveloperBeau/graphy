@@ -1,0 +1,51 @@
+{
+  "name": "graphy",
+  "version": "0.1.0",
+  "description": "Build and query knowledge graphs of any codebase. Auto-runs when Claude reads source files; exposes MCP tools (search, neighbors, shortest-path) so Claude can query the graph instead of grepping.",
+  "author": "DeveloperBeau",
+  "homepage": "https://github.com/DeveloperBeau/graphy",
+  "mcpServers": {
+    "graphy": {
+      "command": "graphy",
+      "args": ["serve", "--graph", "${CLAUDE_PROJECT_DIR}/graphy-out/graph.json"],
+      "env": {
+        "GRAPHY_PLUGIN_PATH": "${HOME}/.graphy/plugins"
+      }
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/maybe-build.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/rebuild-async.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
