@@ -11,7 +11,7 @@
 //! modularity is defined on undirected graphs. Edge weights are taken as 1;
 //! parallel edges accumulate weight.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use petgraph::graph::NodeIndex;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
@@ -50,6 +50,134 @@ pub fn cluster(g: &mut KnowledgeGraph) {
         adj = folded;
     }
     write_back(g, &levels);
+}
+
+/// Delta-Louvain entry point used by incremental updates. The dirty set
+/// contains node indices that were freshly spliced (or whose neighbours
+/// changed); their immediate neighbours form the "hot frontier" that the
+/// constrained local-moving phase re-evaluates. All other nodes keep
+/// their prior community label.
+///
+/// When the hot frontier exceeds `MAX_HOT_RATIO * n` the function falls
+/// back to a full [`cluster`] pass because at that size the local pass
+/// has no asymptotic advantage.
+pub const MAX_HOT_RATIO: f64 = 0.25;
+
+pub fn cluster_seeded(g: &mut KnowledgeGraph, dirty: &[NodeIndex]) {
+    let n = g.graph.node_count();
+    if n == 0 {
+        return;
+    }
+    let (adj, total_weight) = build_undirected_adjacency(g);
+
+    let idx_of: HashMap<NodeIndex, usize> = g
+        .graph
+        .node_indices()
+        .enumerate()
+        .map(|(i, ni)| (ni, i))
+        .collect();
+
+    // Seed community labels from prior `node.community` values. Nodes
+    // without a label (freshly spliced) get a fresh identity slot above
+    // every existing label.
+    let mut community: Vec<usize> = vec![0; adj.len()];
+    let mut max_label: usize = 0;
+    let nodes: Vec<NodeIndex> = g.graph.node_indices().collect();
+    for (i, ni) in nodes.iter().enumerate() {
+        if let Some(c) = g.graph[*ni].community {
+            community[i] = c as usize;
+            if c as usize > max_label {
+                max_label = c as usize;
+            }
+        } else {
+            // Placeholder; will be assigned a fresh id below.
+            community[i] = usize::MAX;
+        }
+    }
+    let mut next_label = max_label + 1;
+    for c in community.iter_mut() {
+        if *c == usize::MAX {
+            *c = next_label;
+            next_label += 1;
+        }
+    }
+
+    // Build the hot frontier: dirty nodes + first-order neighbours.
+    let mut hot: HashSet<usize> = HashSet::new();
+    for ni in dirty {
+        if let Some(&i) = idx_of.get(ni) {
+            hot.insert(i);
+            for &(j, _) in &adj[i] {
+                hot.insert(j);
+            }
+        }
+    }
+    let hot_ratio = hot.len() as f64 / n as f64;
+    if hot_ratio > MAX_HOT_RATIO {
+        // Too much churn — full pass is faster than dragging stale
+        // community labels through a constrained loop.
+        cluster(g);
+        return;
+    }
+
+    constrained_local_moving(&adj, &mut community, total_weight, &hot);
+    densify(&mut community);
+    write_back(g, &[community]);
+}
+
+/// Like [`local_moving_phase`] but only iterates over `hot`. Modularity
+/// gains are still computed against the *full* `sum_in` table so cold
+/// nodes' contributions are not lost.
+fn constrained_local_moving(
+    adj: &Adj,
+    community: &mut [usize],
+    total_weight: f64,
+    hot: &HashSet<usize>,
+) {
+    if total_weight == 0.0 || hot.is_empty() {
+        return;
+    }
+    let n = adj.len();
+    let mut k = vec![0.0_f64; n];
+    for (i, neighbours) in adj.iter().enumerate() {
+        k[i] = neighbours.iter().map(|(_, w)| *w).sum();
+    }
+    let mut sum_in: HashMap<usize, f64> = HashMap::new();
+    for (i, &c) in community.iter().enumerate() {
+        *sum_in.entry(c).or_insert(0.0) += k[i];
+    }
+    for _ in 0..MAX_INNER_PASSES {
+        let mut moved = false;
+        for &i in hot {
+            let c_old = community[i];
+            *sum_in.entry(c_old).or_insert(0.0) -= k[i];
+            let mut to: HashMap<usize, f64> = HashMap::new();
+            for &(j, w) in &adj[i] {
+                if j == i {
+                    continue;
+                }
+                *to.entry(community[j]).or_insert(0.0) += w;
+            }
+            let mut best_c = c_old;
+            let mut best_gain = 0.0_f64;
+            for (&c, &w_to_c) in &to {
+                let sigma_tot = *sum_in.get(&c).unwrap_or(&0.0);
+                let gain = w_to_c - sigma_tot * k[i] / total_weight;
+                if gain > best_gain + MIN_GAIN {
+                    best_gain = gain;
+                    best_c = c;
+                }
+            }
+            *sum_in.entry(best_c).or_insert(0.0) += k[i];
+            if best_c != c_old {
+                community[i] = best_c;
+                moved = true;
+            }
+        }
+        if !moved {
+            break;
+        }
+    }
 }
 
 fn build_undirected_adjacency(g: &KnowledgeGraph) -> (Adj, f64) {

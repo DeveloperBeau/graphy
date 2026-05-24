@@ -107,14 +107,27 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     report.nodes_stripped = n;
     report.edges_stripped = e;
 
-    // Re-extract only the changed/added files. The unchanged ("cached")
-    // files are *already* represented in `graph` (we just stripped only
-    // the changed-or-removed ones), so we do not re-splice them.
+    // Cross-file edges that pointed at stripped nodes were forcibly
+    // removed by petgraph along with their endpoints. To make sure every
+    // edge in the final graph is rooted in a current extraction, drop
+    // every surviving edge and re-splice from both fresh and cached
+    // extractions below. Nodes already in the prior graph survive — they
+    // dedupe by id when re-spliced.
+    let surviving_edges: Vec<_> = graph.graph.edge_indices().collect();
+    for e in surviving_edges {
+        graph.graph.remove_edge(e);
+    }
+
     let fresh = extract_all(&part.uncached);
     for (path, output) in part.uncached.iter().zip(&fresh) {
         cache.save(path, output).ok();
     }
     cache.flush().ok();
+
+    // Splice cached extractions first (nodes dedupe; edges accumulate).
+    for (_, out) in &part.cached {
+        splice(&mut graph, out);
+    }
     for out in fresh {
         splice(&mut graph, &out);
     }
@@ -129,6 +142,20 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         edges = graph.edge_count(),
         "incremental update",
     );
+
+    // Dedup BEFORE clustering: freshly spliced extern nodes need to be
+    // collapsed into their canonical defs before we count communities,
+    // otherwise the delta-Louvain seed sees them as fresh dirty nodes
+    // and assigns them their own communities — inflating the count.
+    if cfg.dedup {
+        let dr = crate::dedup::dedup(&mut graph);
+        info!(
+            imports = dr.imports_resolved,
+            merged = dr.reexports_merged,
+            ambiguous = dr.ambiguous_groups,
+            "dedup pass (incremental)"
+        );
+    }
 
     cluster_incrementally(&mut graph, &report);
 
@@ -331,26 +358,28 @@ fn run_full(
 }
 
 fn cluster_incrementally(g: &mut KnowledgeGraph, report: &IncrementalReport) {
+    // Identify the nodes that need re-evaluation: every node whose source
+    // file is a freshly extracted file. Their community labels are blank
+    // after the splice; their neighbours may need to follow.
     let n = g.node_count();
-    let touched =
-        report.nodes_stripped + report.files_added + report.files_changed * 8;
-    let ratio = if n == 0 { 0.0 } else { touched as f64 / n as f64 };
-
-    if ratio >= 0.2 {
-        // Too much churn — a fresh pass is faster than dragging stale
-        // community labels through a hot loop.
-        debug!(
-            ratio = %format!("{:.2}", ratio),
-            "incremental clustering: full pass"
-        );
-        cluster::cluster(g);
+    if n == 0 {
         return;
     }
+    let dirty: Vec<petgraph::graph::NodeIndex> = g
+        .graph
+        .node_indices()
+        .filter(|ni| g.graph[*ni].community.is_none())
+        .collect();
+    debug!(
+        dirty = dirty.len(),
+        total = n,
+        ratio = %format!("{:.2}", dirty.len() as f64 / n as f64),
+        "delta-louvain candidate set"
+    );
 
-    // Otherwise rely on existing community labels for the unchanged nodes
-    // and run a single local-moving pass over the whole graph; densify
-    // happens inside `cluster::cluster`. The unchanged nodes already have
-    // good labels so the inner loop converges quickly. We still run the
-    // full pass — this is a placeholder for a future delta-Louvain.
-    cluster::cluster(g);
+    if dirty.is_empty() && report.files_removed == 0 {
+        // Nothing changed structurally; prior labels are still valid.
+        return;
+    }
+    cluster::cluster_seeded(g, &dirty);
 }

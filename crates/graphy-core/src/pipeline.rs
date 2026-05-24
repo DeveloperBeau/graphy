@@ -77,19 +77,9 @@ impl Pipeline {
                 .join("graph.json")
                 .exists();
             if prior_exists {
-                let mut out = crate::incremental::update_graph(&self.cfg)?;
-                if self.cfg.dedup {
-                    let report = crate::dedup::dedup(&mut out.graph);
-                    info!(
-                        imports = report.imports_resolved,
-                        merged = report.reexports_merged,
-                        ambiguous = report.ambiguous_groups,
-                        "dedup pass"
-                    );
-                    out.analysis = analyze(&out.graph);
-                    out.paths = export(&self.cfg.out_root, &out.graph, &out.analysis)?;
-                }
-                return Ok(out);
+                // `update_graph` runs dedup itself (when cfg.dedup is on)
+                // so that clustering operates on the canonical graph.
+                return crate::incremental::update_graph(&self.cfg);
             }
         }
 

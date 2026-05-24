@@ -160,3 +160,53 @@ fn dedup_empty_graph_is_safe() {
     assert_eq!(report.reexports_merged, 0);
     assert_eq!(report.ambiguous_groups, 0);
 }
+
+#[test]
+fn qualified_path_disambiguates_same_leaf_collision() {
+    // Two helpers share a leaf name but live in different files. An
+    // extern that qualifies the path with the file stem should resolve
+    // to the unique correct one rather than giving up.
+    let ex = ExtractionOutput {
+        nodes: vec![
+            n("src/a.rs::helper", "function", "src/a.rs"),
+            n("src/b.rs::helper", "function", "src/b.rs"),
+            ext("extern::a::helper", "src/caller.rs"),
+        ],
+        edges: vec![e(
+            "src/caller.rs",
+            "extern::a::helper",
+            "imports",
+            Confidence::Extracted,
+        )],
+    };
+    let mut g = build_graph(vec![ex]);
+    let report = dedup(&mut g);
+    assert_eq!(
+        report.imports_resolved, 1,
+        "extern::a::helper should resolve to src/a.rs::helper"
+    );
+    let target = g
+        .by_id
+        .get("src/a.rs::helper")
+        .expect("a.rs helper survived");
+    assert!(g.graph[*target]
+        .aliases
+        .contains(&"extern::a::helper".to_string()));
+}
+
+#[test]
+fn qualified_path_strips_use_keyword_and_as_alias() {
+    let ex = ExtractionOutput {
+        nodes: vec![
+            n("src/x.rs::Helper", "function", "src/x.rs"),
+            ext("extern::use x::Helper as MyHelper;", "src/caller.rs"),
+        ],
+        edges: vec![],
+    };
+    let mut g = build_graph(vec![ex]);
+    let report = dedup(&mut g);
+    assert_eq!(
+        report.imports_resolved, 1,
+        "the `use ... as ...` form should be normalised before lookup"
+    );
+}

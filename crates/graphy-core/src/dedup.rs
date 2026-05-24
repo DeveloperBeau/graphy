@@ -54,8 +54,12 @@ pub fn dedup(g: &mut KnowledgeGraph) -> DedupReport {
 // ---------- pass 1: extern imports -> local defs ----------
 
 fn resolve_imports(g: &mut KnowledgeGraph) -> usize {
-    // Build a leaf-name index over non-extern nodes.
-    let mut leaf_index: HashMap<String, Vec<NodeIndex>> = HashMap::new();
+    // Build a multi-key index: every non-extern node is registered under
+    // each progressive suffix of its qualified path. For a node `helper`
+    // in `src/foo/bar.rs` the keys are: `helper`, `bar::helper`,
+    // `foo::bar::helper`, `src::foo::bar::helper`. Resolution prefers the
+    // longest matching suffix to disambiguate same-leaf collisions.
+    let mut suffix_index: HashMap<String, Vec<NodeIndex>> = HashMap::new();
     let extern_ids: HashSet<String> = g
         .by_id
         .iter()
@@ -67,22 +71,16 @@ fn resolve_imports(g: &mut KnowledgeGraph) -> usize {
         if id.starts_with("extern::") {
             continue;
         }
-        let leaf = leaf_name(&g.graph[idx].label);
-        leaf_index.entry(leaf.to_string()).or_default().push(idx);
+        for key in qualified_suffixes(&g.graph[idx]) {
+            suffix_index.entry(key).or_default().push(idx);
+        }
     }
 
-    // For each extern, see whether its leaf matches exactly one local def.
     let mut redirects: Vec<(NodeIndex, NodeIndex, String)> = Vec::new();
     for extern_id in &extern_ids {
         let Some(&extern_idx) = g.by_id.get(extern_id) else { continue };
         let label = g.graph[extern_idx].label.clone();
-        let leaf = leaf_name(&label);
-        let candidates = leaf_index.get(leaf);
-        let Some(candidates) = candidates else { continue };
-        if candidates.len() != 1 {
-            continue;
-        }
-        let target = candidates[0];
+        let Some(target) = best_match(&suffix_index, &label) else { continue };
         if target == extern_idx {
             continue;
         }
@@ -94,6 +92,66 @@ fn resolve_imports(g: &mut KnowledgeGraph) -> usize {
         redirect_node(g, from, to, &original_id);
     }
     count
+}
+
+/// Every progressive suffix of a node's qualified path. Path components
+/// come from the file path (parents → file stem), label is appended last.
+fn qualified_suffixes(data: &NodeData) -> Vec<String> {
+    let mut out = vec![data.label.clone()];
+    let Some(file) = data.source_file.as_deref() else { return out };
+    let stem = std::path::Path::new(file);
+    let mut parts: Vec<String> = stem
+        .components()
+        .filter_map(|c| c.as_os_str().to_str().map(String::from))
+        .collect();
+    if let Some(last) = parts.last_mut() {
+        if let Some(dot) = last.rfind('.') {
+            last.truncate(dot);
+        }
+    }
+    // Drop leading "/" or drive-letter components — they're not part of a
+    // logical qualified path.
+    parts.retain(|p| !p.is_empty() && p != "/");
+    for k in 1..=parts.len() {
+        let slice = &parts[parts.len() - k..];
+        let mut joined = slice.join("::");
+        joined.push_str("::");
+        joined.push_str(&data.label);
+        out.push(joined);
+    }
+    out
+}
+
+/// Best (longest-suffix-first) unique match for an extern label.
+///
+/// `extern_label` looks like `crate::a::helper`, `std::sync::Arc`, etc.
+/// We progressively shorten the right side until a single candidate is
+/// found, then return it. Leaf-only matches still work; collisions on
+/// leaf are resolved by a longer prefix in the qualified path.
+fn best_match(
+    index: &HashMap<String, Vec<NodeIndex>>,
+    extern_label: &str,
+) -> Option<NodeIndex> {
+    let cleaned = extern_label
+        .trim()
+        .trim_start_matches("use ")
+        .trim_end_matches(';')
+        .trim();
+    // Strip an optional ` as <alias>` clause.
+    let cleaned = cleaned.split(" as ").next().unwrap_or(cleaned);
+    let parts: Vec<&str> = cleaned.split("::").filter(|s| !s.is_empty()).collect();
+    if parts.is_empty() {
+        return None;
+    }
+    for k in (1..=parts.len()).rev() {
+        let key = parts[parts.len() - k..].join("::");
+        if let Some(candidates) = index.get(&key) {
+            if candidates.len() == 1 {
+                return Some(candidates[0]);
+            }
+        }
+    }
+    None
 }
 
 // ---------- pass 2: re-export / alias collapse + ambiguity ----------
