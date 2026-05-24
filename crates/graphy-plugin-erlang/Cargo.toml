@@ -1,0 +1,17 @@
+[package]
+name = "graphy-plugin-erlang"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "graphy language plugin: Erlang extractor (cdylib)."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+graphy-plugin-api.workspace = true
+tree-sitter.workspace = true
+tree-sitter-erlang = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true

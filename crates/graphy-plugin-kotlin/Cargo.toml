@@ -1,0 +1,17 @@
+[package]
+name = "graphy-plugin-kotlin"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "graphy language plugin: Kotlin extractor (cdylib)."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+graphy-plugin-api.workspace = true
+tree-sitter.workspace = true
+tree-sitter-kotlin-ng = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true

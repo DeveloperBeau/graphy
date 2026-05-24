@@ -1,0 +1,18 @@
+[package]
+name = "graphy-plugin-js-ts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "graphy language plugin: JavaScript/TypeScript extractor (cdylib)."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+graphy-plugin-api.workspace = true
+tree-sitter.workspace = true
+tree-sitter-javascript = { workspace = true }
+tree-sitter-typescript = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
