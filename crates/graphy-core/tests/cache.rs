@@ -1,0 +1,90 @@
+//! `cache` module: content-hash persistence.
+
+use std::fs;
+use std::path::PathBuf;
+
+use graphy_core::cache::Cache;
+use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
+use tempfile::tempdir;
+
+fn ex(nodes: &[&str]) -> ExtractionOutput {
+    ExtractionOutput {
+        nodes: nodes
+            .iter()
+            .map(|id| Node {
+                id: id.to_string(),
+                label: id.to_string(),
+                source_file: None,
+                source_location: None,
+                kind: None,
+            })
+            .collect(),
+        edges: vec![],
+    }
+}
+
+#[test]
+fn first_partition_marks_everything_uncached() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("a.rs");
+    fs::write(&p, "fn f(){}").unwrap();
+    let mut cache = Cache::open(dir.path()).unwrap();
+    let part = cache.partition(&[p.clone()]);
+    assert!(part.cached.is_empty());
+    assert_eq!(part.uncached, vec![p]);
+}
+
+#[test]
+fn unchanged_file_returns_cached_output_on_second_run() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("a.rs");
+    fs::write(&p, "fn f(){}").unwrap();
+
+    let mut cache = Cache::open(dir.path()).unwrap();
+    let _ = cache.partition(&[p.clone()]);
+    cache.save(&p, &ex(&["a"])).unwrap();
+    cache.flush().unwrap();
+
+    let mut reopen = Cache::open(dir.path()).unwrap();
+    let part = reopen.partition(&[p.clone()]);
+    assert_eq!(part.cached.len(), 1);
+    assert_eq!(part.cached[0].1.nodes[0].id, "a");
+    assert!(part.uncached.is_empty());
+}
+
+#[test]
+fn content_change_invalidates_cache_entry() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("a.rs");
+    fs::write(&p, "fn f(){}").unwrap();
+
+    let mut cache = Cache::open(dir.path()).unwrap();
+    let _ = cache.partition(&[p.clone()]);
+    cache.save(&p, &ex(&["a"])).unwrap();
+    cache.flush().unwrap();
+
+    // Mutate file → hash differs → entry invalidated.
+    fs::write(&p, "fn g(){}").unwrap();
+    let mut reopen = Cache::open(dir.path()).unwrap();
+    let part = reopen.partition(&[p.clone()]);
+    assert!(part.cached.is_empty());
+    assert_eq!(part.uncached.len(), 1);
+}
+
+#[test]
+fn missing_file_routed_to_uncached_without_error() {
+    let dir = tempdir().unwrap();
+    let mut cache = Cache::open(dir.path()).unwrap();
+    let part = cache.partition(&[PathBuf::from("/no/such/file.rs")]);
+    assert_eq!(part.uncached.len(), 1);
+    assert!(part.cached.is_empty());
+}
+
+#[test]
+fn empty_partition_is_safe() {
+    let dir = tempdir().unwrap();
+    let mut cache = Cache::open(dir.path()).unwrap();
+    let part = cache.partition(&[]);
+    assert!(part.cached.is_empty() && part.uncached.is_empty());
+    cache.flush().unwrap();
+}
