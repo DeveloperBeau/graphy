@@ -1,0 +1,111 @@
+//! Orchestrator: detect → extract → build → cluster → analyze → report → export.
+
+use std::path::{Path, PathBuf};
+use std::time::Instant;
+
+use anyhow::Result;
+use tracing::info;
+
+use crate::analyze::{Analysis, analyze};
+use crate::build::build_graph;
+use crate::cache::Cache;
+use crate::cluster::cluster;
+use crate::detect::{DetectOptions, collect_files};
+use crate::export::{ExportPaths, export};
+use crate::extract::extract_all;
+use crate::graph::KnowledgeGraph;
+
+#[derive(Debug, Clone)]
+pub struct PipelineConfig {
+    pub root: PathBuf,
+    pub out_root: PathBuf,
+    pub include_docs: bool,
+    /// When true, skip extraction for files whose content hash matches the
+    /// cached output. Defaults to true.
+    pub use_cache: bool,
+}
+
+impl PipelineConfig {
+    pub fn new(root: impl Into<PathBuf>) -> Self {
+        let root = root.into();
+        Self {
+            out_root: root.clone(),
+            root,
+            include_docs: false,
+            use_cache: true,
+        }
+    }
+}
+
+pub struct PipelineOutputs {
+    pub graph: KnowledgeGraph,
+    pub analysis: Analysis,
+    pub paths: ExportPaths,
+    pub files_scanned: usize,
+    pub files_cached: usize,
+    pub elapsed_ms: u128,
+}
+
+pub struct Pipeline {
+    cfg: PipelineConfig,
+}
+
+impl Pipeline {
+    pub fn new(cfg: PipelineConfig) -> Self {
+        Self { cfg }
+    }
+
+    pub fn run(&self) -> Result<PipelineOutputs> {
+        let start = Instant::now();
+        let files = collect_files(
+            &self.cfg.root,
+            DetectOptions {
+                include_docs: self.cfg.include_docs,
+                follow_symlinks: false,
+            },
+        );
+        info!(count = files.len(), "files detected");
+
+        let (mut extractions, files_cached) = if self.cfg.use_cache {
+            let mut cache = Cache::open(&self.cfg.out_root)?;
+            let part = cache.partition(&files);
+            let cached_count = part.cached.len();
+            let mut all: Vec<_> = part.cached.into_iter().map(|(_, o)| o).collect();
+            let fresh = extract_all(&part.uncached);
+            for (path, output) in part.uncached.iter().zip(&fresh) {
+                let _ = cache.save(path, output);
+            }
+            cache.flush().ok();
+            all.extend(fresh);
+            (all, cached_count)
+        } else {
+            (extract_all(&files), 0)
+        };
+        // Local mut on `extractions` allows future incremental updates without
+        // changing the surrounding shape.
+        let extractions = std::mem::take(&mut extractions);
+
+        let mut graph = build_graph(extractions);
+        let nodes = graph.node_count();
+        let edges = graph.edge_count();
+        info!(nodes, edges, "graph built");
+
+        cluster(&mut graph);
+        let analysis = analyze(&graph);
+        let paths = export(&self.cfg.out_root, &graph, &analysis)?;
+
+        Ok(PipelineOutputs {
+            graph,
+            analysis,
+            paths,
+            files_scanned: files.len(),
+            files_cached,
+            elapsed_ms: start.elapsed().as_millis(),
+        })
+    }
+}
+
+/// Convenience: run with defaults under `root`.
+pub fn run(root: &Path) -> Result<PipelineOutputs> {
+    Pipeline::new(PipelineConfig::new(root)).run()
+}
