@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 
 use petgraph::graph::NodeIndex;
-use petgraph::visit::EdgeRef;
+use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 
 use crate::graph::KnowledgeGraph;
 
@@ -176,7 +176,8 @@ fn write_back(g: &mut KnowledgeGraph, levels: &[Vec<usize>]) {
         }
     }
     let mut renumber: HashMap<usize, u32> = HashMap::new();
-    for (idx, ni) in g.graph.node_indices().enumerate() {
+    let indices: Vec<_> = g.graph.node_indices().collect();
+    for (idx, ni) in indices.into_iter().enumerate() {
         let raw = mapping[idx];
         let next = renumber.len() as u32;
         let c_label = *renumber.entry(raw).or_insert(next);

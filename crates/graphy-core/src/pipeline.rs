@@ -23,6 +23,13 @@ pub struct PipelineConfig {
     /// When true, skip extraction for files whose content hash matches the
     /// cached output. Defaults to true.
     pub use_cache: bool,
+    /// When true, run entity deduplication after the graph is built.
+    /// Defaults to true.
+    pub dedup: bool,
+    /// When true and a prior `graph.json` is on disk, apply only a delta
+    /// rather than rebuilding from scratch. Falls back to a full build on
+    /// the first run automatically. Defaults to true.
+    pub incremental: bool,
 }
 
 impl PipelineConfig {
@@ -33,6 +40,8 @@ impl PipelineConfig {
             root,
             include_docs: false,
             use_cache: true,
+            dedup: true,
+            incremental: true,
         }
     }
 }
@@ -56,6 +65,34 @@ impl Pipeline {
     }
 
     pub fn run(&self) -> Result<PipelineOutputs> {
+        // Incremental fast-path: if a prior graph is on disk and the user
+        // has not opted out, apply a delta instead of rebuilding from
+        // scratch. `update_graph` falls through to a full build itself
+        // when there is no prior graph.
+        if self.cfg.incremental {
+            let prior_exists = self
+                .cfg
+                .out_root
+                .join("graphy-out")
+                .join("graph.json")
+                .exists();
+            if prior_exists {
+                let mut out = crate::incremental::update_graph(&self.cfg)?;
+                if self.cfg.dedup {
+                    let report = crate::dedup::dedup(&mut out.graph);
+                    info!(
+                        imports = report.imports_resolved,
+                        merged = report.reexports_merged,
+                        ambiguous = report.ambiguous_groups,
+                        "dedup pass"
+                    );
+                    out.analysis = analyze(&out.graph);
+                    out.paths = export(&self.cfg.out_root, &out.graph, &out.analysis)?;
+                }
+                return Ok(out);
+            }
+        }
+
         let start = Instant::now();
         let files = collect_files(
             &self.cfg.root,
@@ -81,11 +118,18 @@ impl Pipeline {
         } else {
             (extract_all(&files), 0)
         };
-        // Local mut on `extractions` allows future incremental updates without
-        // changing the surrounding shape.
         let extractions = std::mem::take(&mut extractions);
 
         let mut graph = build_graph(extractions);
+        if self.cfg.dedup {
+            let report = crate::dedup::dedup(&mut graph);
+            info!(
+                imports = report.imports_resolved,
+                merged = report.reexports_merged,
+                ambiguous = report.ambiguous_groups,
+                "dedup pass"
+            );
+        }
         let nodes = graph.node_count();
         let edges = graph.edge_count();
         info!(nodes, edges, "graph built");

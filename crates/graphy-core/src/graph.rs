@@ -3,10 +3,15 @@
 use std::collections::HashMap;
 
 use indexmap::IndexMap;
-use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::graph::NodeIndex;
+use petgraph::stable_graph::StableDiGraph;
 use serde::{Deserialize, Serialize};
 
 use crate::schema::{Confidence, Edge, Node};
+
+/// Stable petgraph alias: node indices survive `remove_node` so the
+/// `by_id` map stays valid after dedup / incremental strips.
+pub type DiGraph<N, E> = StableDiGraph<N, E>;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct NodeData {
@@ -19,6 +24,11 @@ pub struct NodeData {
     pub kind: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub community: Option<u32>,
+    /// Ids that previously named this entity before [`crate::dedup`]
+    /// collapsed them into this node. Preserved so external tooling can
+    /// resolve the original ids back to the canonical node.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub aliases: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,6 +66,7 @@ impl KnowledgeGraph {
                 source_location: n.source_location,
                 kind: n.kind,
                 community: None,
+                aliases: Vec::new(),
             },
         );
     }
@@ -102,6 +113,7 @@ impl KnowledgeGraph {
                     "source_location": d.source_location,
                     "kind": d.kind,
                     "community": d.community,
+                    "aliases": d.aliases,
                 })
             })
             .collect();
