@@ -1,0 +1,133 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/graphy-core",
+    "crates/graphy-cli",
+    "crates/graphy-plugin-api",
+    "crates/graphy-plugin-bash",
+    "crates/graphy-plugin-c-family",
+    "crates/graphy-plugin-csharp",
+    "crates/graphy-plugin-css",
+    "crates/graphy-plugin-dart",
+    "crates/graphy-plugin-elixir",
+    "crates/graphy-plugin-erlang",
+    "crates/graphy-plugin-fortran",
+    "crates/graphy-plugin-go",
+    "crates/graphy-plugin-groovy",
+    "crates/graphy-plugin-haskell",
+    "crates/graphy-plugin-html",
+    "crates/graphy-plugin-java",
+    "crates/graphy-plugin-js-ts",
+    "crates/graphy-plugin-json",
+    "crates/graphy-plugin-julia",
+    "crates/graphy-plugin-kotlin",
+    "crates/graphy-plugin-lua",
+    "crates/graphy-plugin-markdown",
+    "crates/graphy-plugin-objc",
+    "crates/graphy-plugin-ocaml",
+    "crates/graphy-plugin-pascal",
+    "crates/graphy-plugin-perl",
+    "crates/graphy-plugin-php",
+    "crates/graphy-plugin-powershell",
+    "crates/graphy-plugin-python",
+    "crates/graphy-plugin-r",
+    "crates/graphy-plugin-ruby",
+    "crates/graphy-plugin-rust",
+    "crates/graphy-plugin-scala",
+    "crates/graphy-plugin-sql",
+    "crates/graphy-plugin-svelte",
+    "crates/graphy-plugin-swift",
+    "crates/graphy-plugin-toml",
+    "crates/graphy-plugin-verilog",
+    "crates/graphy-plugin-yaml",
+    "crates/graphy-plugin-zig",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+repository = "https://github.com/DeveloperBeau/graphy"
+description = "standalone implementation: turn a codebase into a queryable knowledge graph, fast."
+
+[workspace.dependencies]
+graphy-core = { path = "crates/graphy-core" }
+graphy-plugin-api = { path = "crates/graphy-plugin-api" }
+
+anyhow = "1"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rayon = "1"
+walkdir = "2"
+ignore = "0.4"
+petgraph = { version = "0.8", features = ["serde-1"] }
+indexmap = { version = "2", features = ["serde"] }
+ahash = "0.8"
+once_cell = "1"
+regex = "1"
+
+tree-sitter = "0.26"
+tree-sitter-rust = "0.24"
+tree-sitter-python = "0.23"
+tree-sitter-javascript = "0.23"
+tree-sitter-typescript = "0.23"
+tree-sitter-go = "0.23"
+tree-sitter-java = "0.23"
+tree-sitter-c = "0.23"
+tree-sitter-cpp = "0.23"
+tree-sitter-ruby = "0.23"
+tree-sitter-c-sharp = "0.23"
+tree-sitter-bash = "0.23"
+tree-sitter-json = "0.24"
+tree-sitter-swift = "0.7"
+tree-sitter-kotlin-ng = "1"
+tree-sitter-php = "0.24"
+tree-sitter-scala = "0.24"
+tree-sitter-lua = "0.5"
+tree-sitter-zig = "1"
+tree-sitter-elixir = "0.3"
+tree-sitter-objc = "3"
+tree-sitter-julia = "0.23"
+tree-sitter-html = "0.23"
+tree-sitter-css = "0.23"
+tree-sitter-groovy = "0.1"
+tree-sitter-powershell = "0.26"
+tree-sitter-verilog = "1"
+tree-sitter-fortran = "0.6"
+tree-sitter-sequel = "0.3"
+tree-sitter-r = "1"
+tree-sitter-dart = "0.2"
+tree-sitter-vue = "0.0.3"
+tree-sitter-svelte-ng = "1"
+tree-sitter-md = "0.5"
+tree-sitter-yaml = "0.7"
+tree-sitter-pascal = "0.10"
+tree-sitter-perl = "1"
+tree-sitter-haskell = "0.23"
+tree-sitter-ocaml = "0.25"
+tree-sitter-erlang = "0.18"
+tree-sitter-toml-ng = "0.7"
+
+blake3 = "1"
+notify = "8"
+notify-debouncer-full = "0.6"
+libloading = "0.8"
+dirs = "5"
+sha2 = "0.10"
+toml = "0.8"
+hex = "0.4"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+opt-level = 3
+strip = "symbols"
+
+[profile.bench]
+inherits = "release"
+debug = true
