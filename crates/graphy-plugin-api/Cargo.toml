@@ -1,0 +1,14 @@
+[package]
+name = "graphy-plugin-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "C-ABI surface for graphy language plugins."
+
+[dependencies]
+serde = { workspace = true, features = ["derive"], optional = true }
+
+[features]
+default = ["helpers"]
+helpers = ["dep:serde"]
