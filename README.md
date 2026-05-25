@@ -72,6 +72,15 @@ import. Schema version is tracked via the cache manifest's
 `abi_version` field; older v1 caches are accepted and upgraded
 in-place on the first new run.
 
+### Cycle-aware delta-Louvain
+
+Strongly-connected components (e.g. recursive call cycles, mutually
+recursive types) are detected on the first run and cached at
+`graphy-out/.cache/scc.json`. Incremental runs widen delta-Louvain's
+hot frontier to cover every node in any cycle touching a dirty node, so
+community labels propagate fully through the cycle. The SCC index is
+patched in place when edges change. Use `--no-scc-expansion` to disable.
+
 ### Watch
 
 `graphy watch <path>` runs the initial build then re-runs whenever a tracked file changes. Uses `notify` + a 250 ms debouncer; changes inside `graphy-out/` are ignored to avoid feedback loops.
