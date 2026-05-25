@@ -312,14 +312,23 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         .collect();
 
     // Load or (re)build the SCC index, then patch it for the dirty set.
-    let mut scc = crate::scc::SccIndex::load(&cfg.out_root).unwrap_or_default();
-    if scc.components.is_empty() && scc.by_id.is_empty() {
-        scc = crate::scc::SccIndex::build(&graph);
+    // This whole block is gated on `cfg.scc_expansion`; when disabled the
+    // delta-Louvain pass runs without cycle-aware seeding.
+    let scc_opt: Option<crate::scc::SccIndex> = if cfg.scc_expansion {
+        let mut scc = crate::scc::SccIndex::load(&cfg.out_root).unwrap_or_default();
+        if scc.components.is_empty() && scc.by_id.is_empty() {
+            scc = crate::scc::SccIndex::build(&graph);
+        } else {
+            scc.patch(&graph, &dirty_node_ids);
+        }
+        Some(scc)
     } else {
-        scc.patch(&graph, &dirty_node_ids);
+        None
+    };
+    cluster_incrementally(&mut graph, &report, scc_opt.as_ref());
+    if let Some(scc) = &scc_opt {
+        scc.save(&cfg.out_root).ok();
     }
-    cluster_incrementally(&mut graph, &report, Some(&scc));
-    scc.save(&cfg.out_root).ok();
 
     let mut analysis = analyze(&graph);
     analysis.dedup_imports_resolved = dedup_imports_resolved;

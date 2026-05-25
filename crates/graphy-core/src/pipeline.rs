@@ -30,6 +30,9 @@ pub struct PipelineConfig {
     /// rather than rebuilding from scratch. Falls back to a full build on
     /// the first run automatically. Defaults to true.
     pub incremental: bool,
+    /// When true, build/load/patch the SCC index and pass it to
+    /// delta-Louvain for cycle-aware community assignment. Defaults to true.
+    pub scc_expansion: bool,
 }
 
 impl PipelineConfig {
@@ -42,6 +45,7 @@ impl PipelineConfig {
             use_cache: true,
             dedup: true,
             incremental: true,
+            scc_expansion: true,
         }
     }
 }
