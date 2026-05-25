@@ -24,6 +24,8 @@ use crate::schema::ExtractionOutput;
 const CACHE_DIR: &str = ".cache";
 const MANIFEST_FILE: &str = "manifest.json";
 
+pub const CACHE_ABI: u32 = 2;
+
 /// (cached outputs, files needing fresh extraction).
 #[derive(Debug, Default)]
 pub struct CachePartition {
@@ -33,8 +35,14 @@ pub struct CachePartition {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct Manifest {
+    #[serde(default = "default_abi_v1")]
+    abi_version: u32,
     /// Map of relative-or-absolute path → content hash.
     entries: HashMap<String, String>,
+}
+
+fn default_abi_v1() -> u32 {
+    1
 }
 
 #[derive(Debug)]
@@ -105,7 +113,8 @@ impl Cache {
     }
 
     /// Flush manifest to disk. Should be called at the end of every run.
-    pub fn flush(&self) -> Result<()> {
+    pub fn flush(&mut self) -> Result<()> {
+        self.manifest.abi_version = CACHE_ABI;
         let path = self.root.join(MANIFEST_FILE);
         let body = serde_json::to_vec_pretty(&self.manifest)?;
         fs::write(&path, body)
