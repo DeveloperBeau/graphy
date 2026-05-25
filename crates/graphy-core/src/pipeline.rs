@@ -104,19 +104,41 @@ impl Pipeline {
         let (mut extractions, files_cached) = if let Some(ref mut cache) = cache {
             let part = cache.partition(&files);
             let cached_count = part.cached.len();
-            let mut all: Vec<_> = part.cached.into_iter().map(|(_, o)| o).collect();
+            let mut all: Vec<(PathBuf, _)> = part.cached;
             let fresh = extract_all(&part.uncached);
             for (path, output) in part.uncached.iter().zip(&fresh) {
                 let _ = cache.save(path, output);
             }
             cache.flush().ok();
-            all.extend(fresh);
+            all.extend(part.uncached.into_iter().zip(fresh));
             (all, cached_count)
         } else {
-            (extract_all(&files), 0)
+            let outputs = extract_all(&files);
+            let paired: Vec<(PathBuf, _)> = files.iter().cloned().zip(outputs).collect();
+            (paired, 0)
         };
-        let extractions = std::mem::take(&mut extractions);
 
+        // Build a file → extern-ids index before consuming the extractions.
+        // This is used after dedup to fan-out each resolved redirect to EVERY
+        // file that emits the same extern id, not just the one that "won" the
+        // splice-time node dedup.
+        let file_extern_ids: std::collections::HashMap<String, std::collections::HashSet<String>> =
+            extractions
+                .iter()
+                .map(|(path, out)| {
+                    let key = path.to_string_lossy().into_owned();
+                    let ids: std::collections::HashSet<String> = out
+                        .nodes
+                        .iter()
+                        .filter(|n| n.id.starts_with("extern::"))
+                        .map(|n| n.id.clone())
+                        .collect();
+                    (key, ids)
+                })
+                .filter(|(_, ids)| !ids.is_empty())
+                .collect();
+
+        let extractions: Vec<_> = extractions.into_iter().map(|(_, o)| o).collect();
         let mut graph = build_graph(extractions);
         let mut dedup_imports_resolved = 0usize;
         if self.cfg.dedup {
@@ -129,17 +151,34 @@ impl Pipeline {
                 "dedup pass"
             );
             if let Some(ref mut cache) = cache {
+                // Fan out each redirect to every file that contributed the
+                // same `extern::X` node, not just the attributed source file.
+                let mut augmented = report.per_file_maps.clone();
+                for (file_key, extern_ids) in &file_extern_ids {
+                    for (_, map) in &report.per_file_maps {
+                        for r in &map.redirects {
+                            if extern_ids.contains(&r.from) {
+                                let entry = augmented
+                                    .entry(file_key.clone())
+                                    .or_insert_with(|| crate::dedup::map::DedupMap::empty_for(""));
+                                if !entry.redirects.iter().any(|x| x.from == r.from) {
+                                    entry.redirects.push(r.clone());
+                                }
+                            }
+                        }
+                    }
+                }
                 // Write populated maps first, then write an empty map for
                 // every file that dedup didn't touch.  This ensures every
                 // file always has a .dedup.json keyed to its current content
                 // hash, which lets the invalidation logic detect stale maps.
-                for (file_key, map) in &report.per_file_maps {
+                for (file_key, map) in &augmented {
                     let p = std::path::PathBuf::from(file_key);
                     let _ = cache.save_dedup_map(&p, map);
                 }
                 for file in &files {
                     let key = file.to_string_lossy().into_owned();
-                    if !report.per_file_maps.contains_key(&key) {
+                    if !augmented.contains_key(&key) {
                         let _ = cache.save_dedup_map(
                             file,
                             &crate::dedup::map::DedupMap::empty_for(""),

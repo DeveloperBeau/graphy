@@ -5,6 +5,53 @@ use graphy_core::pipeline::{Pipeline, PipelineConfig};
 use std::fs;
 use tempfile::tempdir;
 
+// ---------------------------------------------------------------------------
+// Regression test: warm imports_resolved must not exceed cold
+// ---------------------------------------------------------------------------
+
+/// The core regression: after a cold build and one or more warm incremental
+/// runs with no file changes, the dedup pass should resolve 0 imports on the
+/// warm run.  Prior to the fix, warm runs resolved MORE imports than cold
+/// because:
+/// 1. `redirect_node` rebuilt `by_id` using `canonical_id_of`, which renamed
+///    `extern::X` entries to `source_file::label` — creating phantom non-extern
+///    nodes in `graph.json`.  Those phantoms then appeared in the suffix index
+///    on warm runs, making previously-ambiguous externs resolvable.
+/// 2. Dedup maps were only attributed to the file whose extern node happened
+///    to survive splice-time dedup, so other files carrying the same extern id
+///    in their raw extractions never got the redirect in their cache maps.
+#[test]
+fn warm_run_imports_resolved_is_le_cold() {
+    let dir = tempdir().unwrap();
+    // Two-file fixture where b.rs imports from a.rs via an extern node.
+    fs::write(dir.path().join("a.rs"), "pub fn helper(){}\n").unwrap();
+    fs::write(
+        dir.path().join("b.rs"),
+        "use crate::a::helper;\npub fn caller(){ helper(); }\n",
+    ).unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+
+    // Cold run.
+    let cold = Pipeline::new(cfg.clone()).run().unwrap();
+    let cold_resolved = cold.analysis.dedup_imports_resolved;
+
+    // Warm run (no file changes).
+    let warm = Pipeline::new(cfg.clone()).run().unwrap();
+    let warm_resolved = warm.analysis.dedup_imports_resolved;
+
+    assert!(
+        warm_resolved <= cold_resolved,
+        "warm imports_resolved ({warm_resolved}) must be <= cold ({cold_resolved})"
+    );
+
+    // A fully-converged warm run (second warm, no changes) should resolve 0.
+    let warm2 = Pipeline::new(cfg).run().unwrap();
+    assert_eq!(
+        warm2.analysis.dedup_imports_resolved, 0,
+        "second warm run should resolve 0 imports (cache fully converged)"
+    );
+}
+
 #[test]
 fn dedup_map_roundtrips_through_serde() {
     let m = DedupMap {

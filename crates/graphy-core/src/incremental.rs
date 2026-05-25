@@ -127,11 +127,58 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     // Apply any persisted dedup decisions from prior runs so the cached
     // extractions splice in canonical form. Eliminates a re-dedup pass on
     // warm runs.
+    //
+    // IMPORTANT: we build a *merged* redirect map from ALL cached files before
+    // applying. The same extern id (e.g. `extern::fmt`) can be emitted by
+    // multiple files; dedup resolves it once and attributes the redirect only
+    // to the file whose node was iterated first. All other files that emit the
+    // same extern still carry it in their raw extractions, so we must apply the
+    // redirect from ANY file's map to EVERY extraction — not just the map that
+    // happens to belong to that specific file.
+    // Build two structures used both for apply and for write-back fanout:
+    //
+    // 1. `merged`: union of all redirects/ambiguous marks from all per-file
+    //    maps written during the previous run. Using the union ensures that an
+    //    extern id which appears in N files is removed from ALL of them, not
+    //    just the one file whose map happened to record the resolution.
+    //
+    // 2. `file_extern_ids`: for each cached file, the set of `extern::*` node
+    //    ids present in its raw extraction (before apply). Needed at write-back
+    //    time to fan out new dedup redirects to every file that contributes a
+    //    given extern, not just the one that "won" the splice-time dedup.
+    let mut merged = crate::dedup::map::DedupMap::empty_for("");
+    // Maps file path → set of extern ids in its raw extraction.
+    let mut file_extern_ids: HashMap<PathBuf, HashSet<String>> = HashMap::new();
     if cfg.dedup {
-        for (path, out) in part.cached.iter_mut() {
-            if let Some(map) = cache.load_dedup_map(path) {
-                crate::dedup::map::apply_dedup_map(out, &map);
+        for (path, out) in part.cached.iter() {
+            // Record the raw extern ids for this file.
+            let extern_ids: HashSet<String> = out
+                .nodes
+                .iter()
+                .filter(|n| n.id.starts_with("extern::"))
+                .map(|n| n.id.clone())
+                .collect();
+            if !extern_ids.is_empty() {
+                file_extern_ids.insert(path.clone(), extern_ids);
             }
+            // Merge this file's prior dedup map into `merged`.
+            if let Some(map) = cache.load_dedup_map(path) {
+                for r in map.redirects.iter() {
+                    if !merged.redirects.iter().any(|x| x.from == r.from) {
+                        merged.redirects.push(r.clone());
+                    }
+                }
+                for a in map.ambiguous_marked.iter() {
+                    if !merged.ambiguous_marked.contains(a) {
+                        merged.ambiguous_marked.push(a.clone());
+                    }
+                }
+            }
+        }
+        // Apply the merged map to every cached extraction so externs that were
+        // resolved in any prior run are removed before the graph is spliced.
+        for (_, out) in part.cached.iter_mut() {
+            crate::dedup::map::apply_dedup_map(out, &merged);
         }
     }
 
@@ -168,9 +215,54 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
             ambiguous = dr.ambiguous_groups,
             "dedup pass (incremental)"
         );
+        // Build the write-back maps: start from the existing (prior) per-file
+        // maps so previously-applied redirects are preserved, then add any
+        // newly-resolved redirects. Finally, fan each new redirect out to every
+        // cached file whose raw extraction contained the same `extern::X` id —
+        // not just the file whose node happened to survive the splice-time dedup.
+        //
+        // Seeding from the prior maps is critical: without it, a warm run would
+        // overwrite the maps with only the newly-resolved externs, discarding
+        // the redirects that were correctly applied (and thus not re-resolved).
+        let all_redirects_union: Vec<crate::dedup::map::Redirect> = {
+            let mut union: Vec<crate::dedup::map::Redirect> = merged.redirects.clone();
+            for (_, map) in &dr.per_file_maps {
+                for r in &map.redirects {
+                    if !union.iter().any(|x| x.from == r.from) {
+                        union.push(r.clone());
+                    }
+                }
+            }
+            union
+        };
+        // For each cached file, write back all redirects that touch an extern
+        // present in that file's raw extraction.
+        let mut written: HashSet<String> = HashSet::new();
+        for (path, extern_ids) in &file_extern_ids {
+            let key = path.to_string_lossy().into_owned();
+            let applicable: Vec<crate::dedup::map::Redirect> = all_redirects_union
+                .iter()
+                .filter(|r| extern_ids.contains(&r.from))
+                .cloned()
+                .collect();
+            if !applicable.is_empty() {
+                let map = crate::dedup::map::DedupMap {
+                    version: crate::dedup::map::SCHEMA_VERSION,
+                    for_extraction: String::new(),
+                    redirects: applicable,
+                    ambiguous_marked: Vec::new(),
+                };
+                let _ = cache.save_dedup_map(path, &map);
+                written.insert(key);
+            }
+        }
+        // For files that had a dedup map entry (even empty) but no externs,
+        // preserve whatever dr.per_file_maps says (e.g. ambiguous_marked).
         for (file_key, map) in &dr.per_file_maps {
-            let p = std::path::PathBuf::from(file_key);
-            let _ = cache.save_dedup_map(&p, map);
+            if !written.contains(file_key) {
+                let p = std::path::PathBuf::from(file_key);
+                let _ = cache.save_dedup_map(&p, map);
+            }
         }
         // Ensure every changed/added file gets a .dedup.json even if dedup
         // found nothing to do for it (empty map).  This keeps the cache
@@ -178,7 +270,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         // file has never been through a dedup pass.
         for file in &part.uncached {
             let key = file.to_string_lossy().into_owned();
-            if !dr.per_file_maps.contains_key(&key) {
+            if !written.contains(&key) && !dr.per_file_maps.contains_key(&key) {
                 let _ = cache.save_dedup_map(
                     file,
                     &crate::dedup::map::DedupMap::empty_for(""),

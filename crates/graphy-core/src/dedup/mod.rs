@@ -314,35 +314,18 @@ fn redirect_node(
         g.graph.remove_edge(e);
     }
 
-    // Drop the orphan node + its by_id entry. Removing the node
-    // invalidates other NodeIndex values, so we look up by id to find it.
+    // Drop the orphan node + its by_id entry. The graph uses StableDiGraph
+    // so removing a node does NOT invalidate or shift other NodeIndex values;
+    // only the removed node's slot becomes vacant. We therefore only need to
+    // remove the single by_id entry for original_id — no full rebuild needed.
+    // (The old full-rebuild was the root cause of phantom non-extern ids
+    // appearing in by_id: canonical_id_of rewrote `extern::X` entries to
+    // `source_file::label`, making them look like non-extern nodes to the
+    // suffix index on the next warm run.)
     g.by_id.remove(original_id);
     g.graph.remove_node(from);
-    // Rebuild by_id since petgraph reuses freed indices and shifts may
-    // have moved nodes. Walk every remaining node and re-record.
-    g.by_id.clear();
-    let mut tmp: Vec<(String, NodeIndex)> = Vec::new();
-    for ni in g.graph.node_indices() {
-        // Use the node's own canonical id: first alias if present, else
-        // synthesise from label + source_location to remain stable.
-        let id = canonical_id_of(&g.graph[ni]);
-        tmp.push((id, ni));
-    }
-    for (id, ni) in tmp {
-        g.by_id.entry(id).or_insert(ni);
-    }
 }
 
-fn canonical_id_of(data: &NodeData) -> String {
-    // We never lose the original "primary" id because every node stores
-    // its incoming edges' source label. To make redirect_node deterministic
-    // we rebuild the id from source_file + label, matching how extractors
-    // emit it.
-    match (&data.source_file, &data.source_location) {
-        (Some(f), Some(_)) => format!("{f}::{}", data.label),
-        _ => data.label.clone(),
-    }
-}
 
 fn has_connecting_import(
     g: &crate::graph::DiGraph<NodeData, crate::graph::EdgeData>,
