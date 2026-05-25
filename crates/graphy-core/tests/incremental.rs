@@ -193,3 +193,52 @@ fn hierarchical_delta_modularity_within_5_percent_of_fresh() {
         "modularity drifted: fresh={q_fresh}, delta={q_delta}, ratio={ratio}"
     );
 }
+
+#[test]
+fn hierarchical_delta_persists_levels_after_run() {
+    let dir = tempdir().unwrap();
+    touch(dir.path(), "a.rs", "pub fn f(){} pub fn g(){ f(); }\n");
+    let mut cfg = PipelineConfig::new(dir.path());
+    cfg.out_root = dir.path().to_path_buf();
+    cfg.hierarchical_clustering = true;
+    let _ = Pipeline::new(cfg).run().unwrap();
+    let p = dir.path().join("graphy-out/.cache/louvain-levels.json");
+    assert!(p.exists(), "louvain-levels.json should exist after first run");
+    let body = fs::read_to_string(&p).unwrap();
+    let parsed: graphy_core::cluster::levels::LouvainLevels =
+        serde_json::from_str(&body).unwrap();
+    assert_eq!(parsed.version, 1);
+    assert!(!parsed.levels.is_empty(), "expected at least one recorded level");
+}
+
+#[test]
+fn hierarchical_delta_falls_back_on_quality_gate() {
+    let dir = tempdir().unwrap();
+    touch(dir.path(), "a.rs", "pub fn f(){} pub fn g(){ f(); }\n");
+    let mut cfg = PipelineConfig::new(dir.path());
+    cfg.out_root = dir.path().to_path_buf();
+    cfg.hierarchical_clustering = true;
+    let _ = Pipeline::new(cfg.clone()).run().unwrap();
+
+    // Corrupt the persisted modularity to artificially trip the gate on the
+    // next run.
+    let p = dir.path().join("graphy-out/.cache/louvain-levels.json");
+    let mut levels: graphy_core::cluster::levels::LouvainLevels =
+        serde_json::from_str(&fs::read_to_string(&p).unwrap()).unwrap();
+    levels.modularity = 1.0; // unattainable on this graph
+    fs::write(&p, serde_json::to_string(&levels).unwrap()).unwrap();
+
+    // Modify the file → triggers incremental → quality gate trips → full pass.
+    touch(dir.path(), "a.rs", "pub fn f(){} pub fn h(){}\n");
+    let _ = Pipeline::new(cfg).run().unwrap();
+
+    // After the full-pass fallback, persisted modularity reflects the real
+    // graph value, not the corrupted seed.
+    let after: graphy_core::cluster::levels::LouvainLevels =
+        serde_json::from_str(&fs::read_to_string(&p).unwrap()).unwrap();
+    assert!(
+        after.modularity < 1.0,
+        "persisted modularity not refreshed: {}",
+        after.modularity
+    );
+}

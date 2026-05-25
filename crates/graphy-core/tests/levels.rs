@@ -178,7 +178,8 @@ fn hierarchical_seeded_preserves_unchanged_communities() {
     let comm_b_before: u32 = g.graph[g.by_id["3"]].community.unwrap();
 
     let dirty_idx = g.by_id["0"];
-    graphy_core::cluster::cluster_hierarchical_seeded(&mut g, &[dirty_idx], &prior);
+    let mut rec = graphy_core::cluster::levels::LevelRecorder::new();
+    graphy_core::cluster::cluster_hierarchical_seeded(&mut g, &[dirty_idx], &prior, &mut rec);
 
     let comm_b_after: u32 = g.graph[g.by_id["3"]].community.unwrap();
     assert_eq!(comm_b_before, comm_b_after,
