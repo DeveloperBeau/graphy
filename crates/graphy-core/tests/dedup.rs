@@ -269,3 +269,29 @@ fn split_legacy_compound_externs_walks_braced_label() {
     // extern node.
     assert!(g.by_id.keys().any(|k| k.contains("crate::a::other")));
 }
+
+#[test]
+fn dedup_resolves_each_expanded_member_independently() {
+    use graphy_core::pipeline::{Pipeline, PipelineConfig};
+    use tempfile::tempdir;
+    use std::fs;
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("a.rs"),
+        "pub fn helper(){}\npub fn other(){}\n").unwrap();
+    fs::write(dir.path().join("b.rs"),
+        "use crate::a::{helper, other};\nfn main(){ helper(); other(); }\n").unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+    let r = Pipeline::new(cfg).run().unwrap();
+    let labels: Vec<String> = r
+        .graph
+        .graph
+        .node_weights()
+        .map(|n| n.label.clone())
+        .collect();
+    assert!(labels.contains(&"helper".to_string()));
+    assert!(labels.contains(&"other".to_string()));
+    // No compound extern survives dedup.
+    assert!(!labels.iter().any(|l| l.contains("{")),
+        "compound extern survived dedup: {:?}",
+        labels.iter().filter(|l| l.contains("{")).collect::<Vec<_>>());
+}
