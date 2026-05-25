@@ -293,7 +293,33 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         cache.flush().ok();
     }
 
-    cluster_incrementally(&mut graph, &report);
+    // Build a single idx → id reverse map once; reused inside both the
+    // dirty-node collection and the SCC patch call.
+    let idx_to_id: HashMap<petgraph::graph::NodeIndex, String> = {
+        let mut m = HashMap::with_capacity(graph.by_id.len());
+        for (id, &idx) in &graph.by_id {
+            m.insert(idx, id.clone());
+        }
+        m
+    };
+
+    // Collect ids of nodes that lack a community label (freshly spliced).
+    let dirty_node_ids: Vec<String> = graph
+        .graph
+        .node_indices()
+        .filter(|ni| graph.graph[*ni].community.is_none())
+        .filter_map(|ni| idx_to_id.get(&ni).cloned())
+        .collect();
+
+    // Load or (re)build the SCC index, then patch it for the dirty set.
+    let mut scc = crate::scc::SccIndex::load(&cfg.out_root).unwrap_or_default();
+    if scc.components.is_empty() && scc.by_id.is_empty() {
+        scc = crate::scc::SccIndex::build(&graph);
+    } else {
+        scc.patch(&graph, &dirty_node_ids);
+    }
+    cluster_incrementally(&mut graph, &report, Some(&scc));
+    scc.save(&cfg.out_root).ok();
 
     let mut analysis = analyze(&graph);
     analysis.dedup_imports_resolved = dedup_imports_resolved;
@@ -568,7 +594,11 @@ fn run_full(
     })
 }
 
-fn cluster_incrementally(g: &mut KnowledgeGraph, report: &IncrementalReport) {
+fn cluster_incrementally(
+    g: &mut KnowledgeGraph,
+    report: &IncrementalReport,
+    scc: Option<&crate::scc::SccIndex>,
+) {
     // Identify the nodes that need re-evaluation: every node whose source
     // file is a freshly extracted file. Their community labels are blank
     // after the splice; their neighbours may need to follow.
@@ -592,5 +622,5 @@ fn cluster_incrementally(g: &mut KnowledgeGraph, report: &IncrementalReport) {
         // Nothing changed structurally; prior labels are still valid.
         return;
     }
-    cluster::cluster_seeded(g, &dirty, None);
+    cluster::cluster_seeded(g, &dirty, scc);
 }

@@ -243,6 +243,63 @@ fn constrained_local_moving(
     }
 }
 
+/// Modularity score of the current community assignment.
+///
+/// Used by integration tests to assert that delta-Louvain output stays
+/// close to a full Louvain baseline. Returns 0.0 when the graph has no
+/// edges.
+pub fn modularity(g: &KnowledgeGraph) -> f64 {
+    let n = g.graph.node_count();
+    if n == 0 {
+        return 0.0;
+    }
+    // Build an undirected adjacency list inline (mirrors build_undirected_adjacency).
+    let mut idx_of: HashMap<NodeIndex, usize> = HashMap::with_capacity(n);
+    for (i, ni) in g.graph.node_indices().enumerate() {
+        idx_of.insert(ni, i);
+    }
+    let mut adj: Adj = vec![Vec::new(); n];
+    let mut total_weight = 0.0_f64;
+    for e in g.graph.edge_references() {
+        let s = idx_of[&e.source()];
+        let t = idx_of[&e.target()];
+        if s == t {
+            adj[s].push((s, 2.0));
+            total_weight += 2.0;
+        } else {
+            adj[s].push((t, 1.0));
+            adj[t].push((s, 1.0));
+            total_weight += 2.0;
+        }
+    }
+    if total_weight == 0.0 {
+        return 0.0;
+    }
+
+    // Degree of each node.
+    let mut k = vec![0.0_f64; n];
+    for (i, nbrs) in adj.iter().enumerate() {
+        k[i] = nbrs.iter().map(|(_, w)| *w).sum();
+    }
+
+    // Community label per adjacency-list index.
+    let nodes: Vec<NodeIndex> = g.graph.node_indices().collect();
+    let community: Vec<u32> = nodes
+        .iter()
+        .map(|ni| g.graph[*ni].community.unwrap_or(0))
+        .collect();
+
+    let mut q = 0.0_f64;
+    for (i, nbrs) in adj.iter().enumerate() {
+        for &(j, w) in nbrs {
+            if community[i] == community[j] {
+                q += w - k[i] * k[j] / total_weight;
+            }
+        }
+    }
+    q / total_weight
+}
+
 fn build_undirected_adjacency(g: &KnowledgeGraph) -> (Adj, f64) {
     let n = g.graph.node_count();
     let mut idx_of: HashMap<NodeIndex, usize> = HashMap::with_capacity(n);
