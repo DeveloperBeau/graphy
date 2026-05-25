@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 # Run graphy on every fixture and emit a comparison report covering wall
-# time, peak RSS, graph shape, and the relation histogram. Each fixture is
-# benchmarked once per trial; the reported value is the best (min) wall
-# time across $TRIALS runs and the worst (max) peak RSS.
+# time, peak RSS, graph shape, the relation histogram, and the post-dedup
+# cache efficiency (cold vs warm imports_resolved).
 #
 # Usage: bench/compare.sh [fixtures-dir] [report-out] [trials]
+#
+# Environment:
+#   BENCH_ASSERT=1   Fail with exit code 1 if any fixture's warm
+#                    dedup_imports_resolved exceeds 20% of its cold count
+#                    (and cold count > 0).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FIXTURES="${1:-$REPO_ROOT/fixtures}"
 REPORT="${2:-$REPO_ROOT/bench/comparison.md}"
 TRIALS="${3:-3}"
+BENCH_ASSERT="${BENCH_ASSERT:-0}"
 
 GRAPHY_BIN="$REPO_ROOT/target/release/graphy"
 
@@ -45,6 +50,24 @@ print(0)
 PY
 }
 
+# Read dedup_imports_resolved from graphy-out/stats.json.
+read_imports_resolved() {
+  local stats_file="$1"
+  if [[ -f "$stats_file" ]]; then
+    python3 - "$stats_file" <<'PY'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    print(int(d.get("dedup_imports_resolved", 0)))
+except Exception:
+    print(0)
+PY
+  else
+    echo 0
+  fi
+}
+
 run_once() {
   local fixture_dir="$1"; local out="$2"; local timefile="$3"
   rm -rf "$out"
@@ -52,7 +75,18 @@ run_once() {
     "$TIME_BIN" $TIME_FLAG "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" \
       >/dev/null 2>"$timefile"
   else
-    "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" >/dev/null
+    "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" >/dev/null 2>/dev/null
+  fi
+}
+
+# Run graphy a second time WITHOUT clearing the output (warm/incremental run).
+run_warm() {
+  local fixture_dir="$1"; local timefile="$2"
+  if [[ -n "$TIME_BIN" ]]; then
+    "$TIME_BIN" $TIME_FLAG "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" \
+      >/dev/null 2>"$timefile"
+  else
+    "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" >/dev/null 2>/dev/null
   fi
 }
 
@@ -78,6 +112,29 @@ bench_one() {
   echo "${best_ms}|${best_rss}"
 }
 
+# Measure dedup cache efficiency: cold run then warm run on the same fixture.
+# Outputs "cold_imports|warm_imports".
+bench_dedup_cache() {
+  local fixture_dir="$1"; local out="$2"
+  local stats_file="$out/stats.json"
+  local tmp_time
+  tmp_time="$(mktemp)"
+
+  # Cold run: blow away prior output to force a full build + dedup.
+  rm -rf "$out"
+  run_once "$fixture_dir" "$out" "$tmp_time"
+  local cold_imports
+  cold_imports="$(read_imports_resolved "$stats_file")"
+
+  # Warm run: re-run without clearing output so incremental path is taken.
+  run_warm "$fixture_dir" "$tmp_time"
+  local warm_imports
+  warm_imports="$(read_imports_resolved "$stats_file")"
+
+  rm -f "$tmp_time"
+  echo "${cold_imports}|${warm_imports}"
+}
+
 count_json() {
   local f="$1" expr="$2"
   if [[ -f "$f" ]]; then jq "$expr" "$f" 2>/dev/null || echo "-"
@@ -100,6 +157,9 @@ format_kb() {
 
 declare -a rows=()
 declare -a rel_rows=()
+declare -a dedup_rows=()
+assert_failures=()
+
 for fx in "$FIXTURES"/*/; do
   [[ -d "$fx" ]] || continue
   label="$(basename "$fx")"
@@ -112,8 +172,27 @@ for fx in "$FIXTURES"/*/; do
   edges=$(count_json "$out/graph.json" '.edges | length')
   rels="$(relations_csv "$out/graph.json")"
 
+  # Measure dedup cache hit rate (cold vs warm imports_resolved).
+  dedup_res="$(bench_dedup_cache "$fx" "$out")"
+  IFS='|' read -r cold_imports warm_imports <<< "$dedup_res"
+
+  # Compute reduction % (skip if cold == 0 to avoid div-by-zero).
+  if (( cold_imports > 0 )); then
+    reduction_pct=$(python3 -c "print(f'{(1 - $warm_imports / $cold_imports) * 100:.1f}')")
+    # BENCH_ASSERT: warm must be <= 20% of cold (80% reduction).
+    if [[ "$BENCH_ASSERT" == "1" ]]; then
+      passes=$(python3 -c "print('yes' if $warm_imports <= 0.20 * $cold_imports else 'no')")
+      if [[ "$passes" == "no" ]]; then
+        assert_failures+=("$label: cold=$cold_imports warm=$warm_imports reduction=${reduction_pct}% (need >=80%)")
+      fi
+    fi
+  else
+    reduction_pct="n/a"
+  fi
+
   rows+=("$label|$ms|$rss|$nodes|$edges")
   rel_rows+=("$label|$rels")
+  dedup_rows+=("$label|$cold_imports|$warm_imports|$reduction_pct")
 done
 
 {
@@ -148,6 +227,19 @@ done
     echo "| $label | $n | $e |"
   done
   echo
+  echo "## Post-dedup cache efficiency"
+  echo
+  echo "Measures \`dedup_imports_resolved\` on a cold run (full build) versus a"
+  echo "warm run (incremental, all files cached). A healthy warm run should"
+  echo "resolve ≥80% fewer imports than cold because dedup maps are pre-applied."
+  echo
+  echo "| fixture | cold imports | warm imports | reduction |"
+  echo "|---|---:|---:|---:|"
+  for r in "${dedup_rows[@]}"; do
+    IFS='|' read -r label cold warm reduction <<< "$r"
+    echo "| $label | $cold | $warm | ${reduction}% |"
+  done
+  echo
   echo "## Relation distribution"
   echo
   for r in "${rel_rows[@]}"; do
@@ -160,3 +252,16 @@ done
 } > "$REPORT"
 
 echo "[compare] wrote $REPORT"
+
+# Report assertion results.
+if [[ "$BENCH_ASSERT" == "1" ]]; then
+  if [[ ${#assert_failures[@]} -gt 0 ]]; then
+    echo "[compare] BENCH_ASSERT failures:"
+    for f in "${assert_failures[@]}"; do
+      echo "  FAIL: $f"
+    done
+    exit 1
+  else
+    echo "[compare] BENCH_ASSERT: all fixtures pass the >=80% dedup-cache reduction threshold"
+  fi
+fi

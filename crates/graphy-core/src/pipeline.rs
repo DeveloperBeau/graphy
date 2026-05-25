@@ -118,8 +118,10 @@ impl Pipeline {
         let extractions = std::mem::take(&mut extractions);
 
         let mut graph = build_graph(extractions);
+        let mut dedup_imports_resolved = 0usize;
         if self.cfg.dedup {
             let report = crate::dedup::dedup(&mut graph);
+            dedup_imports_resolved = report.imports_resolved;
             info!(
                 imports = report.imports_resolved,
                 merged = report.reexports_merged,
@@ -152,7 +154,8 @@ impl Pipeline {
         info!(nodes, edges, "graph built");
 
         cluster(&mut graph);
-        let analysis = analyze(&graph);
+        let mut analysis = analyze(&graph);
+        analysis.dedup_imports_resolved = dedup_imports_resolved;
         let paths = export(&self.cfg.out_root, &graph, &analysis)?;
 
         Ok(PipelineOutputs {

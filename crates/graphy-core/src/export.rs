@@ -16,6 +16,7 @@ pub struct ExportPaths {
     pub graph_json: std::path::PathBuf,
     pub report_md: std::path::PathBuf,
     pub graph_html: std::path::PathBuf,
+    pub stats_json: std::path::PathBuf,
 }
 
 pub fn export(out_root: &Path, g: &KnowledgeGraph, a: &Analysis) -> Result<ExportPaths> {
@@ -26,6 +27,7 @@ pub fn export(out_root: &Path, g: &KnowledgeGraph, a: &Analysis) -> Result<Expor
     let graph_json = out.join("graph.json");
     let report_md = out.join("GRAPH_REPORT.md");
     let graph_html = out.join("graph.html");
+    let stats_json = out.join("stats.json");
 
     fs::write(
         &graph_json,
@@ -33,11 +35,22 @@ pub fn export(out_root: &Path, g: &KnowledgeGraph, a: &Analysis) -> Result<Expor
     )?;
     fs::write(&report_md, report::render(g, a))?;
     fs::write(&graph_html, render_html(g, a))?;
+    fs::write(
+        &stats_json,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "nodes": a.node_count,
+            "edges": a.edge_count,
+            "communities": a.community_count,
+            "ambiguous_edges": a.ambiguous_edge_count,
+            "dedup_imports_resolved": a.dedup_imports_resolved,
+        }))?,
+    )?;
 
     Ok(ExportPaths {
         graph_json,
         report_md,
         graph_html,
+        stats_json,
     })
 }
 

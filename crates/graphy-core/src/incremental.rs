@@ -158,8 +158,10 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     // collapsed into their canonical defs before we count communities,
     // otherwise the delta-Louvain seed sees them as fresh dirty nodes
     // and assigns them their own communities — inflating the count.
+    let mut dedup_imports_resolved = 0usize;
     if cfg.dedup {
         let dr = crate::dedup::dedup(&mut graph);
+        dedup_imports_resolved = dr.imports_resolved;
         info!(
             imports = dr.imports_resolved,
             merged = dr.reexports_merged,
@@ -188,7 +190,8 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
 
     cluster_incrementally(&mut graph, &report);
 
-    let analysis = analyze(&graph);
+    let mut analysis = analyze(&graph);
+    analysis.dedup_imports_resolved = dedup_imports_resolved;
     let paths = export(&cfg.out_root, &graph, &analysis)?;
     let elapsed_ms = start.elapsed().as_millis();
 

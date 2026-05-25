@@ -11,6 +11,10 @@ pub struct Analysis {
     pub community_count: usize,
     pub god_nodes: Vec<GodNode>,
     pub ambiguous_edge_count: usize,
+    /// Number of `extern::*` import nodes resolved to local definitions
+    /// during the dedup pass. Zero when dedup is disabled or no externs
+    /// were resolved. Set by the pipeline after calling `dedup::dedup`.
+    pub dedup_imports_resolved: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,5 +58,6 @@ pub fn analyze(g: &KnowledgeGraph) -> Analysis {
         community_count: communities.len(),
         god_nodes,
         ambiguous_edge_count: ambiguous,
+        dedup_imports_resolved: 0,
     }
 }
