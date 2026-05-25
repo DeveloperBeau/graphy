@@ -63,7 +63,11 @@ pub fn cluster(g: &mut KnowledgeGraph) {
 /// has no asymptotic advantage.
 pub const MAX_HOT_RATIO: f64 = 0.25;
 
-pub fn cluster_seeded(g: &mut KnowledgeGraph, dirty: &[NodeIndex]) {
+pub fn cluster_seeded(
+    g: &mut KnowledgeGraph,
+    dirty: &[NodeIndex],
+    scc: Option<&crate::scc::SccIndex>,
+) {
     let n = g.graph.node_count();
     if n == 0 {
         return;
@@ -95,13 +99,43 @@ pub fn cluster_seeded(g: &mut KnowledgeGraph, dirty: &[NodeIndex]) {
         }
     }
     let mut next_label = max_label + 1;
+    if let Some(scc) = scc {
+        // Nodes in the same non-trivial SCC that are all unassigned should
+        // share a single fresh label so they start co-located and Louvain
+        // keeps them together instead of splitting them.
+        let mut idx_to_id: HashMap<NodeIndex, String> = HashMap::with_capacity(g.by_id.len());
+        for (id, &idx) in &g.by_id {
+            idx_to_id.insert(idx, id.clone());
+        }
+        // Map SCC representative id → shared fresh label (only for components
+        // where every member is currently usize::MAX).
+        let mut scc_label: HashMap<String, usize> = HashMap::new();
+        for (i, ni) in nodes.iter().enumerate() {
+            if community[i] != usize::MAX {
+                continue;
+            }
+            if let Some(id) = idx_to_id.get(ni) {
+                let members = scc.component_of(id);
+                if members.len() > 1 {
+                    // Use the first member's id as the representative key.
+                    let rep = members[0].to_owned();
+                    let label = scc_label.entry(rep).or_insert_with(|| {
+                        let l = next_label;
+                        next_label += 1;
+                        l
+                    });
+                    community[i] = *label;
+                }
+            }
+        }
+    }
+    // Any still-unassigned node (singleton or no SCC index) gets its own label.
     for c in community.iter_mut() {
         if *c == usize::MAX {
             *c = next_label;
             next_label += 1;
         }
     }
-
     // Build the hot frontier: dirty nodes + first-order neighbours.
     let mut hot: HashSet<usize> = HashSet::new();
     for ni in dirty {
@@ -112,12 +146,41 @@ pub fn cluster_seeded(g: &mut KnowledgeGraph, dirty: &[NodeIndex]) {
             }
         }
     }
+
+    // Check the fallback threshold using only organic churn (before SCC
+    // widening), so a small dirty set inside a large cycle doesn't
+    // incorrectly trigger a full re-cluster.
     let hot_ratio = hot.len() as f64 / n as f64;
     if hot_ratio > MAX_HOT_RATIO {
         // Too much churn — full pass is faster than dragging stale
         // community labels through a constrained loop.
         cluster(g);
         return;
+    }
+
+    if let Some(scc) = scc {
+        // Widen the hot frontier to include every member of the same SCC
+        // as any dirty node, so cycle participants are re-evaluated together.
+        let mut idx_to_id: HashMap<NodeIndex, String> =
+            HashMap::with_capacity(g.by_id.len());
+        for (id, &idx) in &g.by_id {
+            idx_to_id.insert(idx, id.clone());
+        }
+        let mut additions: Vec<usize> = Vec::new();
+        for ni in dirty {
+            if let Some(id) = idx_to_id.get(ni) {
+                for member_id in scc.component_of(id) {
+                    if let Some(&i) = g.by_id.get(member_id) {
+                        if let Some(&local_idx) = idx_of.get(&i) {
+                            additions.push(local_idx);
+                        }
+                    }
+                }
+            }
+        }
+        for i in additions {
+            hot.insert(i);
+        }
     }
 
     constrained_local_moving(&adj, &mut community, total_weight, &hot);
@@ -178,6 +241,63 @@ fn constrained_local_moving(
             break;
         }
     }
+}
+
+/// Modularity score of the current community assignment.
+///
+/// Used by integration tests to assert that delta-Louvain output stays
+/// close to a full Louvain baseline. Returns 0.0 when the graph has no
+/// edges.
+pub fn modularity(g: &KnowledgeGraph) -> f64 {
+    let n = g.graph.node_count();
+    if n == 0 {
+        return 0.0;
+    }
+    // Build an undirected adjacency list inline (mirrors build_undirected_adjacency).
+    let mut idx_of: HashMap<NodeIndex, usize> = HashMap::with_capacity(n);
+    for (i, ni) in g.graph.node_indices().enumerate() {
+        idx_of.insert(ni, i);
+    }
+    let mut adj: Adj = vec![Vec::new(); n];
+    let mut total_weight = 0.0_f64;
+    for e in g.graph.edge_references() {
+        let s = idx_of[&e.source()];
+        let t = idx_of[&e.target()];
+        if s == t {
+            adj[s].push((s, 2.0));
+            total_weight += 2.0;
+        } else {
+            adj[s].push((t, 1.0));
+            adj[t].push((s, 1.0));
+            total_weight += 2.0;
+        }
+    }
+    if total_weight == 0.0 {
+        return 0.0;
+    }
+
+    // Degree of each node.
+    let mut k = vec![0.0_f64; n];
+    for (i, nbrs) in adj.iter().enumerate() {
+        k[i] = nbrs.iter().map(|(_, w)| *w).sum();
+    }
+
+    // Community label per adjacency-list index.
+    let nodes: Vec<NodeIndex> = g.graph.node_indices().collect();
+    let community: Vec<u32> = nodes
+        .iter()
+        .map(|ni| g.graph[*ni].community.unwrap_or(0))
+        .collect();
+
+    let mut q = 0.0_f64;
+    for (i, nbrs) in adj.iter().enumerate() {
+        for &(j, w) in nbrs {
+            if community[i] == community[j] {
+                q += w - k[i] * k[j] / total_weight;
+            }
+        }
+    }
+    q / total_weight
 }
 
 fn build_undirected_adjacency(g: &KnowledgeGraph) -> (Adj, f64) {

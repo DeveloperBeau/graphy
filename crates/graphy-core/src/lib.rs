@@ -18,6 +18,7 @@ pub mod manifest;
 pub mod pipeline;
 pub mod report;
 pub mod schema;
+pub mod scc;
 pub mod security;
 pub mod serve;
 pub mod validate;
