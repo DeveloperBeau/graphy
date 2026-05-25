@@ -62,6 +62,16 @@ graphy doctor                      # version + arch
 
 Each run writes `graphy-out/.cache/manifest.json` mapping every input file to its blake3 content hash and stores per-file `ExtractionOutput` JSON beside it. On the next run files whose hash is unchanged are served from cache and tree-sitter is skipped. Cold → warm: typical 3–5× speedup; identical graph shape.
 
+### Post-dedup cache
+
+Each cached extraction is paired with a small `<hash>.dedup.json`
+file under `graphy-out/.cache/`. The file records the canonical-id
+redirects produced by the prior dedup pass so warm incremental runs
+apply them at splice time instead of re-resolving every cross-file
+import. Schema version is tracked via the cache manifest's
+`abi_version` field; older v1 caches are accepted and upgraded
+in-place on the first new run.
+
 ### Watch
 
 `graphy watch <path>` runs the initial build then re-runs whenever a tracked file changes. Uses `notify` + a 250 ms debouncer; changes inside `graphy-out/` are ignored to avoid feedback loops.
