@@ -143,3 +143,53 @@ impl IdLabel for graphy_core::graph::NodeData {
         self.label.clone()
     }
 }
+
+#[test]
+#[ignore = "large-fixture test; run with `cargo test -- --ignored`"]
+fn hierarchical_delta_modularity_within_5_percent_of_fresh() {
+    use graphy_core::cluster::levels::compute_modularity;
+    use std::process::Command;
+
+    // The fixture is gitignored; ensure it's been generated.
+    let repo_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .unwrap()
+        .to_path_buf();
+    let fixture = repo_root.join("fixtures/large-synthetic");
+    if !fixture.join("src/main.rs").exists() {
+        let script = repo_root.join("fixtures/gen-large-synthetic.sh");
+        let status = Command::new("bash")
+            .arg(&script)
+            .arg(&fixture)
+            .status()
+            .expect("run gen-large-synthetic.sh");
+        assert!(status.success(), "fixture generation failed");
+    }
+
+    let dir = tempdir().unwrap();
+    // First run: full pass, populates louvain-levels.json.
+    let mut cfg = graphy_core::pipeline::PipelineConfig::new(&fixture);
+    cfg.out_root = dir.path().to_path_buf();
+    let r1 = graphy_core::pipeline::Pipeline::new(cfg.clone()).run().unwrap();
+    let q_fresh = compute_modularity(&r1.graph);
+
+    // Touch one file (under fixture, then restore).
+    let touch_path = fixture.join("src/modules/m_0_0.rs");
+    let body_orig = std::fs::read_to_string(&touch_path).unwrap();
+    let body_modified = format!("{body_orig}\npub fn extra_marker() {{}}\n");
+    std::fs::write(&touch_path, &body_modified).unwrap();
+
+    let r2 = graphy_core::pipeline::Pipeline::new(cfg).run().unwrap();
+    let q_delta = compute_modularity(&r2.graph);
+
+    // Restore.
+    std::fs::write(&touch_path, &body_orig).unwrap();
+
+    let drift = (q_fresh - q_delta).abs();
+    let ratio = drift / q_fresh.abs().max(0.001);
+    assert!(
+        ratio < 0.05,
+        "modularity drifted: fresh={q_fresh}, delta={q_delta}, ratio={ratio}"
+    );
+}
