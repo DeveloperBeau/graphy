@@ -2,7 +2,7 @@
 
 mod bash;
 mod c_family;
-mod common;
+pub mod common;
 mod csharp;
 mod css;
 mod dart;
