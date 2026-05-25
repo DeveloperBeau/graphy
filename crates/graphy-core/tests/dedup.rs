@@ -228,3 +228,44 @@ fn dedup_emits_per_file_maps() {
     assert_eq!(map.redirects[0].from, "extern::lib::helper");
     assert_eq!(map.redirects[0].to, "a.rs::helper");
 }
+
+#[test]
+fn split_legacy_compound_externs_walks_braced_label() {
+    use graphy_core::schema::*;
+    let ex = ExtractionOutput {
+        nodes: vec![
+            // Legacy compound extern from before this feature shipped.
+            Node {
+                id: "extern::crate::a::{helper, other}".into(),
+                label: "crate::a::{helper, other}".into(),
+                source_file: Some("src/x.rs".into()),
+                source_location: Some("L1".into()),
+                kind: Some("import".into()),
+            },
+            Node {
+                id: "src/a.rs::helper".into(),
+                label: "helper".into(),
+                source_file: Some("src/a.rs".into()),
+                source_location: Some("L2".into()),
+                kind: Some("function".into()),
+            },
+        ],
+        edges: vec![Edge {
+            source: "src/x.rs".into(),
+            target: "extern::crate::a::{helper, other}".into(),
+            relation: "imports".into(),
+            confidence: Confidence::Extracted,
+        }],
+    };
+    let mut g = graphy_core::build::build_graph(vec![ex]);
+    let _report = graphy_core::dedup::dedup(&mut g);
+    // After the legacy split, the compound extern is gone, and the
+    // expanded `extern::crate::a::helper` resolves to src/a.rs::helper.
+    assert!(!g.by_id.contains_key("extern::crate::a::{helper, other}"));
+    let helper = g.by_id.get("src/a.rs::helper")
+        .expect("helper canonical survived");
+    assert!(g.graph[*helper].aliases.iter().any(|s| s.contains("helper")));
+    // The unmatched `other` should still be on the graph as its own
+    // extern node.
+    assert!(g.by_id.keys().any(|k| k.contains("crate::a::other")));
+}

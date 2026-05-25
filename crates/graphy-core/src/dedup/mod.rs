@@ -47,10 +47,12 @@ pub struct DedupReport {
 /// Collapse externs that resolve to local definitions, merge re-exports,
 /// flag ambiguous duplicates. Returns counters for the report.
 pub fn dedup(g: &mut KnowledgeGraph) -> DedupReport {
+    let split = pre_split_compound_externs(g);
     let mut per_file_maps: HashMap<String, DedupMap> = HashMap::new();
     let mut report = DedupReport::default();
     report.imports_resolved = resolve_imports(g, &mut per_file_maps);
     let (merged, ambiguous) = collapse_aliases(g, &mut per_file_maps);
+    report.imports_resolved += split;
     report.reexports_merged = merged;
     report.ambiguous_groups = ambiguous;
     report.per_file_maps = per_file_maps;
@@ -368,4 +370,92 @@ fn mark_ambiguous(data: &mut NodeData) {
     if !kind.ends_with("?ambiguous") {
         data.kind = Some(format!("{kind}?ambiguous"));
     }
+}
+
+// ---------- pass 0: legacy compound extern splitter ----------
+
+/// Splits any `extern::<prefix>::{a, b, c}` nodes that were persisted by
+/// older graph versions (before braced-glob expansion ran at extraction
+/// time). Each compound node is replaced by one simple extern per leaf,
+/// edges are fanned out to every new node, and the compound id is recorded
+/// as an alias so the provenance trail is preserved.
+///
+/// Returns the number of *new* simple externs that were inserted (may be
+/// higher than the number of compound nodes removed when a compound
+/// contains many items).
+fn pre_split_compound_externs(g: &mut KnowledgeGraph) -> usize {
+    use petgraph::visit::EdgeRef;
+
+    let compound_ids: Vec<String> = g
+        .by_id
+        .keys()
+        .filter(|id| id.starts_with("extern::") && id.contains('{'))
+        .cloned()
+        .collect();
+
+    let mut count = 0;
+    for compound_id in compound_ids {
+        let Some(&compound_idx) = g.by_id.get(&compound_id) else { continue };
+        let label = g.graph[compound_idx].label.clone();
+        let source_file = g.graph[compound_idx].source_file.clone();
+        let source_location = g.graph[compound_idx].source_location.clone();
+
+        let expanded = crate::extract::common::expand_import_paths(label.as_str());
+        if expanded.len() <= 1 {
+            continue;
+        }
+
+        // Insert a simple extern node for every expanded path.
+        let mut new_indices: Vec<petgraph::graph::NodeIndex> =
+            Vec::with_capacity(expanded.len());
+        for path in &expanded {
+            let new_id = format!("extern::{path}");
+            let idx = g.ensure_node(
+                &new_id,
+                NodeData {
+                    label: path.clone(),
+                    source_file: source_file.clone(),
+                    source_location: source_location.clone(),
+                    kind: Some("import".into()),
+                    community: None,
+                    aliases: vec![compound_id.clone()],
+                },
+            );
+            new_indices.push(idx);
+        }
+
+        // Rewire incoming edges — fan each one out to every expanded extern.
+        let inbound: Vec<_> = g
+            .graph
+            .edges_directed(compound_idx, petgraph::Direction::Incoming)
+            .map(|e| (e.id(), e.source()))
+            .collect();
+        for (eid, src) in inbound {
+            let weight = g.graph.edge_weight(eid).cloned().expect("edge");
+            for &new in &new_indices {
+                g.graph.add_edge(src, new, weight.clone());
+            }
+            g.graph.remove_edge(eid);
+        }
+
+        // Rewire outgoing edges (rare for extern nodes, but be defensive).
+        let outbound: Vec<_> = g
+            .graph
+            .edges_directed(compound_idx, petgraph::Direction::Outgoing)
+            .map(|e| (e.id(), e.target()))
+            .collect();
+        for (eid, dst) in outbound {
+            let weight = g.graph.edge_weight(eid).cloned().expect("edge");
+            for &new in &new_indices {
+                g.graph.add_edge(new, dst, weight.clone());
+            }
+            g.graph.remove_edge(eid);
+        }
+
+        // Remove the compound node and its by_id entry.
+        g.by_id.remove(&compound_id);
+        g.graph.remove_node(compound_idx);
+        count += expanded.len();
+    }
+    count
 }
