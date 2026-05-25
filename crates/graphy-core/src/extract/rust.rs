@@ -70,26 +70,28 @@ fn walk_items(
                 let text = child
                     .utf8_text(src.as_bytes())
                     .expect("utf8 source");
-                let target = text
+                let cleaned = text
                     .trim_start_matches("use ")
                     .trim_end_matches(';')
-                    .trim()
-                    .to_string();
-                if !target.is_empty() {
-                    let import_id = format!("extern::{target}");
-                    out.nodes.push(Node {
-                        id: import_id.clone(),
-                        label: target.clone(),
-                        source_file: Some(file.to_string()),
-                        source_location: Some(line_loc(child)),
-                        kind: Some("import".into()),
-                    });
-                    out.edges.push(Edge {
-                        source: file.to_string(),
-                        target: import_id,
-                        relation: "imports".into(),
-                        confidence: Confidence::Extracted,
-                    });
+                    .trim();
+                for path in crate::extract::common::expand_import_paths(cleaned) {
+                    let target = path.trim().to_string();
+                    if !target.is_empty() {
+                        let import_id = format!("extern::{target}");
+                        out.nodes.push(Node {
+                            id: import_id.clone(),
+                            label: target,
+                            source_file: Some(file.to_string()),
+                            source_location: Some(line_loc(child)),
+                            kind: Some("import".into()),
+                        });
+                        out.edges.push(Edge {
+                            source: file.to_string(),
+                            target: import_id,
+                            relation: "imports".into(),
+                            confidence: Confidence::Extracted,
+                        });
+                    }
                 }
             }
             _ => {}

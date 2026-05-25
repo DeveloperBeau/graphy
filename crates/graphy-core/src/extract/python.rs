@@ -51,7 +51,47 @@ fn walk_defs(
             }
             "import_statement" | "import_from_statement" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_import(out, file, text, child);
+                let cleaned = text.trim();
+                let (module, names_raw): (String, Option<String>) =
+                    if let Some(rest) = cleaned.strip_prefix("from ") {
+                        if let Some((m, n)) = rest.split_once(" import ") {
+                            (m.trim().to_string(), Some(n.trim().to_string()))
+                        } else {
+                            (rest.trim().to_string(), None)
+                        }
+                    } else if let Some(rest) = cleaned.strip_prefix("import ") {
+                        // `import a, b, c` — expand each as its own top-level module.
+                        (String::new(), Some(rest.trim().to_string()))
+                    } else {
+                        (cleaned.to_string(), None)
+                    };
+                let brace_form = if let Some(ref n) = names_raw {
+                    format!("{{{n}}}")
+                } else {
+                    module.clone()
+                };
+                for path in crate::extract::common::expand_import_paths(&brace_form) {
+                    if path.is_empty() {
+                        continue;
+                    }
+                    // Convert the leaf path from ::- to dot-separated form, then
+                    // join it with the module using a single dot separator.
+                    // This avoids the double-dot problem: `from . import helper`
+                    // would become `..helper` if we naively replaced `::` globally
+                    // on a normalised string like `.::helper`.
+                    let leaf = path.replace("::", ".");
+                    let label = if !module.is_empty() {
+                        if module.ends_with('.') {
+                            // module is already a trailing-dot relative prefix (e.g. "..", ".")
+                            format!("{module}{leaf}")
+                        } else {
+                            format!("{module}.{leaf}")
+                        }
+                    } else {
+                        leaf
+                    };
+                    emit_import(out, file, &label, child);
+                }
             }
             _ => {}
         }

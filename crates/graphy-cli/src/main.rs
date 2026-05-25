@@ -27,6 +27,22 @@ struct Cli {
     /// Output root (default: same as input).
     #[arg(long)]
     out: Option<PathBuf>,
+
+    /// Disable entity deduplication.
+    #[arg(long)]
+    no_dedup: bool,
+
+    /// Force a full rebuild even when a prior graph exists.
+    #[arg(long)]
+    full: bool,
+
+    /// Disable SCC expansion for delta-Louvain (cycle-aware clustering).
+    #[arg(long)]
+    no_scc_expansion: bool,
+
+    /// Disable hierarchical Louvain level caching (use single-pass clustering).
+    #[arg(long)]
+    no_hierarchical: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -38,6 +54,18 @@ enum Command {
         docs: bool,
         #[arg(long)]
         out: Option<PathBuf>,
+        /// Disable entity deduplication.
+        #[arg(long)]
+        no_dedup: bool,
+        /// Force a full rebuild even when a prior graph exists.
+        #[arg(long)]
+        full: bool,
+        /// Disable SCC expansion for delta-Louvain (cycle-aware clustering).
+        #[arg(long)]
+        no_scc_expansion: bool,
+        /// Disable hierarchical Louvain level caching (use single-pass clustering).
+        #[arg(long)]
+        no_hierarchical: bool,
     },
     /// Re-run the pipeline whenever a file under PATH changes.
     Watch {
@@ -96,7 +124,9 @@ fn main() -> Result<()> {
             println!("rust target: {}", std::env::consts::ARCH);
             Ok(())
         }
-        Some(Command::Run { path, docs, out }) => run(path, docs, out),
+        Some(Command::Run { path, docs, out, no_dedup, full, no_scc_expansion, no_hierarchical }) => {
+            run(path, docs, out, no_dedup, full, no_scc_expansion, no_hierarchical)
+        }
         Some(Command::Watch { path, docs, out }) => watch(path, docs, out),
         Some(Command::Serve { graph }) => {
             let graph = graph.unwrap_or_else(|| {
@@ -107,7 +137,7 @@ fn main() -> Result<()> {
         Some(Command::Plugins { action }) => plugins_cmd(action),
         None => {
             let path = cli.path.unwrap_or_else(|| PathBuf::from("."));
-            run(path, cli.docs, cli.out)
+            run(path, cli.docs, cli.out, cli.no_dedup, cli.full, cli.no_scc_expansion, cli.no_hierarchical)
         }
     }
 }
@@ -183,8 +213,21 @@ fn watch(path: PathBuf, docs: bool, out: Option<PathBuf>) -> Result<()> {
     graphy_core::watch::watch(make_cfg(path, docs, out))
 }
 
-fn run(path: PathBuf, docs: bool, out: Option<PathBuf>) -> Result<()> {
-    let result = Pipeline::new(make_cfg(path, docs, out)).run()?;
+fn run(
+    path: PathBuf,
+    docs: bool,
+    out: Option<PathBuf>,
+    no_dedup: bool,
+    full: bool,
+    no_scc_expansion: bool,
+    no_hierarchical: bool,
+) -> Result<()> {
+    let mut cfg = make_cfg(path, docs, out);
+    cfg.dedup = !no_dedup;
+    cfg.incremental = !full;
+    cfg.scc_expansion = !no_scc_expansion;
+    cfg.hierarchical_clustering = !no_hierarchical;
+    let result = Pipeline::new(cfg).run()?;
     println!(
         "scanned {} files ({} from cache) in {} ms → {} nodes, {} edges, {} communities",
         result.files_scanned,

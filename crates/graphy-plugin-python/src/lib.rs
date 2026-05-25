@@ -151,14 +151,51 @@ fn walk(
             }
             "import_statement" | "import_from_statement" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
-                let target = text.trim();
-                if !target.is_empty() {
-                    let import_id = format!("extern::{target}");
+                let cleaned = text.trim();
+                let (module, names_raw): (String, Option<String>) =
+                    if let Some(rest) = cleaned.strip_prefix("from ") {
+                        if let Some((m, n)) = rest.split_once(" import ") {
+                            (m.trim().to_string(), Some(n.trim().to_string()))
+                        } else {
+                            (rest.trim().to_string(), None)
+                        }
+                    } else if let Some(rest) = cleaned.strip_prefix("import ") {
+                        // `import a, b, c` — expand each as its own top-level module.
+                        (String::new(), Some(rest.trim().to_string()))
+                    } else {
+                        (cleaned.to_string(), None)
+                    };
+                let brace_form = if let Some(ref n) = names_raw {
+                    format!("{{{n}}}")
+                } else {
+                    module.clone()
+                };
+                let row = child.start_position().row;
+                for path in expand_import_paths(&brace_form) {
+                    if path.is_empty() {
+                        continue;
+                    }
+                    // Convert the leaf path from ::- to dot-separated form, then
+                    // join it with the module using a single dot separator.
+                    // This avoids the double-dot problem: `from . import helper`
+                    // would become `..helper` if we naively replaced `::` globally
+                    // on a normalised string like `.::helper`.
+                    let leaf = path.replace("::", ".");
+                    let label = if !module.is_empty() {
+                        if module.ends_with('.') {
+                            format!("{module}{leaf}")
+                        } else {
+                            format!("{module}.{leaf}")
+                        }
+                    } else {
+                        leaf
+                    };
+                    let import_id = format!("extern::{label}");
                     out.nodes.push(Node {
                         id: import_id.clone(),
-                        label: target.to_string(),
+                        label,
                         source_file: Some(file.to_string()),
-                        source_location: Some(format!("L{}", child.start_position().row + 1)),
+                        source_location: Some(format!("L{}", row + 1)),
                         kind: Some("import".into()),
                     });
                     out.edges.push(Edge {
@@ -223,4 +260,71 @@ fn collect_calls(
         }
         collect_calls(child, src, caller_id, out, symbols);
     }
+}
+
+/// Expand an import path that may contain brace groups into individual
+/// fully-qualified paths. Copied from `graphy_core::extract::common`.
+fn expand_import_paths(raw: &str) -> Vec<String> {
+    let raw = raw.trim();
+    if !raw.contains('{') {
+        return vec![raw.to_string()];
+    }
+    let Some(open) = raw.find('{') else {
+        return vec![raw.to_string()];
+    };
+    let prefix = raw[..open].trim_end_matches(':').to_string();
+    let prefix_with_sep = if prefix.is_empty() { String::new() } else { format!("{prefix}::") };
+    let body_start = open + 1;
+    let mut depth = 1usize;
+    let mut end = body_start;
+    for (i, c) in raw[body_start..].char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    end = body_start + i;
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    if depth != 0 {
+        return vec![raw.to_string()];
+    }
+    let body = &raw[body_start..end];
+    let mut parts: Vec<String> = Vec::new();
+    let mut buf = String::new();
+    let mut local_depth = 0usize;
+    for c in body.chars() {
+        match c {
+            '{' => { local_depth += 1; buf.push(c); }
+            '}' => { local_depth -= 1; buf.push(c); }
+            ',' if local_depth == 0 => {
+                let piece = buf.trim();
+                if !piece.is_empty() {
+                    parts.push(piece.to_string());
+                }
+                buf.clear();
+            }
+            _ => buf.push(c),
+        }
+    }
+    let last = buf.trim();
+    if !last.is_empty() {
+        parts.push(last.to_string());
+    }
+    let mut out: Vec<String> = Vec::new();
+    for part in parts {
+        let trimmed = part.split(" as ").next().unwrap_or(part.as_str()).trim();
+        if trimmed.contains('{') {
+            for nested in expand_import_paths(trimmed) {
+                out.push(format!("{prefix_with_sep}{nested}"));
+            }
+        } else {
+            out.push(format!("{prefix_with_sep}{trimmed}"));
+        }
+    }
+    out
 }

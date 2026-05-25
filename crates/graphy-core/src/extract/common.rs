@@ -83,3 +83,78 @@ pub fn emit_call(
         });
     }
 }
+
+pub fn expand_import_paths(raw: &str) -> Vec<String> {
+    let raw = raw.trim();
+    // Quick path: no brace at all.
+    if !raw.contains('{') {
+        return vec![raw.to_string()];
+    }
+    // Find the matching brace pair.
+    let Some(open) = raw.find('{') else {
+        return vec![raw.to_string()];
+    };
+    let prefix = raw[..open].trim_end_matches(':').to_string();
+    let prefix_with_sep = if prefix.is_empty() { String::new() } else { format!("{prefix}::") };
+    // Walk the brace content respecting nested braces.
+    let body_start = open + 1;
+    let mut depth = 1usize;
+    let mut end = body_start;
+    for (i, c) in raw[body_start..].char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    end = body_start + i;
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    if depth != 0 {
+        // Unbalanced -- fall back to raw.
+        return vec![raw.to_string()];
+    }
+    let body = &raw[body_start..end];
+    let mut parts: Vec<String> = Vec::new();
+    let mut buf = String::new();
+    let mut local_depth = 0usize;
+    for c in body.chars() {
+        match c {
+            '{' => { local_depth += 1; buf.push(c); }
+            '}' => { local_depth -= 1; buf.push(c); }
+            ',' if local_depth == 0 => {
+                let piece = buf.trim();
+                if !piece.is_empty() {
+                    parts.push(piece.to_string());
+                }
+                buf.clear();
+            }
+            _ => buf.push(c),
+        }
+    }
+    let last = buf.trim();
+    if !last.is_empty() {
+        parts.push(last.to_string());
+    }
+    let mut out: Vec<String> = Vec::new();
+    for part in parts {
+        // Strip ` as <alias>`.
+        let trimmed = part.split(" as ").next().unwrap_or(part.as_str()).trim();
+        if trimmed.contains('{') {
+            // Nested brace -- recurse.
+            for nested in expand_import_paths(trimmed) {
+                out.push(format!("{prefix_with_sep}{nested}"));
+            }
+        } else {
+            out.push(format!("{prefix_with_sep}{trimmed}"));
+        }
+    }
+    out
+}
+
+pub fn is_glob(path: &str) -> bool {
+    path.ends_with("::*") || path.ends_with(".*") || path == "*"
+}
