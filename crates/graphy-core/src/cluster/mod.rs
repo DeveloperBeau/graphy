@@ -27,10 +27,33 @@ const MIN_GAIN: f64 = 1e-7;
 type Adj = Vec<Vec<(usize, f64)>>;
 
 pub fn cluster(g: &mut KnowledgeGraph) {
+    let mut rec = crate::cluster::levels::LevelRecorder::new();
+    cluster_with_recorder(g, &mut rec);
+}
+
+pub fn cluster_with_recorder(
+    g: &mut KnowledgeGraph,
+    recorder: &mut crate::cluster::levels::LevelRecorder,
+) {
     if g.graph.node_count() == 0 {
         return;
     }
     let (mut adj, mut total_weight) = build_undirected_adjacency(g);
+
+    // Capture base-level node-id -> super-index mapping for the recorder.
+    let idx_of: HashMap<NodeIndex, usize> = g
+        .graph
+        .node_indices()
+        .enumerate()
+        .map(|(i, ni)| (ni, i))
+        .collect();
+    let base_map: HashMap<String, usize> = g
+        .by_id
+        .iter()
+        .filter_map(|(id, ni)| idx_of.get(ni).map(|i| (id.clone(), *i)))
+        .collect();
+    recorder.record_base_map(base_map);
+
     // `levels[k]` maps a node index at outer pass `k` to its community index
     // at the *folded* graph for pass `k+1`. Indices are renumbered to dense
     // 0..n so composition during `write_back` is a simple chained lookup.
@@ -40,6 +63,7 @@ pub fn cluster(g: &mut KnowledgeGraph) {
         let mut community: Vec<usize> = (0..adj.len()).collect();
         let improved = local_moving_phase(&adj, &mut community, total_weight);
         densify(&mut community);
+        recorder.record_level(&adj, &community);
         levels.push(community.clone());
         if !improved {
             break;

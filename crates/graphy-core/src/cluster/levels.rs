@@ -50,6 +50,46 @@ impl LouvainLevels {
     }
 }
 
+/// In-memory recorder that captures one [`LevelState`] per outer Louvain pass.
+///
+/// Call [`record_base_map`](LevelRecorder::record_base_map) once before the
+/// loop to supply the original node-id → super-index mapping, then call
+/// [`record_level`](LevelRecorder::record_level) after each pass. Retrieve
+/// everything with [`into_levels`](LevelRecorder::into_levels).
+#[derive(Default)]
+pub struct LevelRecorder {
+    pub(crate) records: Vec<LevelState>,
+    pub(crate) base_map: Option<HashMap<String, usize>>,
+}
+
+impl LevelRecorder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn record_base_map(&mut self, map: HashMap<String, usize>) {
+        self.base_map = Some(map);
+    }
+
+    pub fn record_level(&mut self, adj: &[Vec<(usize, f64)>], community: &[usize]) {
+        let mut state = LevelState {
+            node_to_super: HashMap::new(),
+            super_adjacency: adj.to_vec(),
+            community: community.to_vec(),
+        };
+        if self.records.is_empty() {
+            if let Some(map) = self.base_map.take() {
+                state.node_to_super = map;
+            }
+        }
+        self.records.push(state);
+    }
+
+    pub fn into_levels(self) -> Vec<LevelState> {
+        self.records
+    }
+}
+
 use crate::graph::KnowledgeGraph;
 
 pub fn graph_hash_of(g: &KnowledgeGraph) -> String {

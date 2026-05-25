@@ -66,6 +66,38 @@ fn save_then_load_roundtrip() {
 }
 
 #[test]
+fn recorder_captures_one_level_per_outer_pass() {
+    let nodes = (0..6)
+        .map(|i| Node {
+            id: i.to_string(),
+            label: i.to_string(),
+            source_file: None,
+            source_location: None,
+            kind: None,
+        })
+        .collect();
+    let edges = vec![(0, 1), (1, 2), (0, 2), (3, 4), (4, 5), (3, 5), (2, 3)]
+        .into_iter()
+        .map(|(s, t)| Edge {
+            source: s.to_string(),
+            target: t.to_string(),
+            relation: "calls".into(),
+            confidence: Confidence::Extracted,
+        })
+        .collect();
+    let mut g = graphy_core::build::build_graph(vec![ExtractionOutput { nodes, edges }]);
+    let mut rec = graphy_core::cluster::levels::LevelRecorder::new();
+    graphy_core::cluster::cluster_with_recorder(&mut g, &mut rec);
+    let levels = rec.into_levels();
+    assert!(!levels.is_empty(), "expected at least one recorded level");
+    // Level 0 should carry the base node_to_super map.
+    assert!(
+        !levels[0].node_to_super.is_empty(),
+        "level 0 missing base node_to_super"
+    );
+}
+
+#[test]
 fn graph_hash_changes_when_any_edge_changes() {
     let g_a = graphy_core::build::build_graph(vec![ExtractionOutput {
         nodes: vec![
