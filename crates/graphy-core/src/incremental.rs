@@ -246,11 +246,24 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
                 .cloned()
                 .collect();
             if !applicable.is_empty() {
+                // Seed ambiguous_marked from both the prior merged map and any
+                // new ambiguous flags emitted by this run's dedup pass for this
+                // specific file. Without this, warm writebacks would overwrite
+                // the map with an empty ambiguous_marked, permanently losing
+                // flags set during a prior run.
+                let mut ambiguous_marked = merged.ambiguous_marked.clone();
+                if let Some(file_map) = dr.per_file_maps.get(&key) {
+                    for a in &file_map.ambiguous_marked {
+                        if !ambiguous_marked.contains(a) {
+                            ambiguous_marked.push(a.clone());
+                        }
+                    }
+                }
                 let map = crate::dedup::map::DedupMap {
                     version: crate::dedup::map::SCHEMA_VERSION,
                     for_extraction: String::new(),
                     redirects: applicable,
-                    ambiguous_marked: Vec::new(),
+                    ambiguous_marked,
                 };
                 let _ = cache.save_dedup_map(path, &map);
                 written.insert(key);

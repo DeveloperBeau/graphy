@@ -239,3 +239,39 @@ fn dedup_map_survives_unrelated_file_change() {
         "b.rs hash should be unchanged"
     );
 }
+
+#[test]
+fn ambiguous_marked_survives_warm_run() {
+    // Three files: a.rs and b.rs each define `helper` (no connecting import),
+    // so dedup flags them ambiguous.  c.rs imports `helper` via an extern,
+    // giving c.rs entries in both file_extern_ids (redirect) and potentially
+    // ambiguous_marked.  After a warm run the per-file maps for a.rs and b.rs
+    // must still carry ambiguous_marked — the warm writeback must not drop them.
+    //
+    // Note: a.rs and b.rs intentionally have DIFFERENT content so the cache
+    // assigns each a distinct content-hash and a distinct .dedup.json file.
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("a.rs"),
+        "// module a\npub fn helper() -> u32 { 1 }\n").unwrap();
+    fs::write(dir.path().join("b.rs"),
+        "// module b\npub fn helper() -> u32 { 2 }\n").unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+    let _ = Pipeline::new(cfg.clone()).run().unwrap();
+    // Second run; ambiguous_marked must survive.
+    let _ = Pipeline::new(cfg).run().unwrap();
+    // Walk all .dedup.json files and assert at least two carry
+    // ambiguous_marked entries (one for a.rs, one for b.rs).
+    let cache_dir = dir.path().join("graphy-out").join(".cache");
+    let mut total_ambiguous = 0;
+    for entry in fs::read_dir(&cache_dir).unwrap().filter_map(|e| e.ok()) {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if !name.ends_with(".dedup.json") { continue; }
+        let body = fs::read_to_string(entry.path()).unwrap();
+        let map: graphy_core::dedup::map::DedupMap =
+            serde_json::from_str(&body).unwrap();
+        total_ambiguous += map.ambiguous_marked.len();
+    }
+    assert!(total_ambiguous >= 2,
+        "expected ambiguous_marked entries on at least 2 files (a.rs, b.rs), got {total_ambiguous}");
+}
+
