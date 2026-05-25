@@ -175,6 +175,22 @@ JSON is the boundary payload so plugins keep their own internal types. The `defi
 
 Each plugin emits nodes for top-level definitions, edges for imports (`use` / `import` / `require` / `#include` / `@import`), and call-graph edges (`Confidence::Inferred`) for direct invocations that resolve to a local symbol.
 
+### Imports
+
+Braced and glob import forms are expanded into one extern node per
+imported symbol so dedup can resolve each independently:
+
+| Source                            | Externs emitted               |
+|-----------------------------------|--------------------------------|
+| `use crate::a::{helper, other};`  | `helper`, `other`              |
+| `from a import x, y`              | `a.x`, `a.y`                   |
+| `import { A, B } from "./m"`      | `./m/A`, `./m/B`               |
+| `import java.util.*;`             | `java.util.*` (glob preserved) |
+
+Glob imports (`a::*`, `from a import *`, `import * as ns from "..."`,
+`java.util.*`) are kept intact and surface in the report as ambiguous
+candidates.
+
 ## Layout
 
 ```
