@@ -328,7 +328,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     } else {
         None
     };
-    cluster_incrementally(&mut graph, &report, scc_opt.as_ref());
+    cluster_incrementally(&mut graph, &report, scc_opt.as_ref(), cfg);
     if let Some(scc) = &scc_opt {
         scc.save(&cfg.out_root).ok();
     }
@@ -601,7 +601,16 @@ fn run_full(
         cache.flush().ok();
     }
 
-    cluster::cluster(&mut graph);
+    {
+        let mut rec = crate::cluster::levels::LevelRecorder::new();
+        crate::cluster::cluster_with_recorder(&mut graph, &mut rec);
+        let levels_path = cfg
+            .out_root
+            .join("graphy-out")
+            .join(".cache")
+            .join("louvain-levels.json");
+        persist_levels(&graph, &levels_path, rec.into_levels());
+    }
     let mut analysis = analyze(&graph);
     analysis.dedup_imports_resolved = dedup_imports_resolved;
     let paths = export(&cfg.out_root, &graph, &analysis)?;
@@ -620,10 +629,8 @@ fn cluster_incrementally(
     g: &mut KnowledgeGraph,
     report: &IncrementalReport,
     scc: Option<&crate::scc::SccIndex>,
+    cfg: &PipelineConfig,
 ) {
-    // Identify the nodes that need re-evaluation: every node whose source
-    // file is a freshly extracted file. Their community labels are blank
-    // after the splice; their neighbours may need to follow.
     let n = g.node_count();
     if n == 0 {
         return;
@@ -644,5 +651,72 @@ fn cluster_incrementally(
         // Nothing changed structurally; prior labels are still valid.
         return;
     }
-    cluster::cluster_seeded(g, &dirty, scc);
+
+    let levels_path = cfg
+        .out_root
+        .join("graphy-out")
+        .join(".cache")
+        .join("louvain-levels.json");
+    let prior = crate::cluster::levels::LouvainLevels::load(&levels_path);
+    let current_hash = crate::cluster::levels::graph_hash_of(g);
+
+    let prior_modularity = prior.as_ref().map(|p| p.modularity);
+
+    match prior.as_ref() {
+        Some(p) if p.graph_hash == current_hash => {
+            // Hash matches: reuse hierarchy for the dirty frontier.
+            crate::cluster::cluster_hierarchical_seeded(g, &dirty, p);
+        }
+        _ => {
+            // No prior, schema mismatch, or hash drift — full pass + persist.
+            let mut rec = crate::cluster::levels::LevelRecorder::new();
+            crate::cluster::cluster_with_recorder(g, &mut rec);
+            persist_levels(g, &levels_path, rec.into_levels());
+            return;
+        }
+    }
+
+    // Quality gate: if reusing the prior hierarchy yielded significantly worse
+    // modularity, fall back to a full pass and replace the stored levels.
+    const QUALITY_GATE_RATIO: f64 = 0.05;
+    const QUALITY_GATE_ABS: f64 = 0.02;
+    let new_q = crate::cluster::levels::compute_modularity(g);
+    let drop = prior_modularity.map(|prev| prev - new_q).unwrap_or(0.0);
+    let prev_abs = prior_modularity
+        .map(|p| p.abs())
+        .unwrap_or(1.0)
+        .max(1e-9);
+    let ratio_drop = drop / prev_abs;
+
+    if drop > QUALITY_GATE_ABS && ratio_drop > QUALITY_GATE_RATIO {
+        tracing::warn!(
+            prior = ?prior_modularity,
+            new = new_q,
+            "louvain quality gate tripped; falling back to full pass"
+        );
+        let mut rec = crate::cluster::levels::LevelRecorder::new();
+        crate::cluster::cluster_with_recorder(g, &mut rec);
+        persist_levels(g, &levels_path, rec.into_levels());
+    } else {
+        // Hierarchical reuse succeeded; update modularity + hash in the stored file.
+        if let Some(mut p) = prior {
+            p.modularity = new_q;
+            p.graph_hash = current_hash;
+            let _ = p.save(&levels_path);
+        }
+    }
+}
+
+fn persist_levels(
+    g: &KnowledgeGraph,
+    path: &std::path::Path,
+    levels: Vec<crate::cluster::levels::LevelState>,
+) {
+    let store = crate::cluster::levels::LouvainLevels {
+        version: crate::cluster::levels::SCHEMA_VERSION,
+        graph_hash: crate::cluster::levels::graph_hash_of(g),
+        modularity: crate::cluster::levels::compute_modularity(g),
+        levels,
+    };
+    let _ = store.save(path);
 }

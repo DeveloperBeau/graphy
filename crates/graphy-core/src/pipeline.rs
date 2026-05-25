@@ -9,7 +9,7 @@ use tracing::info;
 use crate::analyze::{Analysis, analyze};
 use crate::build::build_graph;
 use crate::cache::Cache;
-use crate::cluster::cluster;
+use crate::cluster::{cluster_with_recorder, levels as cluster_levels};
 use crate::detect::{DetectOptions, collect_files};
 use crate::export::{ExportPaths, export};
 use crate::extract::extract_all;
@@ -196,7 +196,23 @@ impl Pipeline {
         let edges = graph.edge_count();
         info!(nodes, edges, "graph built");
 
-        cluster(&mut graph);
+        {
+            let mut rec = cluster_levels::LevelRecorder::new();
+            cluster_with_recorder(&mut graph, &mut rec);
+            let levels_path = self
+                .cfg
+                .out_root
+                .join("graphy-out")
+                .join(".cache")
+                .join("louvain-levels.json");
+            let store = cluster_levels::LouvainLevels {
+                version: cluster_levels::SCHEMA_VERSION,
+                graph_hash: cluster_levels::graph_hash_of(&graph),
+                modularity: cluster_levels::compute_modularity(&graph),
+                levels: rec.into_levels(),
+            };
+            let _ = store.save(&levels_path);
+        }
         let mut analysis = analyze(&graph);
         analysis.dedup_imports_resolved = dedup_imports_resolved;
         let paths = export(&self.cfg.out_root, &graph, &analysis)?;

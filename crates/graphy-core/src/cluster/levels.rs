@@ -124,6 +124,10 @@ impl LevelRecorder {
 
 use crate::graph::KnowledgeGraph;
 
+/// Newman modularity Q for the current community assignment.
+/// Thin alias to `crate::cluster::modularity` — one canonical implementation.
+pub use crate::cluster::modularity as compute_modularity;
+
 pub fn graph_hash_of(g: &KnowledgeGraph) -> String {
     use blake3::Hasher;
     use petgraph::visit::{EdgeRef, IntoEdgeReferences};
