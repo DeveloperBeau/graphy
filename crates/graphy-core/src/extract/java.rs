@@ -59,6 +59,8 @@ fn walk(
             }
             "import_declaration" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
+                // Java wildcard `import java.util.*;` lands here intact — `*` survives
+                // trim() so dedup::is_glob can later identify it.
                 let target = text
                     .trim_start_matches("import")
                     .trim_end_matches(';')

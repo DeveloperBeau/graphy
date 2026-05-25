@@ -99,3 +99,17 @@ fn js_named_import_expands_per_specifier() {
     assert!(externs.iter().any(|l| l.contains("Other")));
     assert!(externs.len() >= 2);
 }
+
+#[test]
+fn java_wildcard_import_marked_as_glob() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("X.java");
+    fs::write(&p, "import java.util.*;\nclass X {}\n").unwrap();
+    let out = extract(&p).unwrap();
+    let externs: Vec<_> = out.nodes.iter()
+        .filter(|n| n.id.starts_with("extern::"))
+        .map(|n| n.label.clone())
+        .collect();
+    assert!(externs.iter().any(|l| l == "java.util.*"),
+        "expected java.util.* extern, got {:?}", externs);
+}
