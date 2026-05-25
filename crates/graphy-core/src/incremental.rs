@@ -675,10 +675,11 @@ fn cluster_incrementally(
 
     let prior_modularity = prior.as_ref().map(|p| p.modularity);
 
+    let mut hier_rec = crate::cluster::levels::LevelRecorder::new();
     match prior.as_ref() {
         Some(p) if p.graph_hash == current_hash => {
             // Hash matches: reuse hierarchy for the dirty frontier.
-            crate::cluster::cluster_hierarchical_seeded(g, &dirty, p);
+            crate::cluster::cluster_hierarchical_seeded(g, &dirty, p, &mut hier_rec);
         }
         _ => {
             // No prior, schema mismatch, or hash drift — full pass + persist.
@@ -711,12 +712,11 @@ fn cluster_incrementally(
         crate::cluster::cluster_with_recorder(g, &mut rec);
         persist_levels(g, &levels_path, rec.into_levels());
     } else {
-        // Hierarchical reuse succeeded; update modularity + hash in the stored file.
-        if let Some(mut p) = prior {
-            p.modularity = new_q;
-            p.graph_hash = current_hash;
-            let _ = p.save(&levels_path);
-        }
+        // Hierarchical reuse succeeded. Persist the FRESH levels captured by
+        // hier_rec (not the stale prior levels) so the next run seeds from an
+        // accurate pyramid. This fixes B1: previously we re-persisted p.levels
+        // which were recorded against an older graph shape.
+        persist_levels(g, &levels_path, hier_rec.into_levels());
     }
 }
 

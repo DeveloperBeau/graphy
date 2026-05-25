@@ -218,10 +218,13 @@ pub fn cluster_seeded(
 /// propagating changes up the stored level pyramid. Untouched super-nodes
 /// keep their prior community assignment so disconnected components are
 /// never perturbed.
+/// Returns `true` if any write-back happened (always true when the graph
+/// is non-empty and prior levels are present).
 pub fn cluster_hierarchical_seeded(
     g: &mut KnowledgeGraph,
     dirty: &[NodeIndex],
     prior: &crate::cluster::levels::LouvainLevels,
+    recorder: &mut crate::cluster::levels::LevelRecorder,
 ) {
     if g.graph.node_count() == 0 || prior.levels.is_empty() {
         return;
@@ -238,23 +241,50 @@ pub fn cluster_hierarchical_seeded(
     let dirty_per_level = prior.propagate_dirty(&dirty_ids);
 
     let (mut adj, mut total_weight) = build_undirected_adjacency(g);
-    let mut community: Vec<usize> = (0..adj.len()).collect();
-    // Seed community from prior level 0 mapping.
+
+    // Capture the base node-id → adjacency-list index map for the recorder.
+    {
+        let idx_of: HashMap<NodeIndex, usize> = g
+            .graph
+            .node_indices()
+            .enumerate()
+            .map(|(i, ni)| (ni, i))
+            .collect();
+        let base_map: HashMap<String, usize> = g
+            .by_id
+            .iter()
+            .filter_map(|(id, ni)| idx_of.get(ni).map(|i| (id.clone(), *i)))
+            .collect();
+        recorder.record_base_map(base_map);
+    }
+
+    // Seed community labels from the prior run's node_to_super.
+    //
+    // IMPORTANT: `c` values from `node_to_super` live in the prior run's
+    // dense-index space, which is unrelated to the current enumeration
+    // indices (nodes may have been added/removed between runs). We must
+    // treat `c` as an opaque label, not a slot index. To avoid collisions
+    // with the fresh identity labels `0..adj.len()` assigned to un-seeded
+    // nodes, we offset prior labels by `adj.len()` before densifying.
+    let mut community: Vec<usize> = (0..adj.len()).collect(); // fresh identity labels
     for (idx, ni) in g.graph.node_indices().enumerate() {
         if let Some(id) = idx_to_id.get(&ni) {
             if let Some(&c) = prior.levels[0].node_to_super.get(id) {
-                if c < adj.len() {
-                    community[idx] = c;
-                }
+                // Offset by adj.len() so prior labels (0..k_prior) never
+                // collide with fresh identity labels (0..adj.len()).
+                community[idx] = adj.len() + c;
             }
         }
     }
+    densify(&mut community); // remap to dense 0..k
+
     // First level: constrained local moving over the level-0 dirty set.
     if let Some(hot) = dirty_per_level.first() {
         let hot_idx_set: HashSet<usize> = hot.iter().copied().collect();
         constrained_local_moving(&adj, &mut community, total_weight, &hot_idx_set);
     }
     densify(&mut community);
+    recorder.record_level(&adj, &community);
     let mut levels_out = vec![community.clone()];
 
     // Higher levels: each iteration folds the prior level's communities.
@@ -275,6 +305,7 @@ pub fn cluster_hierarchical_seeded(
             constrained_local_moving(&adj, &mut community, total_weight, &hot_idx_set);
         }
         densify(&mut community);
+        recorder.record_level(&adj, &community);
         levels_out.push(community.clone());
     }
     write_back(g, &levels_out);
