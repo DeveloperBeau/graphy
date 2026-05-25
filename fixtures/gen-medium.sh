@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Synthesize a medium-sized mixed-language project under fixtures/medium-multilang/.
-# Output is deterministic so the harness can compare graphy vs graphy outputs
+# Output is deterministic so successive bench runs compare against a stable corpus
 # without random drift between runs.
 set -euo pipefail
 

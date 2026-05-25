@@ -1,4 +1,4 @@
-//! `graphy` CLI — standalone implementation.
+//! `graphy` CLI: build a knowledge graph from any folder of source.
 
 use std::path::PathBuf;
 
@@ -11,7 +11,7 @@ use tracing_subscriber::EnvFilter;
 #[command(
     name = "graphy",
     version,
-    about = "Turn a folder of code into a queryable knowledge graph (standalone implementation)."
+    about = "Turn a folder of code into a queryable knowledge graph."
 )]
 struct Cli {
     #[command(subcommand)]

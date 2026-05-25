@@ -1,4 +1,4 @@
-//! Input validation. label sanitization + symlink-aware path checks.
+//! Input validation: label sanitization + symlink-aware graph path checks.
 
 use std::path::{Component, Path, PathBuf};
 

@@ -1,4 +1,4 @@
-//! graphy-core: Rust pipeline mirroring graphy v8.
+//! graphy-core: detect → extract → build → cluster → analyze → report → export pipeline.
 //!
 //! Pipeline: [`detect`] → [`extract`] → [`build`] → [`cluster`] → [`analyze`]
 //! → [`report`] → [`export`].
