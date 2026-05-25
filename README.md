@@ -81,6 +81,22 @@ hot frontier to cover every node in any cycle touching a dirty node, so
 community labels propagate fully through the cycle. The SCC index is
 patched in place when edges change. Use `--no-scc-expansion` to disable.
 
+### Hierarchical clustering
+
+Louvain's hierarchical fold state is persisted to
+`graphy-out/.cache/louvain-levels.json` after every clustering pass.
+On warm incremental runs, the prior levels seed the new pass: only the
+super-nodes that the dirty set touches get re-evaluated, leaving
+unrelated community structure untouched.
+
+A quality gate guards the fast path: if the delta pass produces a
+modularity drop greater than 5 % relative and 0.02 absolute, the
+algorithm falls back to a fresh full Louvain pass and refreshes the
+cache.
+
+Use `--no-hierarchical` to disable the level cache entirely (falls
+back to single-pass constrained moving with SCC expansion).
+
 ### Watch
 
 `graphy watch <path>` runs the initial build then re-runs whenever a tracked file changes. Uses `notify` + a 250 ms debouncer; changes inside `graphy-out/` are ignored to avoid feedback loops.
