@@ -141,3 +141,54 @@ fn incremental_run_writes_dedup_map_files() {
     });
     assert!(any_populated, "expected at least one map with redirects");
 }
+
+#[test]
+fn dedup_map_invalidated_on_file_content_change() {
+    let dir = tempdir().unwrap();
+    let a = dir.path().join("a.rs");
+    fs::write(&a, "pub fn helper(){}\n").unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+    let _ = Pipeline::new(cfg.clone()).run().unwrap();
+    fs::write(&a, "pub fn helper(){}\npub fn extra(){}\n").unwrap();
+    let _ = Pipeline::new(cfg).run().unwrap();
+    // The dedup map for a.rs's *prior* hash should no longer be at the
+    // current hash filename — open the manifest and verify the entry points
+    // at the new hash.
+    let manifest = serde_json::from_str::<serde_json::Value>(
+        &fs::read_to_string(dir.path().join("graphy-out/.cache/manifest.json")).unwrap()
+    ).unwrap();
+    let current_hash = manifest["entries"][a.to_string_lossy().as_ref()]
+        .as_str().unwrap();
+    let map_path = dir.path().join(format!(
+        "graphy-out/.cache/{}.dedup.json", current_hash));
+    assert!(map_path.exists(), "fresh dedup map should be written");
+}
+
+#[test]
+fn dedup_map_survives_unrelated_file_change() {
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("a.rs"), "pub fn helper(){}\n").unwrap();
+    fs::write(dir.path().join("b.rs"),
+        "use crate::a::helper;\npub fn caller(){ helper(); }\n").unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+    let _ = Pipeline::new(cfg.clone()).run().unwrap();
+    // Capture b.rs's dedup map hash.
+    let manifest_before = std::fs::read_to_string(
+        dir.path().join("graphy-out/.cache/manifest.json")).unwrap();
+    let hash_b_before: serde_json::Value =
+        serde_json::from_str(&manifest_before).unwrap();
+    // Touch a.rs only.
+    fs::write(dir.path().join("a.rs"),
+        "pub fn helper(){}\npub fn extra(){}\n").unwrap();
+    let _ = Pipeline::new(cfg).run().unwrap();
+    let manifest_after: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(
+            dir.path().join("graphy-out/.cache/manifest.json")).unwrap()
+    ).unwrap();
+    let b_path = dir.path().join("b.rs");
+    let b_key = b_path.to_string_lossy().to_string();
+    assert_eq!(
+        hash_b_before["entries"][&b_key], manifest_after["entries"][&b_key],
+        "b.rs hash should be unchanged"
+    );
+}

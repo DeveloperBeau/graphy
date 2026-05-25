@@ -170,6 +170,19 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
             let p = std::path::PathBuf::from(file_key);
             let _ = cache.save_dedup_map(&p, map);
         }
+        // Ensure every changed/added file gets a .dedup.json even if dedup
+        // found nothing to do for it (empty map).  This keeps the cache
+        // consistent: a missing .dedup.json at the current hash means the
+        // file has never been through a dedup pass.
+        for file in &part.uncached {
+            let key = file.to_string_lossy().into_owned();
+            if !dr.per_file_maps.contains_key(&key) {
+                let _ = cache.save_dedup_map(
+                    file,
+                    &crate::dedup::map::DedupMap::empty_for(""),
+                );
+            }
+        }
         cache.flush().ok();
     }
 

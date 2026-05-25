@@ -127,9 +127,22 @@ impl Pipeline {
                 "dedup pass"
             );
             if let Some(ref mut cache) = cache {
+                // Write populated maps first, then write an empty map for
+                // every file that dedup didn't touch.  This ensures every
+                // file always has a .dedup.json keyed to its current content
+                // hash, which lets the invalidation logic detect stale maps.
                 for (file_key, map) in &report.per_file_maps {
                     let p = std::path::PathBuf::from(file_key);
                     let _ = cache.save_dedup_map(&p, map);
+                }
+                for file in &files {
+                    let key = file.to_string_lossy().into_owned();
+                    if !report.per_file_maps.contains_key(&key) {
+                        let _ = cache.save_dedup_map(
+                            file,
+                            &crate::dedup::map::DedupMap::empty_for(""),
+                        );
+                    }
                 }
                 cache.flush().ok();
             }
