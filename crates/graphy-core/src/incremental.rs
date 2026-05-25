@@ -592,5 +592,5 @@ fn cluster_incrementally(g: &mut KnowledgeGraph, report: &IncrementalReport) {
         // Nothing changed structurally; prior labels are still valid.
         return;
     }
-    cluster::cluster_seeded(g, &dirty);
+    cluster::cluster_seeded(g, &dirty, None);
 }
