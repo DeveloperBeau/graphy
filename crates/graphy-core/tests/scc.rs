@@ -1,5 +1,6 @@
 //! Strongly-connected component index tests.
 
+use graphy_core::graph::EdgeData;
 use graphy_core::scc::SccIndex;
 use graphy_core::schema::*;
 use graphy_core::build::build_graph;
@@ -120,4 +121,87 @@ fn scc_build_handles_thousand_nodes_under_one_second() {
     assert!(elapsed.as_millis() < 1000, "build took {:?}", elapsed);
     assert_eq!(scc.components.len(), 1);
     assert_eq!(scc.components[0].len(), 100);
+}
+
+#[test]
+fn scc_patch_after_adding_cycle_edge() {
+    // Start acyclic: A → B → C.
+    let ex = ExtractionOutput {
+        nodes: vec![
+            Node { id: "A".into(), label: "A".into(), source_file: None,
+                source_location: None, kind: Some("function".into()) },
+            Node { id: "B".into(), label: "B".into(), source_file: None,
+                source_location: None, kind: Some("function".into()) },
+            Node { id: "C".into(), label: "C".into(), source_file: None,
+                source_location: None, kind: Some("function".into()) },
+        ],
+        edges: vec![
+            Edge { source: "A".into(), target: "B".into(),
+                relation: "calls".into(), confidence: Confidence::Extracted },
+            Edge { source: "B".into(), target: "C".into(),
+                relation: "calls".into(), confidence: Confidence::Extracted },
+        ],
+    };
+    let mut g = build_graph(vec![ex]);
+    let mut scc = SccIndex::build(&g);
+    assert!(scc.components.is_empty());
+
+    // Add the closing edge C → A.
+    let a = g.by_id["A"];
+    let c = g.by_id["C"];
+    g.graph.add_edge(c, a, EdgeData {
+        relation: "calls".into(),
+        confidence: Confidence::Extracted,
+    });
+
+    scc.patch(&g, &["A".to_string(), "C".to_string()]);
+    assert_eq!(scc.components.len(), 1);
+    let mut comp = scc.components[0].clone();
+    comp.sort();
+    assert_eq!(comp, vec!["A".to_string(), "B".to_string(), "C".to_string()]);
+}
+
+#[test]
+fn scc_patch_after_removing_cycle_edge() {
+    let mut g = cycle3();
+    let mut scc = SccIndex::build(&g);
+    assert_eq!(scc.components.len(), 1);
+    let c = g.by_id["C"]; let a = g.by_id["A"];
+    let eid = g.graph.find_edge(c, a).unwrap();
+    g.graph.remove_edge(eid);
+    scc.patch(&g, &["A".to_string(), "C".to_string()]);
+    assert!(scc.components.is_empty(),
+        "cycle should be gone after edge removal");
+}
+
+#[test]
+fn scc_patch_merges_two_smaller_components() {
+    // Two disjoint cycles: A↔B and C↔D.
+    let ex = ExtractionOutput {
+        nodes: vec!["A","B","C","D"].into_iter().map(|id| Node {
+            id: id.into(), label: id.into(),
+            source_file: None, source_location: None,
+            kind: Some("function".into()),
+        }).collect(),
+        edges: vec![
+            ("A","B"), ("B","A"), ("C","D"), ("D","C"),
+        ].into_iter().map(|(s,t)| Edge {
+            source: s.into(), target: t.into(),
+            relation: "calls".into(), confidence: Confidence::Extracted,
+        }).collect(),
+    };
+    let mut g = build_graph(vec![ex]);
+    let mut scc = SccIndex::build(&g);
+    assert_eq!(scc.components.len(), 2);
+
+    // Add B→C and D→B to merge them into one giant SCC.
+    let b = g.by_id["B"]; let c = g.by_id["C"]; let d = g.by_id["D"];
+    g.graph.add_edge(b, c, EdgeData {
+        relation: "calls".into(), confidence: Confidence::Extracted });
+    g.graph.add_edge(d, b, EdgeData {
+        relation: "calls".into(), confidence: Confidence::Extracted });
+
+    scc.patch(&g, &["B".to_string(), "C".to_string(), "D".to_string()]);
+    assert_eq!(scc.components.len(), 1);
+    assert_eq!(scc.components[0].len(), 4);
 }
