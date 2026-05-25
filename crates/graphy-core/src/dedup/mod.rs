@@ -22,6 +22,8 @@
 //! `INFERRED` (the link was originally explicit but the resolution to
 //! a local symbol is a heuristic).
 
+pub mod map;
+
 use std::collections::{HashMap, HashSet};
 
 use petgraph::graph::NodeIndex;
