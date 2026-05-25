@@ -19,6 +19,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::dedup::map::DedupMap;
 use crate::schema::ExtractionOutput;
 
 const CACHE_DIR: &str = ".cache";
@@ -118,6 +119,30 @@ impl Cache {
         let path = self.root.join(MANIFEST_FILE);
         let body = serde_json::to_vec_pretty(&self.manifest)?;
         fs::write(&path, body)
+            .with_context(|| format!("write {}", path.display()))?;
+        Ok(())
+    }
+
+    /// Load the `DedupMap` associated with `file`, if one was previously saved.
+    /// Returns `None` for v1 manifests (which predate dedup map storage).
+    pub fn load_dedup_map(&self, file: &Path) -> Option<DedupMap> {
+        if self.manifest.abi_version < 2 { return None; }
+        let key = file.to_string_lossy().into_owned();
+        let hash = self.manifest.entries.get(&key)?;
+        let path = self.root.join(format!("{hash}.dedup.json"));
+        let text = std::fs::read_to_string(path).ok()?;
+        serde_json::from_str(&text).ok()
+    }
+
+    /// Persist a `DedupMap` for `file`. No-ops gracefully if the file is not
+    /// yet recorded in the manifest (i.e. `save` has not been called for it).
+    pub fn save_dedup_map(&self, file: &Path, map: &DedupMap) -> Result<()> {
+        let key = file.to_string_lossy().into_owned();
+        let Some(hash) = self.manifest.entries.get(&key) else { return Ok(()) };
+        let path = self.root.join(format!("{hash}.dedup.json"));
+        let body = serde_json::to_vec_pretty(map)
+            .context("serialize dedup map")?;
+        std::fs::write(&path, body)
             .with_context(|| format!("write {}", path.display()))?;
         Ok(())
     }
