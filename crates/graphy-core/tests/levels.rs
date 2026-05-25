@@ -1,0 +1,88 @@
+//! Persisted hierarchical Louvain levels.
+
+use graphy_core::cluster::levels::{LevelState, LouvainLevels, graph_hash_of};
+use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
+use tempfile::tempdir;
+use std::fs;
+
+#[test]
+fn roundtrip_serialises_and_deserialises_levels() {
+    let levels = LouvainLevels {
+        version: 1,
+        graph_hash: "blake3:test".into(),
+        modularity: 0.42,
+        levels: vec![LevelState {
+            node_to_super: [("a".into(), 0_usize), ("b".into(), 1)]
+                .into_iter().collect(),
+            super_adjacency: vec![vec![(1, 1.0)], vec![(0, 1.0)]],
+            community: vec![0, 0],
+        }],
+    };
+    let json = serde_json::to_string(&levels).unwrap();
+    let parsed: LouvainLevels = serde_json::from_str(&json).unwrap();
+    assert_eq!(parsed.version, 1);
+    assert_eq!(parsed.levels.len(), 1);
+    assert_eq!(parsed.levels[0].community, vec![0, 0]);
+}
+
+#[test]
+fn cache_load_returns_none_on_missing_file() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("nope.json");
+    assert!(LouvainLevels::load(&p).is_none());
+}
+
+#[test]
+fn cache_load_returns_none_on_corrupt_json() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("bad.json");
+    fs::write(&p, "{ not valid json").unwrap();
+    assert!(LouvainLevels::load(&p).is_none());
+}
+
+#[test]
+fn cache_load_returns_none_on_version_mismatch() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("v0.json");
+    fs::write(&p, r#"{"version":0,"graph_hash":"x","modularity":0.0,"levels":[]}"#).unwrap();
+    assert!(LouvainLevels::load(&p).is_none());
+}
+
+#[test]
+fn save_then_load_roundtrip() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("levels.json");
+    let levels = LouvainLevels {
+        version: 1, graph_hash: "g".into(), modularity: 0.1,
+        levels: vec![LevelState {
+            node_to_super: Default::default(),
+            super_adjacency: vec![vec![]],
+            community: vec![0],
+        }],
+    };
+    levels.save(&p).unwrap();
+    let back = LouvainLevels::load(&p).unwrap();
+    assert_eq!(back.levels.len(), 1);
+}
+
+#[test]
+fn graph_hash_changes_when_any_edge_changes() {
+    let g_a = graphy_core::build::build_graph(vec![ExtractionOutput {
+        nodes: vec![
+            Node { id: "a".into(), label: "a".into(), source_file: None, source_location: None, kind: None },
+            Node { id: "b".into(), label: "b".into(), source_file: None, source_location: None, kind: None },
+        ],
+        edges: vec![Edge {
+            source: "a".into(), target: "b".into(),
+            relation: "calls".into(), confidence: Confidence::Extracted,
+        }],
+    }]);
+    let g_b = graphy_core::build::build_graph(vec![ExtractionOutput {
+        nodes: vec![
+            Node { id: "a".into(), label: "a".into(), source_file: None, source_location: None, kind: None },
+            Node { id: "b".into(), label: "b".into(), source_file: None, source_location: None, kind: None },
+        ],
+        edges: vec![],
+    }]);
+    assert_ne!(graph_hash_of(&g_a), graph_hash_of(&g_b));
+}

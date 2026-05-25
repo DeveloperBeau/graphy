@@ -11,6 +11,8 @@
 //! modularity is defined on undirected graphs. Edge weights are taken as 1;
 //! parallel edges accumulate weight.
 
+pub mod levels;
+
 use std::collections::{HashMap, HashSet};
 
 use petgraph::graph::NodeIndex;
