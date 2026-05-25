@@ -101,6 +101,30 @@ fn js_named_import_expands_per_specifier() {
 }
 
 #[test]
+fn python_relative_import_does_not_double_dot() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("x.py");
+    fs::write(&p, "from . import helper\nfrom ..pkg import x\n").unwrap();
+    let out = extract(&p).unwrap();
+    let labels: Vec<String> = out.nodes.iter()
+        .filter(|n| n.id.starts_with("extern::"))
+        .map(|n| n.label.clone())
+        .collect();
+    assert!(
+        labels.iter().all(|l| !l.starts_with("..h") && !l.contains("...")),
+        "relative imports produced consecutive dots: {labels:?}"
+    );
+    assert!(
+        labels.iter().any(|l| l == ".helper"),
+        "expected '.helper' from `from . import helper`, got {labels:?}"
+    );
+    assert!(
+        labels.iter().any(|l| l == "..pkg.x"),
+        "expected '..pkg.x' from `from ..pkg import x`, got {labels:?}"
+    );
+}
+
+#[test]
 fn java_wildcard_import_marked_as_glob() {
     let dir = tempdir().unwrap();
     let p = dir.path().join("X.java");
