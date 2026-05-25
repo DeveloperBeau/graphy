@@ -275,3 +275,24 @@ fn ambiguous_marked_survives_warm_run() {
         "expected ambiguous_marked entries on at least 2 files (a.rs, b.rs), got {total_ambiguous}");
 }
 
+#[test]
+fn run_full_fallback_path_dedups() {
+    // Simulate the fallback case: graph.json on disk but unparseable.
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("a.rs"), "pub fn helper(){}\n").unwrap();
+    fs::write(dir.path().join("b.rs"),
+        "use crate::a::helper;\npub fn caller(){ helper(); }\n").unwrap();
+    let out_dir = dir.path().join("graphy-out");
+    fs::create_dir_all(&out_dir).unwrap();
+    // Write a deliberately broken graph.json to force the fallback.
+    fs::write(out_dir.join("graph.json"), "{not json").unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+    let _r = Pipeline::new(cfg).run().unwrap();
+    // The export'd stats.json should reflect a dedup pass having run.
+    let stats: serde_json::Value = serde_json::from_str(
+        &fs::read_to_string(out_dir.join("stats.json")).unwrap()
+    ).unwrap();
+    let resolved = stats["dedup_imports_resolved"].as_u64().unwrap_or(0);
+    assert!(resolved >= 1,
+        "run_full fallback must dedup; got dedup_imports_resolved={resolved}");
+}

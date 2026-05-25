@@ -40,7 +40,7 @@ use crate::cache::Cache;
 use crate::cluster;
 use crate::detect::{DetectOptions, collect_files};
 use crate::export::export;
-use crate::extract::{extract, extract_all};
+use crate::extract::extract_all;
 use crate::graph::KnowledgeGraph;
 use crate::pipeline::{PipelineConfig, PipelineOutputs};
 use crate::schema::ExtractionOutput;
@@ -470,6 +470,15 @@ fn run_full(
     start: Instant,
     cached_count: usize,
 ) -> Result<PipelineOutputs> {
+    // Collect all file paths so we can write empty dedup maps for files that
+    // dedup didn't touch (keeps the cache consistent).
+    let all_paths: Vec<PathBuf> = part
+        .cached
+        .iter()
+        .map(|(p, _)| p.clone())
+        .chain(part.uncached.iter().cloned())
+        .collect();
+
     let mut extractions: Vec<ExtractionOutput> =
         part.cached.iter().map(|(_, o)| o.clone()).collect();
     let fresh = extract_all(&part.uncached);
@@ -479,9 +488,74 @@ fn run_full(
     cache.flush().ok();
     extractions.extend(fresh);
 
+    // Build a file → extern-ids index before the extractions are consumed,
+    // so we can fan out each resolved redirect to every file that contributed
+    // the same extern id (mirrors the logic in pipeline.rs::Pipeline::run).
+    // `all_paths` and `extractions` are in the same order (cached then fresh).
+    let file_extern_ids: HashMap<String, HashSet<String>> = all_paths
+        .iter()
+        .zip(extractions.iter())
+        .map(|(path, out)| {
+            let key = path.to_string_lossy().into_owned();
+            let ids: HashSet<String> = out
+                .nodes
+                .iter()
+                .filter(|n| n.id.starts_with("extern::"))
+                .map(|n| n.id.clone())
+                .collect();
+            (key, ids)
+        })
+        .filter(|(_, ids)| !ids.is_empty())
+        .collect();
+
     let mut graph = build_graph(extractions);
+
+    let mut dedup_imports_resolved = 0usize;
+    if cfg.dedup {
+        let report = crate::dedup::dedup(&mut graph);
+        dedup_imports_resolved = report.imports_resolved;
+        info!(
+            imports = report.imports_resolved,
+            merged = report.reexports_merged,
+            ambiguous = report.ambiguous_groups,
+            "dedup pass (run_full fallback)"
+        );
+        // Fan out each redirect to every file that contributed the same
+        // extern id, then persist the maps.
+        let mut augmented = report.per_file_maps.clone();
+        for (file_key, extern_ids) in &file_extern_ids {
+            for (_, map) in &report.per_file_maps {
+                for r in &map.redirects {
+                    if extern_ids.contains(&r.from) {
+                        let entry = augmented
+                            .entry(file_key.clone())
+                            .or_insert_with(|| crate::dedup::map::DedupMap::empty_for(""));
+                        if !entry.redirects.iter().any(|x| x.from == r.from) {
+                            entry.redirects.push(r.clone());
+                        }
+                    }
+                }
+            }
+        }
+        for (file_key, map) in &augmented {
+            let p = PathBuf::from(file_key);
+            let _ = cache.save_dedup_map(&p, map);
+        }
+        for file in &all_paths {
+            let key = file.to_string_lossy().into_owned();
+            if !augmented.contains_key(&key) {
+                let _ = cache.save_dedup_map(
+                    file,
+                    &crate::dedup::map::DedupMap::empty_for(""),
+                );
+            }
+        }
+        cache.flush().ok();
+    }
+
     cluster::cluster(&mut graph);
-    let analysis = analyze(&graph);
+    let mut analysis = analyze(&graph);
+    analysis.dedup_imports_resolved = dedup_imports_resolved;
     let paths = export(&cfg.out_root, &graph, &analysis)?;
 
     Ok(PipelineOutputs {
