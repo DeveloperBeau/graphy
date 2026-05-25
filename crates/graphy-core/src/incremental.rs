@@ -601,7 +601,7 @@ fn run_full(
         cache.flush().ok();
     }
 
-    {
+    if cfg.hierarchical_clustering {
         let mut rec = crate::cluster::levels::LevelRecorder::new();
         crate::cluster::cluster_with_recorder(&mut graph, &mut rec);
         let levels_path = cfg
@@ -610,6 +610,8 @@ fn run_full(
             .join(".cache")
             .join("louvain-levels.json");
         persist_levels(&graph, &levels_path, rec.into_levels());
+    } else {
+        crate::cluster::cluster(&mut graph);
     }
     let mut analysis = analyze(&graph);
     analysis.dedup_imports_resolved = dedup_imports_resolved;
@@ -635,6 +637,17 @@ fn cluster_incrementally(
     if n == 0 {
         return;
     }
+
+    if !cfg.hierarchical_clustering {
+        let dirty: Vec<petgraph::graph::NodeIndex> = g
+            .graph
+            .node_indices()
+            .filter(|ni| g.graph[*ni].community.is_none())
+            .collect();
+        crate::cluster::cluster_seeded(g, &dirty, scc);
+        return;
+    }
+
     let dirty: Vec<petgraph::graph::NodeIndex> = g
         .graph
         .node_indices()

@@ -33,6 +33,8 @@ pub struct PipelineConfig {
     /// When true, build/load/patch the SCC index and pass it to
     /// delta-Louvain for cycle-aware community assignment. Defaults to true.
     pub scc_expansion: bool,
+    /// When true (default), persist + reuse Louvain level state across runs.
+    pub hierarchical_clustering: bool,
 }
 
 impl PipelineConfig {
@@ -46,6 +48,7 @@ impl PipelineConfig {
             dedup: true,
             incremental: true,
             scc_expansion: true,
+            hierarchical_clustering: true,
         }
     }
 }
@@ -196,7 +199,7 @@ impl Pipeline {
         let edges = graph.edge_count();
         info!(nodes, edges, "graph built");
 
-        {
+        if self.cfg.hierarchical_clustering {
             let mut rec = cluster_levels::LevelRecorder::new();
             cluster_with_recorder(&mut graph, &mut rec);
             let levels_path = self
@@ -212,6 +215,8 @@ impl Pipeline {
                 levels: rec.into_levels(),
             };
             let _ = store.save(&levels_path);
+        } else {
+            crate::cluster::cluster(&mut graph);
         }
         let mut analysis = analyze(&graph);
         analysis.dedup_imports_resolved = dedup_imports_resolved;

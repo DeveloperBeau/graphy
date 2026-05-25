@@ -39,6 +39,10 @@ struct Cli {
     /// Disable SCC expansion for delta-Louvain (cycle-aware clustering).
     #[arg(long)]
     no_scc_expansion: bool,
+
+    /// Disable hierarchical Louvain level caching (use single-pass clustering).
+    #[arg(long)]
+    no_hierarchical: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -59,6 +63,9 @@ enum Command {
         /// Disable SCC expansion for delta-Louvain (cycle-aware clustering).
         #[arg(long)]
         no_scc_expansion: bool,
+        /// Disable hierarchical Louvain level caching (use single-pass clustering).
+        #[arg(long)]
+        no_hierarchical: bool,
     },
     /// Re-run the pipeline whenever a file under PATH changes.
     Watch {
@@ -117,8 +124,8 @@ fn main() -> Result<()> {
             println!("rust target: {}", std::env::consts::ARCH);
             Ok(())
         }
-        Some(Command::Run { path, docs, out, no_dedup, full, no_scc_expansion }) => {
-            run(path, docs, out, no_dedup, full, no_scc_expansion)
+        Some(Command::Run { path, docs, out, no_dedup, full, no_scc_expansion, no_hierarchical }) => {
+            run(path, docs, out, no_dedup, full, no_scc_expansion, no_hierarchical)
         }
         Some(Command::Watch { path, docs, out }) => watch(path, docs, out),
         Some(Command::Serve { graph }) => {
@@ -130,7 +137,7 @@ fn main() -> Result<()> {
         Some(Command::Plugins { action }) => plugins_cmd(action),
         None => {
             let path = cli.path.unwrap_or_else(|| PathBuf::from("."));
-            run(path, cli.docs, cli.out, cli.no_dedup, cli.full, cli.no_scc_expansion)
+            run(path, cli.docs, cli.out, cli.no_dedup, cli.full, cli.no_scc_expansion, cli.no_hierarchical)
         }
     }
 }
@@ -213,11 +220,13 @@ fn run(
     no_dedup: bool,
     full: bool,
     no_scc_expansion: bool,
+    no_hierarchical: bool,
 ) -> Result<()> {
     let mut cfg = make_cfg(path, docs, out);
     cfg.dedup = !no_dedup;
     cfg.incremental = !full;
     cfg.scc_expansion = !no_scc_expansion;
+    cfg.hierarchical_clustering = !no_hierarchical;
     let result = Pipeline::new(cfg).run()?;
     println!(
         "scanned {} files ({} from cache) in {} ms → {} nodes, {} edges, {} communities",
