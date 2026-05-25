@@ -69,3 +69,18 @@ fn rust_brace_import_expands_to_multiple_externs() {
     );
     assert!(externs.len() >= 2);
 }
+
+#[test]
+fn python_from_import_expands_per_name() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("x.py");
+    fs::write(&p, "from a import helper, other\n").unwrap();
+    let out = extract(&p).unwrap();
+    let externs: Vec<_> = out.nodes.iter()
+        .filter(|n| n.id.starts_with("extern::"))
+        .map(|n| n.label.clone())
+        .collect();
+    assert!(externs.iter().any(|l| l.contains("helper")));
+    assert!(externs.iter().any(|l| l.contains("other")));
+    assert!(externs.len() >= 2);
+}

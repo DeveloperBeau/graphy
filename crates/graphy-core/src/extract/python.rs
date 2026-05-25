@@ -51,7 +51,27 @@ fn walk_defs(
             }
             "import_statement" | "import_from_statement" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_import(out, file, text, child);
+                let cleaned = text.trim();
+                let normalised = if let Some(rest) = cleaned.strip_prefix("from ") {
+                    if let Some((module, names)) = rest.split_once(" import ") {
+                        // Wrap names in braces so the shared expander treats them uniformly.
+                        format!("{module}::{{{names}}}")
+                    } else {
+                        cleaned.to_string()
+                    }
+                } else if let Some(rest) = cleaned.strip_prefix("import ") {
+                    // `import a, b, c` — already a list at top level.
+                    format!("{{{rest}}}")
+                } else {
+                    cleaned.to_string()
+                };
+                for path in crate::extract::common::expand_import_paths(&normalised) {
+                    if !path.is_empty() {
+                        // Python uses dot notation, not ::, so map back to dots.
+                        let dotted = path.replace("::", ".");
+                        emit_import(out, file, &dotted, child);
+                    }
+                }
             }
             _ => {}
         }
