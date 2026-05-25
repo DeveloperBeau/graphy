@@ -66,10 +66,12 @@ fn delta_louvain_with_scc_produces_reasonable_modularity() {
         delta_q >= -0.01,
         "delta-Louvain produced negative modularity {delta_q:.4}"
     );
-    // Allow up to 50% absolute drift between the two heuristic runs.
+    // Allow up to 20% absolute drift between the two heuristic runs.
+    // A 6-node ring graph has valid local optima in [0, 0.5] so this is still
+    // permissive, but tight enough to catch genuine regressions.
     let abs_diff = (baseline_q - delta_q).abs();
     assert!(
-        abs_diff < 0.50,
+        abs_diff < 0.20,
         "modularity diverged too far: baseline={baseline_q:.4}, delta={delta_q:.4}, |diff|={abs_diff:.4}"
     );
 }

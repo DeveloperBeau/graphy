@@ -103,9 +103,9 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         .map(|p| p.to_string_lossy().into_owned())
         .chain(removed_strs.into_iter())
         .collect();
-    let (n, e) = strip_contributions(&mut graph, &stripped);
-    report.nodes_stripped = n;
-    report.edges_stripped = e;
+    let (stripped_ids, edges_stripped) = strip_contributions(&mut graph, &stripped);
+    report.nodes_stripped = stripped_ids.len();
+    report.edges_stripped = edges_stripped;
 
     // Cross-file edges that pointed at stripped nodes were forcibly
     // removed by petgraph along with their endpoints. To make sure every
@@ -304,12 +304,15 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     };
 
     // Collect ids of nodes that lack a community label (freshly spliced).
-    let dirty_node_ids: Vec<String> = graph
+    // Also include stripped_ids so SccIndex::patch can remove stale entries
+    // for nodes that were deleted from the graph.
+    let mut dirty_node_ids: Vec<String> = graph
         .graph
         .node_indices()
         .filter(|ni| graph.graph[*ni].community.is_none())
         .filter_map(|ni| idx_to_id.get(&ni).cloned())
         .collect();
+    dirty_node_ids.extend(stripped_ids);
 
     // Load or (re)build the SCC index, then patch it for the dirty set.
     // This whole block is gated on `cfg.scc_expansion`; when disabled the
@@ -437,7 +440,7 @@ fn removed_files(prior: &Option<KnowledgeGraph>, files: &[PathBuf]) -> Vec<PathB
     removed.into_iter().map(PathBuf::from).collect()
 }
 
-fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (usize, usize) {
+fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (Vec<String>, usize) {
     // Identify nodes to drop.
     let mut victims: HashSet<petgraph::graph::NodeIndex> = HashSet::new();
     for ni in g.graph.node_indices() {
@@ -463,7 +466,17 @@ fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (usiz
         }
     }
 
-    let node_count = victims.len();
+    // Collect the string ids of victim nodes BEFORE removal so callers can
+    // pass them to SccIndex::patch (lets the SCC index clean up stale entries).
+    let mut idx_to_id: HashMap<petgraph::graph::NodeIndex, String> =
+        HashMap::with_capacity(victims.len());
+    for (id, &ni) in g.by_id.iter() {
+        if victims.contains(&ni) {
+            idx_to_id.insert(ni, id.clone());
+        }
+    }
+    let stripped_ids: Vec<String> = idx_to_id.into_values().collect();
+
     let mut edges_dropped = 0usize;
     let edge_victims: Vec<_> = g
         .graph
@@ -486,7 +499,7 @@ fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (usiz
     }
     g.by_id.retain(|_, ni| g.graph.node_weight(*ni).is_some());
 
-    (node_count, edges_dropped)
+    (stripped_ids, edges_dropped)
 }
 
 fn splice(g: &mut KnowledgeGraph, out: &ExtractionOutput) {

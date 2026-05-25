@@ -205,3 +205,28 @@ fn scc_patch_merges_two_smaller_components() {
     assert_eq!(scc.components.len(), 1);
     assert_eq!(scc.components[0].len(), 4);
 }
+
+#[test]
+fn scc_patch_splits_when_node_removed() {
+    // Cycle A→B→C→A. Remove node B → no cycle remains.
+    let mut g = cycle3();
+    let mut scc = SccIndex::build(&g);
+    assert_eq!(scc.components.len(), 1);
+
+    // Remove B and its incident edges (petgraph removes incident edges
+    // automatically when remove_node is called).
+    let b = g.by_id["B"];
+    g.graph.remove_node(b);
+    g.by_id.remove("B");
+
+    // Patch must be told about A/C (community context loss) AND B (the
+    // removed id) so the prior component is invalidated in the SCC index.
+    scc.patch(&g, &["A".to_string(), "B".to_string(), "C".to_string()]);
+
+    assert!(
+        scc.components.is_empty(),
+        "expected no cycles after removing B, got {:?}",
+        scc.components
+    );
+    assert!(!scc.by_id.contains_key("B"));
+}
