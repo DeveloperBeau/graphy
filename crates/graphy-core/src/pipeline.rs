@@ -93,8 +93,15 @@ impl Pipeline {
         );
         info!(count = files.len(), "files detected");
 
-        let (mut extractions, files_cached) = if self.cfg.use_cache {
-            let mut cache = Cache::open(&self.cfg.out_root)?;
+        // Hoist cache so it stays alive through the dedup pass (we need it to
+        // persist per-file maps after dedup).
+        let mut cache = if self.cfg.use_cache {
+            Some(Cache::open(&self.cfg.out_root)?)
+        } else {
+            None
+        };
+
+        let (mut extractions, files_cached) = if let Some(ref mut cache) = cache {
             let part = cache.partition(&files);
             let cached_count = part.cached.len();
             let mut all: Vec<_> = part.cached.into_iter().map(|(_, o)| o).collect();
@@ -119,6 +126,13 @@ impl Pipeline {
                 ambiguous = report.ambiguous_groups,
                 "dedup pass"
             );
+            if let Some(ref mut cache) = cache {
+                for (file_key, map) in &report.per_file_maps {
+                    let p = std::path::PathBuf::from(file_key);
+                    let _ = cache.save_dedup_map(&p, map);
+                }
+                cache.flush().ok();
+            }
         }
         let nodes = graph.node_count();
         let edges = graph.edge_count();

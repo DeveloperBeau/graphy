@@ -1,6 +1,9 @@
 use graphy_core::dedup::map::{DedupMap, Redirect};
 use graphy_core::dedup::map::apply_dedup_map;
 use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
+use graphy_core::pipeline::{Pipeline, PipelineConfig};
+use std::fs;
+use tempfile::tempdir;
 
 #[test]
 fn dedup_map_roundtrips_through_serde() {
@@ -102,4 +105,39 @@ fn dedup_map_apply_handles_unknown_redirect_target() {
     };
     apply_dedup_map(&mut out, &m);
     assert_eq!(out.nodes.len(), 1);
+}
+
+#[test]
+fn incremental_run_writes_dedup_map_files() {
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("a.rs"), "pub fn helper(){}\n").unwrap();
+    fs::write(dir.path().join("b.rs"),
+        "use crate::a::helper;\npub fn caller(){ helper(); }\n").unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+    let _ = Pipeline::new(cfg.clone()).run().unwrap();
+    // Trigger an incremental pass.
+    let _ = Pipeline::new(cfg).run().unwrap();
+    // At least one .dedup.json file should be on disk by now.
+    let cache_dir = dir.path().join("graphy-out").join(".cache");
+    let entries: Vec<_> = fs::read_dir(&cache_dir).unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().ends_with(".dedup.json"))
+        .collect();
+    assert!(!entries.is_empty(),
+        "expected at least one .dedup.json file in {cache_dir:?}");
+    // And the content should be a parseable DedupMap.
+    let body = fs::read_to_string(entries[0].path()).unwrap();
+    let _map: graphy_core::dedup::map::DedupMap =
+        serde_json::from_str(&body).unwrap();
+    // For this fixture (b.rs imports from a.rs), we expect a redirect to
+    // be recorded on b.rs's map. But we don't know whether entries[0] is
+    // a.rs or b.rs without sorting, so just check at least one map has
+    // non-empty redirects.
+    let any_populated: bool = entries.iter().any(|e| {
+        let body = fs::read_to_string(e.path()).unwrap();
+        let m: graphy_core::dedup::map::DedupMap =
+            serde_json::from_str(&body).unwrap();
+        !m.redirects.is_empty()
+    });
+    assert!(any_populated, "expected at least one map with redirects");
 }

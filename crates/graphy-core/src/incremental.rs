@@ -67,7 +67,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
 
     // Open the cache so we know which files have new content.
     let mut cache = Cache::open(&cfg.out_root)?;
-    let part = cache.partition(&files);
+    let mut part = cache.partition(&files);
     let cached_count = part.cached.len();
 
     let prior_graph = load_prior_graph(&cfg.out_root);
@@ -124,6 +124,17 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     }
     cache.flush().ok();
 
+    // Apply any persisted dedup decisions from prior runs so the cached
+    // extractions splice in canonical form. Eliminates a re-dedup pass on
+    // warm runs.
+    if cfg.dedup {
+        for (path, out) in part.cached.iter_mut() {
+            if let Some(map) = cache.load_dedup_map(path) {
+                crate::dedup::map::apply_dedup_map(out, &map);
+            }
+        }
+    }
+
     // Splice cached extractions first (nodes dedupe; edges accumulate).
     for (_, out) in &part.cached {
         splice(&mut graph, out);
@@ -155,6 +166,11 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
             ambiguous = dr.ambiguous_groups,
             "dedup pass (incremental)"
         );
+        for (file_key, map) in &dr.per_file_maps {
+            let p = std::path::PathBuf::from(file_key);
+            let _ = cache.save_dedup_map(&p, map);
+        }
+        cache.flush().ok();
     }
 
     cluster_incrementally(&mut graph, &report);
