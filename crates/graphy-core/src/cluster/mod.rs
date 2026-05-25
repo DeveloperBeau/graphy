@@ -214,6 +214,72 @@ pub fn cluster_seeded(
     write_back(g, &[community]);
 }
 
+/// Hierarchical delta-Louvain: re-cluster only nodes touched by `dirty`,
+/// propagating changes up the stored level pyramid. Untouched super-nodes
+/// keep their prior community assignment so disconnected components are
+/// never perturbed.
+pub fn cluster_hierarchical_seeded(
+    g: &mut KnowledgeGraph,
+    dirty: &[NodeIndex],
+    prior: &crate::cluster::levels::LouvainLevels,
+) {
+    if g.graph.node_count() == 0 || prior.levels.is_empty() {
+        return;
+    }
+    // Reverse map idx -> id for fast lookup.
+    let mut idx_to_id: HashMap<NodeIndex, String> = HashMap::with_capacity(g.by_id.len());
+    for (id, &idx) in &g.by_id {
+        idx_to_id.insert(idx, id.clone());
+    }
+    let dirty_ids: Vec<String> = dirty
+        .iter()
+        .filter_map(|ni| idx_to_id.get(ni).cloned())
+        .collect();
+    let dirty_per_level = prior.propagate_dirty(&dirty_ids);
+
+    let (mut adj, mut total_weight) = build_undirected_adjacency(g);
+    let mut community: Vec<usize> = (0..adj.len()).collect();
+    // Seed community from prior level 0 mapping.
+    for (idx, ni) in g.graph.node_indices().enumerate() {
+        if let Some(id) = idx_to_id.get(&ni) {
+            if let Some(&c) = prior.levels[0].node_to_super.get(id) {
+                if c < adj.len() {
+                    community[idx] = c;
+                }
+            }
+        }
+    }
+    // First level: constrained local moving over the level-0 dirty set.
+    if let Some(hot) = dirty_per_level.first() {
+        let hot_idx_set: HashSet<usize> = hot.iter().copied().collect();
+        constrained_local_moving(&adj, &mut community, total_weight, &hot_idx_set);
+    }
+    densify(&mut community);
+    let mut levels_out = vec![community.clone()];
+
+    // Higher levels: each iteration folds the prior level's communities.
+    for (level_idx, level) in prior.levels.iter().enumerate().skip(1) {
+        let folded = fold(&adj, &community);
+        if folded.len() == adj.len() {
+            break;
+        }
+        total_weight = folded.iter().flatten().map(|(_, w)| *w).sum();
+        adj = folded;
+        if level.community.len() == adj.len() {
+            community = level.community.clone();
+        } else {
+            community = (0..adj.len()).collect();
+        }
+        if let Some(hot) = dirty_per_level.get(level_idx) {
+            let hot_idx_set: HashSet<usize> = hot.iter().copied().collect();
+            constrained_local_moving(&adj, &mut community, total_weight, &hot_idx_set);
+        }
+        densify(&mut community);
+        levels_out.push(community.clone());
+    }
+    write_back(g, &levels_out);
+}
+
 /// Like [`local_moving_phase`] but only iterates over `hot`. Modularity
 /// gains are still computed against the *full* `sum_in` table so cold
 /// nodes' contributions are not lost.

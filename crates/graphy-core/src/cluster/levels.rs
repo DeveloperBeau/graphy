@@ -30,6 +30,38 @@ pub struct LevelState {
 }
 
 impl LouvainLevels {
+    /// Return, for each level, the set of super-node indices that may
+    /// require re-evaluation given the seed base-level dirty ids.
+    pub fn propagate_dirty(&self, dirty_ids: &[String]) -> Vec<std::collections::HashSet<usize>> {
+        if self.levels.is_empty() {
+            return Vec::new();
+        }
+        let mut out: Vec<std::collections::HashSet<usize>> = Vec::with_capacity(self.levels.len());
+        // Level 0: map ids -> super-node indices.
+        let base = &self.levels[0];
+        let mut current: std::collections::HashSet<usize> = dirty_ids
+            .iter()
+            .filter_map(|id| base.node_to_super.get(id).copied())
+            .collect();
+        for level in &self.levels {
+            // Each "current" super-node maps up via `level.community`.
+            let mut next: std::collections::HashSet<usize> = std::collections::HashSet::new();
+            for &i in &current {
+                if let Some(c) = level.community.get(i) {
+                    next.insert(*c);
+                }
+                for &(j, _) in level.super_adjacency.get(i).into_iter().flatten() {
+                    if let Some(c) = level.community.get(j) {
+                        next.insert(*c);
+                    }
+                }
+            }
+            out.push(current);
+            current = next;
+        }
+        out
+    }
+
     pub fn load(path: &Path) -> Option<Self> {
         let text = std::fs::read_to_string(path).ok()?;
         let parsed: LouvainLevels = serde_json::from_str(&text).ok()?;
