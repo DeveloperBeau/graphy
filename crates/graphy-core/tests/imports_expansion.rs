@@ -84,3 +84,18 @@ fn python_from_import_expands_per_name() {
     assert!(externs.iter().any(|l| l.contains("other")));
     assert!(externs.len() >= 2);
 }
+
+#[test]
+fn js_named_import_expands_per_specifier() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("x.ts");
+    fs::write(&p,
+        "import { Helper, Other } from './a';\nfunction main(){}\n").unwrap();
+    let out = extract(&p).unwrap();
+    let externs: Vec<_> = out.nodes.iter()
+        .filter(|n| n.id.starts_with("extern::"))
+        .map(|n| n.label.clone()).collect();
+    assert!(externs.iter().any(|l| l.contains("Helper")));
+    assert!(externs.iter().any(|l| l.contains("Other")));
+    assert!(externs.len() >= 2);
+}

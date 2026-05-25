@@ -71,8 +71,17 @@ fn walk_defs(
                     .child_by_field_name("source")
                     .expect("import_statement has source field");
                 let text = source.utf8_text(src.as_bytes()).expect("utf8 source");
-                let trimmed = text.trim_matches(|c| matches!(c, '"' | '\''));
-                emit_import(out, file, trimmed, child);
+                let module = text.trim_matches(|c| matches!(c, '"' | '\''));
+                let names = js_imported_names(child, src, module);
+                if names.is_empty() {
+                    // Side-effect-only import: `import "./mod"` — keep the module
+                    // alone as the extern.
+                    emit_import(out, file, module, child);
+                } else {
+                    for n in names {
+                        emit_import(out, file, &n, child);
+                    }
+                }
             }
             _ => {}
         }
@@ -103,6 +112,42 @@ fn walk_calls(
         }
         walk_calls(child, src, file, out, symbols);
     }
+}
+
+fn js_imported_names(node: TsNode, src: &str, module: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let mut cursor = node.walk();
+    for c in node.children(&mut cursor) {
+        if c.kind() != "import_clause" { continue; }
+        let mut sub = c.walk();
+        for sc in c.children(&mut sub) {
+            match sc.kind() {
+                "named_imports" => {
+                    let raw = sc.utf8_text(src.as_bytes()).unwrap_or("");
+                    for name in crate::extract::common::expand_import_paths(raw) {
+                        let stripped = name.trim();
+                        if !stripped.is_empty() {
+                            out.push(format!("{module}/{stripped}"));
+                        }
+                    }
+                }
+                "namespace_import" => {
+                    // `* as ns`
+                    out.push(format!("{module}/*"));
+                }
+                "identifier" => {
+                    // Default import `import Foo from "..."`
+                    let raw = sc.utf8_text(src.as_bytes()).unwrap_or("");
+                    let stripped = raw.trim();
+                    if !stripped.is_empty() {
+                        out.push(format!("{module}/{stripped}"));
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    out
 }
 
 fn collect_calls(
