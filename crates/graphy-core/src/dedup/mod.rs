@@ -41,6 +41,11 @@ pub struct DedupReport {
     pub imports_resolved: usize,
     pub reexports_merged: usize,
     pub ambiguous_groups: usize,
+    /// Number of simple extern nodes created by splitting legacy compound
+    /// `extern::<prefix>::{a, b, c}` nodes that were persisted by older
+    /// graph versions. Tracked separately from `imports_resolved` because
+    /// splits are node creations, not import-to-definition redirects.
+    pub compound_externs_split: usize,
     pub per_file_maps: HashMap<String, DedupMap>,
 }
 
@@ -52,7 +57,9 @@ pub fn dedup(g: &mut KnowledgeGraph) -> DedupReport {
     let mut report = DedupReport::default();
     report.imports_resolved = resolve_imports(g, &mut per_file_maps);
     let (merged, ambiguous) = collapse_aliases(g, &mut per_file_maps);
-    report.imports_resolved += split;
+    // `split` counts new node creations, not import-to-definition redirects.
+    // Store it in its own field so callers can distinguish the two.
+    report.compound_externs_split = split;
     report.reexports_merged = merged;
     report.ambiguous_groups = ambiguous;
     report.per_file_maps = per_file_maps;
@@ -421,6 +428,13 @@ fn pre_split_compound_externs(g: &mut KnowledgeGraph) -> usize {
                     aliases: vec![compound_id.clone()],
                 },
             );
+            // If the node already existed (ensure_node returned an existing
+            // index), its aliases were not updated by ensure_node. We must
+            // explicitly append the compound id so provenance is preserved.
+            let existing = &mut g.graph[idx];
+            if !existing.aliases.contains(&compound_id) {
+                existing.aliases.push(compound_id.clone());
+            }
             new_indices.push(idx);
         }
 

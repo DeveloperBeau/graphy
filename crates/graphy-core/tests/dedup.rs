@@ -271,6 +271,45 @@ fn split_legacy_compound_externs_walks_braced_label() {
 }
 
 #[test]
+fn split_legacy_compound_preserves_alias_on_existing_node() {
+    use graphy_core::schema::*;
+    let ex = ExtractionOutput {
+        nodes: vec![
+            // Already-split fresh extern that shares a leaf with the compound.
+            Node {
+                id: "extern::crate::a::helper".into(),
+                label: "crate::a::helper".into(),
+                source_file: Some("src/x.rs".into()),
+                source_location: Some("L1".into()),
+                kind: Some("import".into()),
+            },
+            // Legacy compound that needs splitting.
+            Node {
+                id: "extern::crate::a::{helper, other}".into(),
+                label: "crate::a::{helper, other}".into(),
+                source_file: Some("src/x.rs".into()),
+                source_location: Some("L1".into()),
+                kind: Some("import".into()),
+            },
+        ],
+        edges: vec![],
+    };
+    let mut g = graphy_core::build::build_graph(vec![ex]);
+    let report = graphy_core::dedup::dedup(&mut g);
+    // Two simple externs created from the compound.
+    assert_eq!(report.compound_externs_split, 2,
+        "expected 2 nodes from splitting the compound");
+    // The existing fresh extern should now carry the compound id as an alias.
+    let idx = g.by_id.get("extern::crate::a::helper")
+        .expect("fresh extern survives dedup");
+    assert!(
+        g.graph[*idx].aliases.iter().any(|a| a.contains("{helper, other}")),
+        "compound alias not preserved on existing node: {:?}",
+        g.graph[*idx].aliases
+    );
+}
+
+#[test]
 fn dedup_resolves_each_expanded_member_independently() {
     use graphy_core::pipeline::{Pipeline, PipelineConfig};
     use tempfile::tempdir;
