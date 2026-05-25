@@ -28,6 +28,7 @@ use std::collections::{HashMap, HashSet};
 
 use petgraph::graph::NodeIndex;
 
+use crate::dedup::map::{DedupMap, Redirect};
 use crate::graph::{KnowledgeGraph, NodeData};
 use crate::schema::Confidence;
 
@@ -40,22 +41,30 @@ pub struct DedupReport {
     pub imports_resolved: usize,
     pub reexports_merged: usize,
     pub ambiguous_groups: usize,
+    pub per_file_maps: HashMap<String, DedupMap>,
 }
 
 /// Collapse externs that resolve to local definitions, merge re-exports,
 /// flag ambiguous duplicates. Returns counters for the report.
 pub fn dedup(g: &mut KnowledgeGraph) -> DedupReport {
+    let mut per_file_maps: HashMap<String, DedupMap> = HashMap::new();
     let mut report = DedupReport::default();
-    report.imports_resolved = resolve_imports(g);
-    let (merged, ambiguous) = collapse_aliases(g);
+    report.imports_resolved = resolve_imports(g, &mut per_file_maps);
+    let (merged, ambiguous) = collapse_aliases(g, &mut per_file_maps);
     report.reexports_merged = merged;
     report.ambiguous_groups = ambiguous;
+    report.per_file_maps = per_file_maps;
     report
+}
+
+fn ensure_map<'a>(maps: &'a mut HashMap<String, DedupMap>, file: &str) -> &'a mut DedupMap {
+    maps.entry(file.to_string())
+        .or_insert_with(|| DedupMap::empty_for(""))
 }
 
 // ---------- pass 1: extern imports -> local defs ----------
 
-fn resolve_imports(g: &mut KnowledgeGraph) -> usize {
+fn resolve_imports(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, DedupMap>) -> usize {
     // Build a multi-key index: every non-extern node is registered under
     // each progressive suffix of its qualified path. For a node `helper`
     // in `src/foo/bar.rs` the keys are: `helper`, `bar::helper`,
@@ -78,20 +87,33 @@ fn resolve_imports(g: &mut KnowledgeGraph) -> usize {
         }
     }
 
-    let mut redirects: Vec<(NodeIndex, NodeIndex, String)> = Vec::new();
+    let mut redirects: Vec<(NodeIndex, NodeIndex, String, Option<String>)> = Vec::new();
     for extern_id in &extern_ids {
         let Some(&extern_idx) = g.by_id.get(extern_id) else { continue };
         let label = g.graph[extern_idx].label.clone();
+        let source_file = g.graph[extern_idx].source_file.clone();
         let Some(target) = best_match(&suffix_index, &label) else { continue };
         if target == extern_idx {
             continue;
         }
-        redirects.push((extern_idx, target, extern_id.clone()));
+        redirects.push((extern_idx, target, extern_id.clone(), source_file));
     }
 
     let count = redirects.len();
-    for (from, to, original_id) in redirects {
+    for (from, to, original_id, source_file) in redirects {
+        // Capture target id before redirect_node invalidates indices.
+        let target_id = id_of(g, to);
         redirect_node(g, from, to, &original_id);
+        // Record the redirect in per_file_maps if we know the source file.
+        if let Some(file) = source_file {
+            let map = ensure_map(per_file_maps, &file);
+            map.redirects.push(Redirect {
+                from: original_id,
+                to: target_id,
+                edge_relation: None,
+                confidence_downgrade: true,
+            });
+        }
     }
     count
 }
@@ -158,7 +180,7 @@ fn best_match(
 
 // ---------- pass 2: re-export / alias collapse + ambiguity ----------
 
-fn collapse_aliases(g: &mut KnowledgeGraph) -> (usize, usize) {
+fn collapse_aliases(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, DedupMap>) -> (usize, usize) {
     let mut groups: HashMap<(String, String), Vec<NodeIndex>> = HashMap::new();
     for ni in g.graph.node_indices() {
         let data = &g.graph[ni];
@@ -179,18 +201,47 @@ fn collapse_aliases(g: &mut KnowledgeGraph) -> (usize, usize) {
         }
         if has_connecting_import(&g.graph, &members) {
             let winner = highest_in_degree(&g.graph, &members);
-            for member in members {
-                if member == winner {
-                    continue;
-                }
-                let mid = id_of(g, member);
+            let winner_id = id_of(g, winner);
+            // Collect losers with their source files before any mutations.
+            let losers: Vec<(NodeIndex, String, Option<String>)> = members
+                .iter()
+                .filter(|&&m| m != winner)
+                .map(|&m| {
+                    let mid = id_of(g, m);
+                    let src = g.graph[m].source_file.clone();
+                    (m, mid, src)
+                })
+                .collect();
+            for (member, mid, source_file) in losers {
                 redirect_node(g, member, winner, &mid);
+                if let Some(file) = source_file {
+                    let map = ensure_map(per_file_maps, &file);
+                    map.redirects.push(Redirect {
+                        from: mid,
+                        to: winner_id.clone(),
+                        edge_relation: None,
+                        confidence_downgrade: true,
+                    });
+                }
                 merged += 1;
             }
         } else {
             ambiguous += 1;
-            for &member in &members {
+            // Collect member ids + source files before mutating.
+            let member_info: Vec<(NodeIndex, String, Option<String>)> = members
+                .iter()
+                .map(|&m| {
+                    let mid = id_of(g, m);
+                    let src = g.graph[m].source_file.clone();
+                    (m, mid, src)
+                })
+                .collect();
+            for (member, mid, source_file) in member_info {
                 mark_ambiguous(&mut g.graph[member]);
+                if let Some(file) = source_file {
+                    let map = ensure_map(per_file_maps, &file);
+                    map.ambiguous_marked.push(mid);
+                }
             }
         }
     }

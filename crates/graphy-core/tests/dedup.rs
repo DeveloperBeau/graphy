@@ -210,3 +210,21 @@ fn qualified_path_strips_use_keyword_and_as_alias() {
         "the `use ... as ...` form should be normalised before lookup"
     );
 }
+
+#[test]
+fn dedup_emits_per_file_maps() {
+    let ex = ExtractionOutput {
+        nodes: vec![
+            n("a.rs::helper", "function", "a.rs"),
+            ext("extern::lib::helper", "b.rs"),
+        ],
+        edges: vec![e("b.rs", "extern::lib::helper", "imports", Confidence::Extracted)],
+    };
+    let mut g = build_graph(vec![ex]);
+    let report = dedup(&mut g);
+    assert_eq!(report.imports_resolved, 1);
+    let map = report.per_file_maps.get("b.rs").expect("b.rs map present");
+    assert_eq!(map.redirects.len(), 1);
+    assert_eq!(map.redirects[0].from, "extern::lib::helper");
+    assert_eq!(map.redirects[0].to, "a.rs::helper");
+}
