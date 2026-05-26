@@ -48,6 +48,8 @@ fn classify(kind: &str) -> Option<&'static str> {
         | "deinit_declaration"
         | "protocol_function_declaration" => Some("function"),
         "class_declaration" => Some("class"),
+        "struct_declaration" => Some("struct"),
+        "enum_declaration" => Some("enum"),
         "protocol_declaration" => Some("protocol"),
         _ => None,
     }
