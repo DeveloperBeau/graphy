@@ -92,6 +92,50 @@ fn empty_file_emits_zero_nodes_and_edges() {
     assert!(out.edges.is_empty(), "empty.toml produced edges: {:#?}", out.edges);
 }
 
+// ---------- Pair nodes inside sections ----------
+//
+// The extractor recurses into `table` children, so `pair` nodes (key-value
+// entries under a section header) are emitted alongside the section header
+// itself. This closes the "TOML pair nodes" deferred item.
+
+#[test]
+fn cargo_toml_emits_pair_nodes_inside_package_section() {
+    let out = extract_file(&fp("Cargo.toml"));
+    // Under [package]: name, version, edition, description, authors
+    assert_extract_has(&out, "name", "pair");
+    assert_extract_has(&out, "version", "pair");
+    assert_extract_has(&out, "edition", "pair");
+}
+
+#[test]
+fn config_toml_emits_pair_nodes_inside_server_section() {
+    let out = extract_file(&fp("config.toml"));
+    // Under [server]: host, port, debug
+    assert_extract_has(&out, "host", "pair");
+    assert_extract_has(&out, "port", "pair");
+    assert_extract_has(&out, "debug", "pair");
+}
+
+#[test]
+fn config_toml_emits_pair_nodes_inside_database_section() {
+    let out = extract_file(&fp("config.toml"));
+    // Under [database]: host, port, name, pool_size
+    assert_extract_has(&out, "name", "pair");
+    assert_extract_has(&out, "pool_size", "pair");
+}
+
+#[test]
+fn pipeline_emits_pair_nodes_for_toml_fixture() {
+    let (g, _guard) = run_pipeline(&fixture_dir(LANG));
+    // Use labels unique to a single file to avoid dedup marking them ambiguous.
+    // "edition" only appears in Cargo.toml's [package] section.
+    assert_node(&g, "edition", "pair");
+    // "pool_size" is unique to config.toml's [database] section.
+    assert_node(&g, "pool_size", "pair");
+    // "level" is unique to config.toml's [logging] section.
+    assert_node(&g, "level", "pair");
+}
+
 // ---------- Edge cases ----------
 
 #[test]
