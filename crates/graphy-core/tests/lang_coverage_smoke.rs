@@ -45,3 +45,16 @@ fn assert_extract_edge_panics_with_edge_dump_on_miss() {
     let out = common::extract_file(&p);
     common::assert_extract_edge(&out, "calls", "main", "missing");
 }
+
+#[test]
+fn run_pipeline_produces_a_graph_for_a_one_file_project() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::create_dir_all(dir.path().join("src")).unwrap();
+    std::fs::write(
+        dir.path().join("src/lib.rs"),
+        "pub fn helper() {}\npub fn main_fn() { helper(); }\n",
+    )
+    .unwrap();
+    let (g, _guard) = common::run_pipeline(dir.path());
+    assert!(g.node_count() >= 2, "expected nodes in graph, got {}", g.node_count());
+}

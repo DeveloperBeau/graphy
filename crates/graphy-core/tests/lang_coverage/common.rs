@@ -49,6 +49,31 @@ pub fn assert_extract_has(out: &ExtractionOutput, label: &str, kind: &str) {
     }
 }
 
+// ----- pipeline helpers -----
+
+/// Run the full pipeline on `root` with hermetic output, no cache, no
+/// incremental fast-path. Returns the in-memory graph plus the tempdir
+/// guard the caller must keep alive for the duration of the test.
+pub fn run_pipeline(root: &Path) -> (KnowledgeGraph, TempDir) {
+    let tmp = TempDir::new().expect("create tempdir for pipeline out_root");
+    let cfg = PipelineConfig {
+        root: root.to_path_buf(),
+        out_root: tmp.path().to_path_buf(),
+        include_docs: false,
+        use_cache: false,
+        dedup: true,
+        incremental: false,
+        scc_expansion: true,
+        hierarchical_clustering: true,
+    };
+    let out = Pipeline::new(cfg)
+        .run()
+        .unwrap_or_else(|e| panic!("pipeline failed for {}: {e}", root.display()));
+    (out.graph, tmp)
+}
+
+// ----- extraction edge helpers (internal) -----
+
 fn id_for_label(out: &ExtractionOutput, label: &str) -> Option<String> {
     out.nodes.iter().find(|n| n.label == label).map(|n| n.id.clone())
 }
