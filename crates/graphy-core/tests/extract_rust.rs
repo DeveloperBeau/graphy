@@ -172,10 +172,22 @@ fn aliased_import_preserves_alias_name() {
     let dir = tempdir().unwrap();
     let p = write(dir.path(), "x.rs", "use std::io::Result as IoResult;\nfn f() {}\n");
     let out = extract(&p).unwrap();
-    let labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
+    let import_labels: Vec<_> = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("import"))
+        .map(|n| n.label.as_str())
+        .collect();
+
+    // Canonical path must be stored cleanly (without ` as IoResult` suffix).
     assert!(
-        labels.iter().any(|l| l.contains("Result") || l.contains("IoResult")),
-        "expected aliased import to be visible in nodes, got {labels:?}"
+        import_labels.iter().any(|l| *l == "std::io::Result"),
+        "expected canonical import label 'std::io::Result', got {import_labels:?}"
+    );
+    // Alias must also be discoverable.
+    assert!(
+        import_labels.iter().any(|l| *l == "IoResult"),
+        "expected alias import label 'IoResult', got {import_labels:?}"
     );
 }
 

@@ -88,6 +88,19 @@ pub fn expand_import_paths(raw: &str) -> Vec<String> {
     let raw = raw.trim();
     // Quick path: no brace at all.
     if !raw.contains('{') {
+        // Split `path::Leaf as Alias` into canonical + alias.
+        if let Some((canonical, alias)) = raw.rsplit_once(" as ") {
+            let canonical = canonical.trim().to_string();
+            let alias = alias.trim().to_string();
+            let mut out = Vec::with_capacity(2);
+            if !canonical.is_empty() {
+                out.push(canonical);
+            }
+            if !alias.is_empty() {
+                out.push(alias);
+            }
+            return out;
+        }
         return vec![raw.to_string()];
     }
     // Find the matching brace pair.
@@ -141,15 +154,26 @@ pub fn expand_import_paths(raw: &str) -> Vec<String> {
     }
     let mut out: Vec<String> = Vec::new();
     for part in parts {
-        // Strip ` as <alias>`.
-        let trimmed = part.split(" as ").next().unwrap_or(part.as_str()).trim();
-        if trimmed.contains('{') {
-            // Nested brace -- recurse.
-            for nested in expand_import_paths(trimmed) {
+        let part_trim = part.trim();
+        if part_trim.contains('{') {
+            // Nested brace — strip alias from the group head, then recurse.
+            let canonical = part_trim.split(" as ").next().unwrap_or(part_trim).trim();
+            for nested in expand_import_paths(canonical) {
                 out.push(format!("{prefix_with_sep}{nested}"));
             }
+        } else if let Some((canonical, alias)) = part_trim.rsplit_once(" as ") {
+            // Braced alias: emit canonical with prefix, alias bare (it's a
+            // local name in this file's namespace, not a path continuation).
+            let canonical = canonical.trim();
+            let alias = alias.trim();
+            if !canonical.is_empty() {
+                out.push(format!("{prefix_with_sep}{canonical}"));
+            }
+            if !alias.is_empty() {
+                out.push(alias.to_string());
+            }
         } else {
-            out.push(format!("{prefix_with_sep}{trimmed}"));
+            out.push(format!("{prefix_with_sep}{part_trim}"));
         }
     }
     out
