@@ -49,15 +49,40 @@ fn schema_emits_create_view_node() {
     assert_extract_has(&out, "active_users", "view");
 }
 
+// ---------- FK reference edges ----------
+//
+// The extractor walks column definitions for REFERENCES clauses and emits a
+// "references" edge from the containing table to the referenced table.
+// This closes the "SQL FK/JOIN edges" deferred item (FK only; JOIN still deferred).
+
 #[test]
-fn schema_emits_no_edges() {
-    // The SQL extractor is DDL-only; no FK or JOIN edges are extracted.
+fn schema_posts_references_users() {
     let out = extract_file(&fp("schema.sql"));
-    assert!(
-        out.edges.is_empty(),
-        "expected no edges from schema.sql (DDL-only extractor); edges = {:#?}",
-        out.edges
-    );
+    assert_extract_edge(&out, "posts", "users", "references");
+}
+
+#[test]
+fn schema_comments_references_posts() {
+    let out = extract_file(&fp("schema.sql"));
+    assert_extract_edge(&out, "comments", "posts", "references");
+}
+
+#[test]
+fn schema_comments_references_users() {
+    let out = extract_file(&fp("schema.sql"));
+    assert_extract_edge(&out, "comments", "users", "references");
+}
+
+#[test]
+fn schema_no_self_references() {
+    // Ensure users -> users FK (there is none) is not emitted.
+    let out = extract_file(&fp("schema.sql"));
+    let self_refs: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "references" && e.source == e.target)
+        .collect();
+    assert!(self_refs.is_empty(), "unexpected self-reference edges: {self_refs:#?}");
 }
 
 #[test]
@@ -101,7 +126,7 @@ fn non_utf8_bytes_with_sql_suffix_do_not_crash() {
 // SQL (.sql) is in CODE_EXTENSIONS and is processed by the pipeline by default.
 // No cross-file edges are expected; the pipeline collects DDL nodes from all files.
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_emits_table_nodes() {
@@ -120,13 +145,23 @@ fn pipeline_emits_view_and_index_nodes() {
 }
 
 #[test]
-fn pipeline_emits_no_edges_for_sql_fixture() {
-    // SQL extractor emits no edges; pipeline should have zero edges for this fixture.
+fn pipeline_emits_fk_reference_edges() {
+    // FK edges from REFERENCES clauses appear in the merged graph.
+    let (g, _guard) = run_pipeline(&fixture_dir(LANG));
+    assert_edge(&g, "posts", "users", "references");
+    assert_edge(&g, "comments", "posts", "references");
+    assert_edge(&g, "comments", "users", "references");
+}
+
+#[test]
+fn pipeline_has_no_edges_from_dml_file() {
+    // queries.sql has no DDL; the only edges in the fixture come from schema.sql FK refs.
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let edge_count = g.graph.edge_references().count();
-    assert_eq!(
-        edge_count, 0,
-        "expected 0 edges for SQL-only fixture; got {edge_count}"
+    // Expect exactly 3 FK edges (posts->users, comments->posts, comments->users).
+    assert!(
+        edge_count >= 3,
+        "expected at least 3 FK reference edges; got {edge_count}"
     );
 }
 

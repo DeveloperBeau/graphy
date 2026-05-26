@@ -1,23 +1,23 @@
--- Schema definitions: tables, views, index
--- Demonstrates: CREATE TABLE, CREATE VIEW, CREATE INDEX
+-- Schema definitions: tables, views, indexes, and foreign key references.
+-- Demonstrates: CREATE TABLE with REFERENCES, CREATE VIEW, CREATE INDEX.
 
 CREATE TABLE users (
-    id   INTEGER PRIMARY KEY,
-    name TEXT    NOT NULL,
-    email TEXT   UNIQUE
+    id    INTEGER PRIMARY KEY,
+    name  TEXT    NOT NULL,
+    email TEXT    UNIQUE
 );
 
 CREATE TABLE posts (
     id      INTEGER PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id),
     title   TEXT    NOT NULL,
     body    TEXT
 );
 
 CREATE TABLE comments (
     id      INTEGER PRIMARY KEY,
-    post_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    post_id INTEGER NOT NULL REFERENCES posts(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     body    TEXT
 );
 
