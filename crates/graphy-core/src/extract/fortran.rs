@@ -26,10 +26,27 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 }
 
 fn first_id<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
+    // Direct child named "name" or "identifier".
     let mut cursor = node.walk();
-    node.children(&mut cursor)
+    if let Some(c) = node
+        .children(&mut cursor)
         .find(|c| c.kind() == "name" || c.kind() == "identifier")
-        .and_then(|c| c.utf8_text(src.as_bytes()).ok())
+    {
+        return c.utf8_text(src.as_bytes()).ok();
+    }
+    // Fortran nests the name one level deeper inside a *_statement child
+    // (e.g. module_statement > name, subroutine_statement > name).
+    let mut cursor2 = node.walk();
+    for child in node.children(&mut cursor2) {
+        let mut inner = child.walk();
+        if let Some(c) = child
+            .children(&mut inner)
+            .find(|c| c.kind() == "name" || c.kind() == "identifier")
+        {
+            return c.utf8_text(src.as_bytes()).ok();
+        }
+    }
+    None
 }
 
 fn walk(
