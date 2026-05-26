@@ -43,6 +43,8 @@ pub fn export(out_root: &Path, g: &KnowledgeGraph, a: &Analysis) -> Result<Expor
             "communities": a.community_count,
             "ambiguous_edges": a.ambiguous_edge_count,
             "dedup_imports_resolved": a.dedup_imports_resolved,
+            "glob_imports_skipped": a.glob_imports_skipped,
+            "modularity": a.modularity,
         }))?,
     )?;
 
