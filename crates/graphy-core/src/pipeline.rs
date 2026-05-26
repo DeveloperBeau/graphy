@@ -221,6 +221,15 @@ impl Pipeline {
         } else {
             crate::cluster::cluster(&mut graph);
         }
+        // Full rebuild invalidates any prior incremental SCC index; delete it
+        // so the next incremental run rebuilds from the canonical graph.
+        let scc_path = self
+            .cfg
+            .out_root
+            .join("graphy-out")
+            .join(".cache")
+            .join("scc.json");
+        let _ = std::fs::remove_file(&scc_path);
         let mut analysis = analyze(&graph);
         analysis.dedup_imports_resolved = dedup_imports_resolved;
         analysis.glob_imports_skipped = dedup_glob_imports_skipped;

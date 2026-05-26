@@ -99,3 +99,49 @@ fn incremental_run_persists_scc_cache() {
         "scc.json should persist after an incremental run"
     );
 }
+
+#[test]
+fn full_rebuild_clears_stale_scc_cache() {
+    let dir = tempdir().unwrap();
+    fs::write(
+        dir.path().join("rec.py"),
+        "def a(): return b()\ndef b(): return a()\n",
+    )
+    .unwrap();
+
+    // First run: pipeline writes graph.json + (via the incremental path on
+    // a subsequent run) scc.json. Force the incremental path explicitly by
+    // running twice.
+    let cfg = PipelineConfig::new(dir.path());
+    let _ = Pipeline::new(cfg.clone()).run().unwrap();
+    let _ = Pipeline::new(cfg.clone()).run().unwrap();
+    let scc_path = dir
+        .path()
+        .join("graphy-out")
+        .join(".cache")
+        .join("scc.json");
+    assert!(scc_path.exists(), "scc.json must exist after incremental run");
+
+    // Now stamp the file with garbage so we can detect a "reset" vs a "rewrite".
+    fs::write(&scc_path, b"STALE_MARKER").unwrap();
+
+    // Force the non-incremental path by deleting graph.json. Pipeline::run
+    // will fall through to the full pipeline branch.
+    let graph_json = dir.path().join("graphy-out").join("graph.json");
+    if graph_json.exists() {
+        fs::remove_file(&graph_json).unwrap();
+    }
+
+    let _ = Pipeline::new(cfg).run().unwrap();
+
+    // After a full rebuild, the stale marker must be gone. Two valid outcomes:
+    //   (a) the file is deleted, or
+    //   (b) the file is rewritten with a fresh JSON payload (no STALE_MARKER).
+    if scc_path.exists() {
+        let contents = fs::read(&scc_path).unwrap();
+        assert!(
+            !contents.windows(b"STALE_MARKER".len()).any(|w| w == b"STALE_MARKER"),
+            "scc.json must be reset on full rebuild; still contains stale marker"
+        );
+    }
+}
