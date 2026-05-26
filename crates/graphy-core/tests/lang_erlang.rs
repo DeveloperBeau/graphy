@@ -106,6 +106,37 @@ fn non_utf8_bytes_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Deferred closure: -import directive ----------
+
+#[test]
+fn service_emits_import_node_for_import_directive() {
+    let out = extract_file(&fp("src/service.erl"));
+    let import_labels: Vec<_> = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("import"))
+        .map(|n| n.label.as_str())
+        .collect();
+    assert!(
+        import_labels.iter().any(|l| l.contains("helpers")),
+        "helpers import node from -import directive not found; import nodes = {import_labels:?}"
+    );
+}
+
+#[test]
+fn service_emits_imports_edge_for_import_directive() {
+    let out = extract_file(&fp("src/service.erl"));
+    let has_edge = out
+        .edges
+        .iter()
+        .any(|e| e.relation == "imports");
+    assert!(
+        has_edge,
+        "no imports edge emitted from service.erl; edges = {:#?}",
+        out.edges
+    );
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
