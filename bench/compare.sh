@@ -144,23 +144,20 @@ bench_dedup_cache() {
 # --no-scc-expansion. Outputs "wall_on_ms|wall_off_ms".
 bench_scc_overhead() {
   local fixture_dir="$1"; local out="$2"
-  local tmp_time
-  tmp_time="$(mktemp)"
 
   # Warm both passes (cache must exist already, from bench_dedup_cache).
   local s e on_ms off_ms
 
   s=$(now_ns)
-  "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" >/dev/null 2>/dev/null
+  "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" >/dev/null 2>&1
   e=$(now_ns)
   on_ms=$(( (e - s) / 1000000 ))
 
   s=$(now_ns)
-  "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" --no-scc-expansion >/dev/null 2>/dev/null
+  "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" --no-scc-expansion >/dev/null 2>&1
   e=$(now_ns)
   off_ms=$(( (e - s) / 1000000 ))
 
-  rm -f "$tmp_time"
   echo "${on_ms}|${off_ms}"
 }
 
