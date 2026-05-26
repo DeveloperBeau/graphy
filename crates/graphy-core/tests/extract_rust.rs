@@ -337,3 +337,19 @@ fn function_references_edges_from_param_and_return_types() {
         "expected references edge from foo to Baz; refs = {refs:#?}"
     );
 }
+
+#[test]
+fn macro_rules_emits_macro_node() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "macro_rules! foo { () => {} }\n",
+    );
+    let out = extract(&p).unwrap();
+    assert!(
+        out.nodes.iter().any(|n| n.label == "foo" && n.kind.as_deref() == Some("macro")),
+        "expected macro node labelled 'foo'; nodes = {:#?}",
+        out.nodes,
+    );
+}

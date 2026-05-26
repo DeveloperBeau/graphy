@@ -1,10 +1,10 @@
 //! Rust source extractor (tree-sitter).
 //!
 //! Emits nodes for `fn`, `struct`, `enum`, `trait`, `impl`, `mod`, `const`,
-//! `static`, and `type` items, plus edges for `use` (imports), direct call
-//! expressions inside fn bodies, `impl Trait for Type` (`implements`),
-//! parent-to-child structural relationships (`contains`), and type usage in
-//! function signatures (`references`).
+//! `static`, `type`, and `macro_rules!` items, plus edges for `use` (imports),
+//! direct call expressions inside fn bodies, `impl Trait for Type`
+//! (`implements`), parent-to-child structural relationships (`contains`), and
+//! type usage in function signatures (`references`).
 
 use std::collections::HashMap;
 use std::fs;
@@ -102,6 +102,25 @@ fn walk_items(
                             // contains edges from the impl type to each method.
                             emit_contains_from_body(child, src, file, &impl_type_id, out, symbols);
                         }
+                    }
+                }
+            }
+            // Emit a macro node for macro_rules! definitions.
+            // tree-sitter-rust uses kind "macro_definition" with a "name" field
+            // holding the identifier after "macro_rules!".
+            "macro_definition" => {
+                if let Some(id_node) = child.child_by_field_name("name") {
+                    if let Ok(name) = id_node.utf8_text(src.as_bytes()) {
+                        let name = name.to_string();
+                        let id = make_id(file, &name);
+                        symbols.insert(name.clone(), id.clone());
+                        out.nodes.push(Node {
+                            id,
+                            label: name,
+                            source_file: Some(file.to_string()),
+                            source_location: Some(line_loc(child)),
+                            kind: Some("macro".to_string()),
+                        });
                     }
                 }
             }
