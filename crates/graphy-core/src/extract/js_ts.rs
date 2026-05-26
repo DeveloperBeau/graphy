@@ -19,6 +19,13 @@ pub enum Flavor {
 
 pub fn extract(path: &Path, flavor: Flavor) -> Result<ExtractionOutput> {
     let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    let file = path.to_string_lossy().into_owned();
+    extract_src(&src, &file, flavor)
+}
+
+/// Parse an in-memory source string as JavaScript (without reading from disk).
+/// `file_label` is used as the file identifier in emitted node IDs.
+pub fn extract_src(src: &str, file_label: &str, flavor: Flavor) -> Result<ExtractionOutput> {
     let lang: Language = match flavor {
         Flavor::Javascript => tree_sitter_javascript::LANGUAGE.into(),
         Flavor::Typescript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
@@ -29,15 +36,14 @@ pub fn extract(path: &Path, flavor: Flavor) -> Result<ExtractionOutput> {
         .set_language(&lang)
         .context("load tree-sitter language")?;
     let tree = parser
-        .parse(&src, None)
+        .parse(src, None)
         .expect("tree-sitter parse() returns Some when language is set");
 
-    let file = path.to_string_lossy().into_owned();
     let mut out = ExtractionOutput::default();
     let mut symbols: HashMap<String, String> = HashMap::new();
 
-    walk_defs(tree.root_node(), &src, &file, &mut out, &mut symbols);
-    walk_calls(tree.root_node(), &src, &file, &mut out, &symbols);
+    walk_defs(tree.root_node(), src, file_label, &mut out, &mut symbols);
+    walk_calls(tree.root_node(), src, file_label, &mut out, &symbols);
     Ok(out)
 }
 

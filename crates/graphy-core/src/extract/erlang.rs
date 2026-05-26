@@ -52,12 +52,19 @@ fn walk(
                     emit_def(out, symbols, file, "module", n, child);
                 }
             }
+            // -import(Module, [Func/Arity, ...]) — dedicated node kind in tree-sitter-erlang.
+            // The first `atom` child is the module being imported from.
+            "import_attribute" => {
+                if let Some(n) = first_id(child, src) {
+                    emit_import(out, file, n, child);
+                }
+            }
+            // -include("file.hrl") / -include_lib("lib/file.hrl") appear as wild_attribute.
             "wild_attribute" => {
                 let text = child.utf8_text(src.as_bytes()).unwrap_or("");
-                if text.starts_with("-import") || text.starts_with("-include") {
+                if text.starts_with("-include") {
                     let trimmed = text
                         .trim_start_matches('-')
-                        .trim_start_matches("import")
                         .trim_start_matches("include")
                         .trim_start_matches("_lib")
                         .trim_matches(|c: char| matches!(c, '(' | ')' | '.' | ' ' | '"'));

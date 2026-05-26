@@ -26,19 +26,31 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 }
 
 fn first_id<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
+    // Direct leaf-level name kinds (never `module_binding` which is a subtree).
     let mut cursor = node.walk();
-    node.children(&mut cursor)
-        .find(|c| {
+    if let Some(c) = node.children(&mut cursor).find(|c| {
+        matches!(
+            c.kind(),
+            "value_name" | "module_name" | "module_type_name" | "type_constructor" | "constructor_name"
+        )
+    }) {
+        return c.utf8_text(src.as_bytes()).ok();
+    }
+    // One level deeper: type_definition > type_binding > type_constructor,
+    // module_definition > module_binding > module_name, etc.
+    let mut cursor2 = node.walk();
+    for child in node.children(&mut cursor2) {
+        let mut inner = child.walk();
+        if let Some(c) = child.children(&mut inner).find(|c| {
             matches!(
                 c.kind(),
-                "value_name"
-                    | "module_name"
-                    | "module_binding"
-                    | "type_constructor"
-                    | "constructor_name"
+                "value_name" | "module_name" | "module_type_name" | "type_constructor" | "constructor_name"
             )
-        })
-        .and_then(|c| c.utf8_text(src.as_bytes()).ok())
+        }) {
+            return c.utf8_text(src.as_bytes()).ok();
+        }
+    }
+    None
 }
 
 fn walk(

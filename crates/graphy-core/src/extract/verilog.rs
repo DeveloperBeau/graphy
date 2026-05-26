@@ -26,15 +26,30 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 }
 
 fn first_id<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
+    // Direct child.
     let mut cursor = node.walk();
-    node.children(&mut cursor)
-        .find(|c| {
+    if let Some(c) = node.children(&mut cursor).find(|c| {
+        matches!(
+            c.kind(),
+            "simple_identifier" | "module_identifier" | "identifier"
+        )
+    }) {
+        return c.utf8_text(src.as_bytes()).ok();
+    }
+    // One level deeper: module_declaration > module_header > simple_identifier.
+    let mut cursor2 = node.walk();
+    for child in node.children(&mut cursor2) {
+        let mut inner = child.walk();
+        if let Some(c) = child.children(&mut inner).find(|c| {
             matches!(
                 c.kind(),
                 "simple_identifier" | "module_identifier" | "identifier"
             )
-        })
-        .and_then(|c| c.utf8_text(src.as_bytes()).ok())
+        }) {
+            return c.utf8_text(src.as_bytes()).ok();
+        }
+    }
+    None
 }
 
 fn walk(
