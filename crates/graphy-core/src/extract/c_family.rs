@@ -82,6 +82,14 @@ fn walk(
                     );
                 }
             }
+            "namespace_definition" => {
+                // C++ only: `namespace foo { ... }`
+                if let Some(n) = child.child_by_field_name("name")
+                    .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+                {
+                    emit_def(out, symbols, file, "namespace", n, child);
+                }
+            }
             "preproc_include" => {
                 let path_node = child
                     .child_by_field_name("path")
