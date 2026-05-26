@@ -63,13 +63,45 @@ fn readme_emits_h2_headings() {
     assert_extract_has(&out, "Maintenance", "heading");
 }
 
+// ---------- Inline link extraction ----------
+//
+// The extractor uses tree-sitter-md's MarkdownParser to access inline trees.
+// For each inline link [text](dest), if dest is NOT an http/https URL, a
+// `references` edge is emitted from the containing heading section to the
+// destination path. This closes the "Markdown inline links" deferred item.
+
 #[test]
-fn readme_emits_no_edges() {
-    // Inline link extraction is not implemented; no edges expected.
+fn readme_emits_link_to_guide() {
+    // README.md contains [Guide](guide.md)
     let out = extract_file(&fp("README.md"));
+    let has_guide_ref = out.edges.iter().any(|e| e.target == "link::guide.md" && e.relation == "references");
     assert!(
-        out.edges.is_empty(),
-        "expected no edges from README.md (link extraction not implemented); edges = {:#?}",
+        has_guide_ref,
+        "expected references edge to link::guide.md; edges = {:#?}",
+        out.edges
+    );
+}
+
+#[test]
+fn readme_emits_link_to_api() {
+    // README.md contains [API Reference](api.md)
+    let out = extract_file(&fp("README.md"));
+    let has_api_ref = out.edges.iter().any(|e| e.target == "link::api.md" && e.relation == "references");
+    assert!(
+        has_api_ref,
+        "expected references edge to link::api.md; edges = {:#?}",
+        out.edges
+    );
+}
+
+#[test]
+fn readme_does_not_emit_https_links_as_edges() {
+    // External URLs (https://) should NOT produce reference edges.
+    let out = extract_file(&fp("README.md"));
+    let has_https = out.edges.iter().any(|e| e.target.starts_with("link::https://") || e.target.starts_with("link::http://"));
+    assert!(
+        !has_https,
+        "http/https links should not produce edges; edges = {:#?}",
         out.edges
     );
 }
@@ -149,14 +181,14 @@ fn pipeline_emits_heading_nodes_from_all_files() {
 }
 
 #[test]
-fn pipeline_emits_no_edges() {
-    // Markdown extractor produces no edges; pipeline output should be edge-free.
+fn pipeline_emits_link_edges() {
+    // Inline link edges from README.md appear in the merged graph.
     let (g, _guard) = run_pipeline_with_docs();
     use petgraph::visit::IntoEdgeReferences;
     let edge_count = g.graph.edge_references().count();
-    assert_eq!(
-        edge_count, 0,
-        "expected 0 edges for Markdown-only fixture; got {edge_count}"
+    assert!(
+        edge_count > 0,
+        "expected inline link reference edges in pipeline output; got 0"
     );
 }
 
