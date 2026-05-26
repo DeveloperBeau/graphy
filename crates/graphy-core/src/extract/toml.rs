@@ -1,4 +1,5 @@
-//! TOML extractor — section headers and top-level keys as nodes.
+//! TOML extractor — section headers, array-of-tables headers, and key-value
+//! pair nodes at every depth.
 
 use std::path::Path;
 
@@ -28,10 +29,15 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
         let kind = child.kind();
         if matches!(kind, "table" | "table_array_element" | "pair") {
             let label = match kind {
-                "pair" => child
-                    .child_by_field_name("key")
-                    .and_then(|k| k.utf8_text(src.as_bytes()).ok())
-                    .map(|s| s.to_string()),
+                "pair" => {
+                    // tree-sitter-toml-ng does not expose "key" as a named field;
+                    // the key is the first named child (bare_key or dotted_key).
+                    child
+                        .child_by_field_name("key")
+                        .or_else(|| child.named_child(0))
+                        .and_then(|k| k.utf8_text(src.as_bytes()).ok())
+                        .map(|s| s.to_string())
+                }
                 _ => child
                     .named_child(0)
                     .and_then(|h| h.utf8_text(src.as_bytes()).ok())
