@@ -145,9 +145,8 @@ pub fn build_from_directory(dir: &Path) -> Result<Manifest> {
             }
         }
         // Drop the library so the file is closed before we hash it (matters
-        // on some platforms with file locks).
-        drop(metaf);
-        drop(abi);
+        // on some platforms with file locks). The function symbols are just
+        // pointer wrappers; only `lib` owns the dlclose.
         drop(lib);
         let sha = sha256_of(&path)?;
         plugins.push(PluginEntry {

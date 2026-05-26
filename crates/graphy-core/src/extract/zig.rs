@@ -77,12 +77,11 @@ fn walk(
                 let mut found_import = false;
                 let mut acur = child.walk();
                 for c in child.children(&mut acur) {
-                    if c.kind() == "builtin_function" {
-                        if let Some(target) = builtin_import_arg(c, src) {
+                    if c.kind() == "builtin_function"
+                        && let Some(target) = builtin_import_arg(c, src) {
                             emit_import(out, file, target, child);
                             found_import = true;
                         }
-                    }
                 }
                 if let (Some(n), true) = (name, found_import) {
                     emit_def(out, symbols, file, "import", n, child);
@@ -126,12 +125,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "call_expression" {
-            if let Some(first) = child.named_child(0) {
+        if child.kind() == "call_expression"
+            && let Some(first) = child.named_child(0) {
                 let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
                 emit_call(out, symbols, caller_id, text);
             }
-        }
         collect_calls(child, src, caller_id, out, symbols);
     }
 }

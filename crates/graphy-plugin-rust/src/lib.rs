@@ -127,12 +127,11 @@ fn add_call_edges(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_item" {
-            if let Some(name) = name_of(child, src) {
+        if child.kind() == "function_item"
+            && let Some(name) = name_of(child, src) {
                 let caller_id = format!("{file}::{name}");
                 collect_calls_in(child, src, &caller_id, out, symbols);
             }
-        }
         add_call_edges(child, src, file, out, symbols);
     }
 }

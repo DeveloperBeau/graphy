@@ -25,8 +25,8 @@ fn extract_to_json(path: &str, source: &str) -> Result<Vec<u8>, String> {
 fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if matches!(child.kind(), "block_mapping_pair" | "flow_pair") {
-            if let Some(key) = child.child_by_field_name("key") {
+        if matches!(child.kind(), "block_mapping_pair" | "flow_pair")
+            && let Some(key) = child.child_by_field_name("key") {
                 let label = key
                     .utf8_text(src.as_bytes())
                     .unwrap_or("")
@@ -42,7 +42,6 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
                     });
                 }
             }
-        }
         walk(child, src, file, out);
     }
 }

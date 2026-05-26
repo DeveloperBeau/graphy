@@ -29,7 +29,7 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     Ok(out)
 }
 
-fn find_identifier<'src>(node: TsNode, src: &'src str) -> Option<String> {
+fn find_identifier(node: TsNode, src: &str) -> Option<String> {
     let mut cursor = node.walk();
     for c in node.children(&mut cursor) {
         if matches!(c.kind(), "identifier" | "object_reference" | "table_reference") {
@@ -62,12 +62,11 @@ fn walk(
                 | "create_schema"
                 | "create_type"
                 | "create_materialized_view"
-        ) {
-            if let Some(name) = find_identifier(child, src) {
+        )
+            && let Some(name) = find_identifier(child, src) {
                 let label_kind = kind.trim_start_matches("create_");
                 emit_def(out, symbols, file, label_kind, &name, child);
             }
-        }
         walk(child, src, file, out, symbols);
     }
 }

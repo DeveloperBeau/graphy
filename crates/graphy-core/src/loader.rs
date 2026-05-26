@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use anyhow::{Context, Result, anyhow};
 use graphy_plugin_api::{
-    ABI_VERSION, GraphyPluginExtractResult, GraphyPluginMetadata, STATUS_OK,
+    ABI_VERSION, GraphyPluginExtractResult, STATUS_OK,
 };
 use libloading::{Library, Symbol};
 use tracing::{debug, warn};
@@ -29,7 +29,6 @@ use crate::manifest::{Manifest, PluginEntry, sha256_of};
 use crate::schema::ExtractionOutput;
 
 type AbiVersionFn = unsafe extern "C" fn() -> u32;
-type MetadataFn = unsafe extern "C" fn() -> *const GraphyPluginMetadata;
 type ExtractFn = unsafe extern "C" fn(
     path_utf8: *const core::ffi::c_char,
     path_len: usize,
@@ -232,11 +231,10 @@ fn default_search_paths() -> Vec<PathBuf> {
         dirs.push(data.join("graphy").join("plugins"));
     }
     dirs.push(PathBuf::from("graphy-plugins"));
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(parent) = exe.parent() {
             dirs.push(parent.join("plugins"));
         }
-    }
     dirs
 }
 

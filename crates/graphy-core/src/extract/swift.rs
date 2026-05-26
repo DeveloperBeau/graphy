@@ -61,17 +61,15 @@ fn walk(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if let Some(kind) = classify(child.kind()) {
-            if let Some(n) = swift_name(child, src) {
+        if let Some(kind) = classify(child.kind())
+            && let Some(n) = swift_name(child, src) {
                 emit_def(out, symbols, file, kind, n, child);
             }
-        }
-        if child.kind() == "import_declaration" {
-            if let Some(first) = child.named_child(0) {
+        if child.kind() == "import_declaration"
+            && let Some(first) = child.named_child(0) {
                 let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
                 emit_import(out, file, text, child);
             }
-        }
         walk(child, src, file, out, symbols);
     }
 }
@@ -106,12 +104,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "call_expression" {
-            if let Some(first) = child.named_child(0) {
+        if child.kind() == "call_expression"
+            && let Some(first) = child.named_child(0) {
                 let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
                 emit_call(out, symbols, caller_id, text);
             }
-        }
         collect_calls(child, src, caller_id, out, symbols);
     }
 }

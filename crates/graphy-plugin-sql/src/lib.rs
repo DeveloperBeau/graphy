@@ -25,7 +25,7 @@ fn extract_to_json(path: &str, source: &str) -> Result<Vec<u8>, String> {
     serde_json::to_vec(&out).map_err(|e| e.to_string())
 }
 
-fn find_identifier<'src>(node: TsNode, src: &'src str) -> Option<String> {
+fn find_identifier(node: TsNode, src: &str) -> Option<String> {
     let mut cursor = node.walk();
     for c in node.children(&mut cursor) {
         if matches!(c.kind(), "identifier" | "object_reference" | "table_reference") {
@@ -58,8 +58,8 @@ fn walk(
                 | "create_schema"
                 | "create_type"
                 | "create_materialized_view"
-        ) {
-            if let Some(name) = find_identifier(child, src) {
+        )
+            && let Some(name) = find_identifier(child, src) {
                 let label_kind = kind.trim_start_matches("create_");
                 emit_def(
                     out,
@@ -70,7 +70,6 @@ fn walk(
                     child.start_position().row,
                 );
             }
-        }
         walk(child, src, file, out, symbols);
     }
 }

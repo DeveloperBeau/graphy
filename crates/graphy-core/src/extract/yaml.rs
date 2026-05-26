@@ -26,8 +26,8 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if matches!(child.kind(), "block_mapping_pair" | "flow_pair") {
-            if let Some(key) = child.child_by_field_name("key") {
+        if matches!(child.kind(), "block_mapping_pair" | "flow_pair")
+            && let Some(key) = child.child_by_field_name("key") {
                 let label = key
                     .utf8_text(src.as_bytes())
                     .unwrap_or("")
@@ -43,7 +43,6 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
                     });
                 }
             }
-        }
         walk(child, src, file, out);
     }
 }

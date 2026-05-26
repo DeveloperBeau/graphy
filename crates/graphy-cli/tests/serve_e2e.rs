@@ -33,7 +33,7 @@ fn serve_loop_handles_blank_lines_and_eof() {
         .spawn().unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let mut reader = BufReader::new(child.stdout.take().unwrap());
-    writeln!(stdin, "").unwrap();
+    writeln!(stdin).unwrap();
     writeln!(
         stdin,
         "{}",

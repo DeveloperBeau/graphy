@@ -222,7 +222,7 @@ fn cache_partition_falls_back_to_uncached_when_payload_file_missing() {
     fs::write(&p, "fn f(){}").unwrap();
 
     let mut c1 = Cache::open(dir.path()).unwrap();
-    let _ = c1.partition(&[p.clone()]);
+    let _ = c1.partition(std::slice::from_ref(&p));
     c1.save(&p, &ExtractionOutput::default()).unwrap();
     c1.flush().unwrap();
 
@@ -236,7 +236,7 @@ fn cache_partition_falls_back_to_uncached_when_payload_file_missing() {
     }
 
     let mut c2 = Cache::open(dir.path()).unwrap();
-    let part = c2.partition(&[p.clone()]);
+    let part = c2.partition(std::slice::from_ref(&p));
     assert!(part.cached.is_empty(), "no cache hits with payload missing");
     assert_eq!(part.uncached, vec![p]);
 }
@@ -247,14 +247,14 @@ fn cache_save_skips_when_payload_already_present() {
     let p = dir.path().join("a.rs");
     fs::write(&p, "fn f(){}").unwrap();
     let mut c1 = Cache::open(dir.path()).unwrap();
-    let _ = c1.partition(&[p.clone()]);
+    let _ = c1.partition(std::slice::from_ref(&p));
     c1.save(&p, &ExtractionOutput::default()).unwrap();
     c1.flush().unwrap();
 
     // Re-open and save again with the same content — the if !target.exists()
     // branch should short-circuit the duplicate write.
     let mut c2 = Cache::open(dir.path()).unwrap();
-    let _ = c2.partition(&[p.clone()]);
+    let _ = c2.partition(std::slice::from_ref(&p));
     c2.save(&p, &ExtractionOutput::default()).unwrap();
     c2.flush().unwrap();
 }

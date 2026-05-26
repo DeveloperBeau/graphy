@@ -108,7 +108,7 @@ impl Pipeline {
             None
         };
 
-        let (mut extractions, files_cached) = if let Some(ref mut cache) = cache {
+        let (extractions, files_cached) = if let Some(ref mut cache) = cache {
             let part = cache.partition(&files);
             let cached_count = part.cached.len();
             let mut all: Vec<(PathBuf, _)> = part.cached;
@@ -165,7 +165,7 @@ impl Pipeline {
                 // same `extern::X` node, not just the attributed source file.
                 let mut augmented = report.per_file_maps.clone();
                 for (file_key, extern_ids) in &file_extern_ids {
-                    for (_, map) in &report.per_file_maps {
+                    for map in report.per_file_maps.values() {
                         for r in &map.redirects {
                             if extern_ids.contains(&r.from) {
                                 let entry = augmented

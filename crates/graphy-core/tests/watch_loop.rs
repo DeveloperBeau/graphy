@@ -42,11 +42,10 @@ fn watch_rebuilds_after_a_tracked_file_change() {
 
     let deadline = Instant::now() + Duration::from_secs(8);
     while Instant::now() < deadline {
-        if let Ok(m) = fs::metadata(&graph_path) {
-            if m.modified().unwrap() > baseline {
+        if let Ok(m) = fs::metadata(&graph_path)
+            && m.modified().unwrap() > baseline {
                 return;
             }
-        }
         thread::sleep(Duration::from_millis(100));
     }
     panic!("watch did not rebuild graph.json within 8s");

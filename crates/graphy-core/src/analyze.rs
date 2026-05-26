@@ -47,7 +47,7 @@ pub fn analyze(g: &KnowledgeGraph) -> Analysis {
                 .count(),
         })
         .collect();
-    god_nodes.sort_by(|a, b| b.degree.cmp(&a.degree));
+    god_nodes.sort_by_key(|n| std::cmp::Reverse(n.degree));
     god_nodes.truncate(20);
 
     let communities: std::collections::HashSet<_> = g

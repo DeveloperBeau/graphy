@@ -52,7 +52,7 @@ fn extern_with_unique_local_match_collapses_into_def() {
     let mut g = build_graph(vec![ex]);
     let report = dedup(&mut g);
     assert_eq!(report.imports_resolved, 1);
-    assert!(g.by_id.get("extern::crate::a::helper").is_none());
+    assert!(!g.by_id.contains_key("extern::crate::a::helper"));
     let helper = g
         .by_id
         .get("a.rs::helper")

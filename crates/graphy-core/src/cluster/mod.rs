@@ -196,11 +196,10 @@ pub fn cluster_seeded(
         for ni in dirty {
             if let Some(id) = idx_to_id.get(ni) {
                 for member_id in scc.component_of(id) {
-                    if let Some(&i) = g.by_id.get(member_id) {
-                        if let Some(&local_idx) = idx_of.get(&i) {
+                    if let Some(&i) = g.by_id.get(member_id)
+                        && let Some(&local_idx) = idx_of.get(&i) {
                             additions.push(local_idx);
                         }
-                    }
                 }
             }
         }
@@ -268,13 +267,12 @@ pub fn cluster_hierarchical_seeded(
     // nodes, we offset prior labels by `adj.len()` before densifying.
     let mut community: Vec<usize> = (0..adj.len()).collect(); // fresh identity labels
     for (idx, ni) in g.graph.node_indices().enumerate() {
-        if let Some(id) = idx_to_id.get(&ni) {
-            if let Some(&c) = prior.levels[0].node_to_super.get(id) {
+        if let Some(id) = idx_to_id.get(&ni)
+            && let Some(&c) = prior.levels[0].node_to_super.get(id) {
                 // Offset by adj.len() so prior labels (0..k_prior) never
                 // collide with fresh identity labels (0..adj.len()).
                 community[idx] = adj.len() + c;
             }
-        }
     }
     densify(&mut community); // remap to dense 0..k
 

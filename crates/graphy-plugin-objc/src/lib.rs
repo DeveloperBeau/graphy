@@ -74,12 +74,11 @@ fn walk(
                 }
             }
             "preproc_include" | "preproc_import" => {
-                if let Some(path_node) = child.child_by_field_name("path") {
-                    if let Ok(text) = path_node.utf8_text(src.as_bytes()) {
+                if let Some(path_node) = child.child_by_field_name("path")
+                    && let Ok(text) = path_node.utf8_text(src.as_bytes()) {
                         let trimmed = text.trim_matches(|c| matches!(c, '"' | '<' | '>'));
                         emit_import(out, file, trimmed, child.start_position().row);
                     }
-                }
             }
             _ => {}
         }

@@ -95,12 +95,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_call" {
-            if let Some(fn_node) = child.child_by_field_name("name") {
+        if child.kind() == "function_call"
+            && let Some(fn_node) = child.child_by_field_name("name") {
                 let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
                 emit_call(out, symbols, caller_id, text);
             }
-        }
         collect_calls(child, src, caller_id, out, symbols);
     }
 }

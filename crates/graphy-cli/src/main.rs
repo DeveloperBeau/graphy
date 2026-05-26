@@ -150,7 +150,7 @@ fn plugins_cmd(action: PluginsAction) -> Result<()> {
                 println!("no plugins registered");
                 return Ok(());
             }
-            println!("{:<28} {:<10} {}", "PLUGIN", "VERSION", "EXTENSIONS");
+            println!("{:<28} {:<10} EXTENSIONS", "PLUGIN", "VERSION");
             for entry in reg.entries() {
                 println!(
                     "{:<28} {:<10} {}",

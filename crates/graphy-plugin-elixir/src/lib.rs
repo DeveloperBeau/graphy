@@ -55,8 +55,8 @@ fn walk(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "call" {
-            if let Some(tgt) = target_of(child, src) {
+        if child.kind() == "call"
+            && let Some(tgt) = target_of(child, src) {
                 match tgt {
                     "defmodule" | "def" | "defp" | "defmacro" | "defmacrop" => {
                         if let Some(arg) = argument_text(child, src) {
@@ -94,7 +94,6 @@ fn walk(
                     }
                 }
             }
-        }
         walk(child, src, file, out, symbols);
     }
 }

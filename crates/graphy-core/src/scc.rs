@@ -168,11 +168,10 @@ impl SccIndex {
         let mut keep: Vec<Vec<String>> = Vec::new();
         'outer: for comp in self.components.drain(..) {
             for member in &comp {
-                if let Some(&i) = g.by_id.get(member) {
-                    if frontier.contains(&i) {
+                if let Some(&i) = g.by_id.get(member)
+                    && frontier.contains(&i) {
                         continue 'outer;
                     }
-                }
             }
             keep.push(comp);
         }

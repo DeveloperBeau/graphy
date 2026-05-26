@@ -3,7 +3,6 @@
 //! HTML, CSS).
 
 use std::fs;
-use std::path::Path;
 
 use graphy_core::extract::extract;
 use tempfile::TempDir;

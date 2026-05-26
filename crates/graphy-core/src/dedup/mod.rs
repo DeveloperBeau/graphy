@@ -149,11 +149,10 @@ fn qualified_suffixes(data: &NodeData) -> Vec<String> {
         .components()
         .filter_map(|c| c.as_os_str().to_str().map(String::from))
         .collect();
-    if let Some(last) = parts.last_mut() {
-        if let Some(dot) = last.rfind('.') {
+    if let Some(last) = parts.last_mut()
+        && let Some(dot) = last.rfind('.') {
             last.truncate(dot);
         }
-    }
     // Drop leading "/" or drive-letter components — they're not part of a
     // logical qualified path.
     parts.retain(|p| !p.is_empty() && p != "/");
@@ -190,11 +189,10 @@ fn best_match(
     }
     for k in (1..=parts.len()).rev() {
         let key = parts[parts.len() - k..].join("::");
-        if let Some(candidates) = index.get(&key) {
-            if candidates.len() == 1 {
+        if let Some(candidates) = index.get(&key)
+            && candidates.len() == 1 {
                 return Some(candidates[0]);
             }
-        }
     }
     None
 }
@@ -271,14 +269,6 @@ fn collapse_aliases(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, 
 }
 
 // ---------- helpers ----------
-
-fn leaf_name(label: &str) -> &str {
-    label
-        .rsplit(|c: char| matches!(c, ':' | '.' | '>' | '/'))
-        .next()
-        .unwrap_or(label)
-        .trim()
-}
 
 fn id_of(g: &KnowledgeGraph, idx: NodeIndex) -> String {
     g.by_id
@@ -357,11 +347,10 @@ fn has_connecting_import(
         for nbr in g.neighbors(a) {
             if set.contains(&nbr) {
                 // Confirm the edge between them is an import.
-                if let Some(e) = g.find_edge(a, nbr) {
-                    if g[e].relation == "imports" {
+                if let Some(e) = g.find_edge(a, nbr)
+                    && g[e].relation == "imports" {
                         return true;
                     }
-                }
             }
         }
     }

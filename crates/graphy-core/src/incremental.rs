@@ -37,7 +37,6 @@ use tracing::{debug, info};
 use crate::analyze::analyze;
 use crate::build::build_graph;
 use crate::cache::Cache;
-use crate::cluster;
 use crate::detect::{DetectOptions, collect_files};
 use crate::export::export;
 use crate::extract::extract_all;
@@ -91,7 +90,6 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     let mut graph = match prior_graph {
         Some(g) => g,
         None => {
-            report.fallback_to_full = true;
             return run_full(cfg, &part, &mut cache, start, cached_count);
         }
     };
@@ -101,7 +99,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         .uncached
         .iter()
         .map(|p| p.to_string_lossy().into_owned())
-        .chain(removed_strs.into_iter())
+        .chain(removed_strs)
         .collect();
     let (stripped_ids, edges_stripped) = strip_contributions(&mut graph, &stripped);
     report.nodes_stripped = stripped_ids.len();
@@ -229,7 +227,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         // the redirects that were correctly applied (and thus not re-resolved).
         let all_redirects_union: Vec<crate::dedup::map::Redirect> = {
             let mut union: Vec<crate::dedup::map::Redirect> = merged.redirects.clone();
-            for (_, map) in &dr.per_file_maps {
+            for map in dr.per_file_maps.values() {
                 for r in &map.redirects {
                     if !union.iter().any(|x| x.from == r.from) {
                         union.push(r.clone());
@@ -436,11 +434,10 @@ fn removed_files(prior: &Option<KnowledgeGraph>, files: &[PathBuf]) -> Vec<PathB
         .collect();
     let mut removed = HashSet::new();
     for n in g.graph.node_weights() {
-        if let Some(sf) = &n.source_file {
-            if !current.contains(sf.as_str()) {
+        if let Some(sf) = &n.source_file
+            && !current.contains(sf.as_str()) {
                 removed.insert(sf.clone());
             }
-        }
     }
     removed.into_iter().map(PathBuf::from).collect()
 }
@@ -449,11 +446,10 @@ fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (Vec<
     // Identify nodes to drop.
     let mut victims: HashSet<petgraph::graph::NodeIndex> = HashSet::new();
     for ni in g.graph.node_indices() {
-        if let Some(sf) = &g.graph[ni].source_file {
-            if files.contains(sf.as_str()) {
+        if let Some(sf) = &g.graph[ni].source_file
+            && files.contains(sf.as_str()) {
                 victims.insert(ni);
             }
-        }
     }
     // Plus any node whose id starts with the removed file (covers the
     // `<file>::<sym>` id convention), or matches the file path verbatim
@@ -464,11 +460,10 @@ fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (Vec<
             victims.insert(ni);
             continue;
         }
-        if let Some((file, _)) = id.split_once("::") {
-            if files.contains(file) {
+        if let Some((file, _)) = id.split_once("::")
+            && files.contains(file) {
                 victims.insert(ni);
             }
-        }
     }
 
     // Collect the string ids of victim nodes BEFORE removal so callers can
@@ -580,7 +575,7 @@ fn run_full(
         // extern id, then persist the maps.
         let mut augmented = report.per_file_maps.clone();
         for (file_key, extern_ids) in &file_extern_ids {
-            for (_, map) in &report.per_file_maps {
+            for map in report.per_file_maps.values() {
                 for r in &map.redirects {
                     if extern_ids.contains(&r.from) {
                         let entry = augmented

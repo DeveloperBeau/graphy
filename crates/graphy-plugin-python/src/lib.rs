@@ -1,6 +1,6 @@
 //! Python language plugin for graphy.
 
-use core::ffi::{c_char, c_uint};
+use core::ffi::c_char;
 use std::collections::HashMap;
 
 use graphy_plugin_api::{
@@ -221,12 +221,11 @@ fn walk_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_definition" {
-            if let Some(name) = name_of(child, src) {
+        if child.kind() == "function_definition"
+            && let Some(name) = name_of(child, src) {
                 let caller_id = format!("{file}::{name}");
                 collect_calls(child, src, &caller_id, out, symbols);
             }
-        }
         walk_calls(child, src, file, out, symbols);
     }
 }
@@ -246,7 +245,7 @@ fn collect_calls(
                 .expect("call has function field");
             let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
             let leaf = text
-                .rsplit(|c: char| matches!(c, '.' | ':' | ' '))
+                .rsplit(['.', ':', ' '])
                 .next()
                 .unwrap_or(text);
             if let Some(target_id) = symbols.get(leaf) {

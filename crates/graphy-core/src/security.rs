@@ -102,11 +102,10 @@ fn canonicalize_partial(p: &Path) -> Result<PathBuf> {
     let existing = abs
         .ancestors()
         .inspect(|a| {
-            if !a.exists() {
-                if let Some(name) = a.file_name() {
+            if !a.exists()
+                && let Some(name) = a.file_name() {
                     suffix = Path::new(name).join(&suffix);
                 }
-            }
         })
         .find(|a| a.exists())
         .unwrap_or(&abs);

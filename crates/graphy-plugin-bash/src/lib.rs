@@ -40,11 +40,10 @@ fn walk(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_definition" {
-            if let Some(n) = name_of(child, src) {
+        if child.kind() == "function_definition"
+            && let Some(n) = name_of(child, src) {
                 emit_def(out, symbols, file, "function", n, child.start_position().row);
             }
-        }
         if child.kind() == "command" {
             // `source path/to/x.sh` or `. path/to/x.sh`
             let name = child
@@ -72,12 +71,11 @@ fn walk_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_definition" {
-            if let Some(name) = name_of(child, src) {
+        if child.kind() == "function_definition"
+            && let Some(name) = name_of(child, src) {
                 let caller_id = format!("{file}::{name}");
                 collect_calls(child, src, &caller_id, out, symbols);
             }
-        }
         walk_calls(child, src, file, out, symbols);
     }
 }

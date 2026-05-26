@@ -74,12 +74,11 @@ fn walk_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if matches!(child.kind(), "function_declaration" | "method_declaration") {
-            if let Some(name) = name_of(child, src) {
+        if matches!(child.kind(), "function_declaration" | "method_declaration")
+            && let Some(name) = name_of(child, src) {
                 let caller_id = format!("{file}::{name}");
                 collect_calls(child, src, &caller_id, out, symbols);
             }
-        }
         walk_calls(child, src, file, out, symbols);
     }
 }

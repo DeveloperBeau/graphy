@@ -29,8 +29,8 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
     for child in node.children(&mut cursor) {
         match child.kind() {
             "rule_set" => {
-                if let Some(selectors) = child.named_child(0) {
-                    if let Ok(text) = selectors.utf8_text(src.as_bytes()) {
+                if let Some(selectors) = child.named_child(0)
+                    && let Ok(text) = selectors.utf8_text(src.as_bytes()) {
                         let label = text.trim().to_string();
                         if !label.is_empty() {
                             out.nodes.push(Node {
@@ -45,7 +45,6 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
                             });
                         }
                     }
-                }
             }
             "import_statement" => {
                 if let Ok(text) = child.utf8_text(src.as_bytes()) {

@@ -83,12 +83,11 @@ fn walk_calls(
         if matches!(
             child.kind(),
             "method_declaration" | "constructor_declaration" | "local_function_statement"
-        ) {
-            if let Some(name) = name_of(child, src) {
+        )
+            && let Some(name) = name_of(child, src) {
                 let caller_id = format!("{file}::{name}");
                 collect_calls(child, src, &caller_id, out, symbols);
             }
-        }
         walk_calls(child, src, file, out, symbols);
     }
 }
@@ -102,12 +101,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "invocation_expression" {
-            if let Some(fn_node) = child.child_by_field_name("function") {
+        if child.kind() == "invocation_expression"
+            && let Some(fn_node) = child.child_by_field_name("function") {
                 let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
                 emit_call(out, symbols, caller_id, text);
             }
-        }
         collect_calls(child, src, caller_id, out, symbols);
     }
 }

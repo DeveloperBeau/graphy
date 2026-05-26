@@ -87,12 +87,11 @@ fn walk_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if matches!(child.kind(), "method" | "singleton_method") {
-            if let Some(name) = ruby_name(child, src) {
+        if matches!(child.kind(), "method" | "singleton_method")
+            && let Some(name) = ruby_name(child, src) {
                 let caller_id = format!("{file}::{name}");
                 collect_calls(child, src, &caller_id, out, symbols);
             }
-        }
         walk_calls(child, src, file, out, symbols);
     }
 }

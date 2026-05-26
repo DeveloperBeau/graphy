@@ -83,14 +83,12 @@ impl Cache {
             };
             let hash = blake3::hash(&bytes).to_hex().to_string();
             self.pending.insert(file.clone(), hash.clone());
-            if let Some(prev) = self.manifest.entries.get(&key) {
-                if prev == &hash {
-                    if let Some(stored) = self.load_output(&hash) {
+            if let Some(prev) = self.manifest.entries.get(&key)
+                && prev == &hash
+                    && let Some(stored) = self.load_output(&hash) {
                         out.cached.push((file.clone(), stored));
                         continue;
                     }
-                }
-            }
             out.uncached.push(file.clone());
         }
         out
