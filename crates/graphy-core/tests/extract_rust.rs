@@ -135,6 +135,102 @@ fn malformed_source_does_not_panic() {
     let _ = out.nodes.len();
 }
 
+// ---------- gap remediation ----------
+
+#[test]
+fn extracts_const_and_static_items() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub const MAX: u32 = 10;\npub static NAME: &str = \"x\";\n",
+    );
+    let out = extract(&p).unwrap();
+    let kinds: Vec<_> = out.nodes.iter().filter_map(|n| n.kind.as_deref()).collect();
+    assert!(kinds.contains(&"const"), "expected const node, got {kinds:?}");
+    assert!(kinds.contains(&"static"), "expected static node, got {kinds:?}");
+    let labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
+    assert!(labels.contains(&"MAX"));
+    assert!(labels.contains(&"NAME"));
+}
+
+#[test]
+fn extracts_type_alias_items() {
+    let dir = tempdir().unwrap();
+    let p = write(dir.path(), "x.rs", "pub type Id = u64;\n");
+    let out = extract(&p).unwrap();
+    assert!(out.nodes.iter().any(|n| n.label == "Id" && n.kind.as_deref() == Some("type")));
+}
+
+#[test]
+fn extracts_implements_edge_for_impl_trait_for_type() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub trait Greet { fn hi(&self); }\npub struct Bot;\nimpl Greet for Bot { fn hi(&self) {} }\n",
+    );
+    let out = extract(&p).unwrap();
+    let implements: Vec<_> = out.edges.iter().filter(|e| e.relation == "implements").collect();
+    assert_eq!(implements.len(), 1, "expected one implements edge, got {:?}", implements);
+    let e = implements[0];
+    assert!(e.source.ends_with("::Bot"), "source = {}", e.source);
+    assert!(e.target.ends_with("::Greet"), "target = {}", e.target);
+}
+
+#[test]
+fn aliased_import_preserves_alias_name() {
+    let dir = tempdir().unwrap();
+    let p = write(dir.path(), "x.rs", "use std::io::Result as IoResult;\nfn f() {}\n");
+    let out = extract(&p).unwrap();
+    let import_labels: Vec<_> = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("import"))
+        .map(|n| n.label.as_str())
+        .collect();
+
+    // Canonical path must be stored cleanly (without ` as IoResult` suffix).
+    assert!(
+        import_labels.iter().any(|l| *l == "std::io::Result"),
+        "expected canonical import label 'std::io::Result', got {import_labels:?}"
+    );
+    // Alias must also be discoverable.
+    assert!(
+        import_labels.iter().any(|l| *l == "IoResult"),
+        "expected alias import label 'IoResult', got {import_labels:?}"
+    );
+}
+
+#[test]
+fn implements_edge_strips_generic_args_from_leaf() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub trait Greet<T> { fn hi(&self) -> T; }\npub struct Bot<X>(X);\nimpl Greet<u32> for Bot<u32> { fn hi(&self) -> u32 { 0 } }\n",
+    );
+    let out = extract(&p).unwrap();
+    let implements: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "implements")
+        .collect();
+    assert_eq!(implements.len(), 1, "expected one implements edge, got {implements:?}");
+    let e = implements[0];
+    // Source must be the struct id without generic args.
+    assert!(
+        e.source.ends_with("::Bot"),
+        "source must be ::Bot (no generics), got {}",
+        e.source
+    );
+    assert!(
+        e.target.ends_with("::Greet"),
+        "target must be ::Greet (no generics), got {}",
+        e.target
+    );
+}
+
 // ---------- hostile ----------
 
 #[test]

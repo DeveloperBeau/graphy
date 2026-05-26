@@ -1,7 +1,8 @@
 //! Rust source extractor (tree-sitter).
 //!
-//! Emits nodes for `fn`, `struct`, `enum`, `trait`, `impl`, `mod` items and
-//! edges for `use` (imports) and direct call expressions inside fn bodies.
+//! Emits nodes for `fn`, `struct`, `enum`, `trait`, `impl`, `mod`, `const`,
+//! `static`, and `type` items, plus edges for `use` (imports), direct call
+//! expressions inside fn bodies, and `impl Trait for Type` (`implements`).
 
 use std::collections::HashMap;
 use std::fs;
@@ -52,7 +53,7 @@ fn walk_items(
         let kind = child.kind();
         match kind {
             "function_item" | "struct_item" | "enum_item" | "trait_item" | "mod_item"
-            | "impl_item" => {
+            | "impl_item" | "const_item" | "static_item" | "type_item" => {
                 if let Some(name) = name_of(child, src) {
                     let id = make_id(file, &name);
                     symbols.insert(name.clone(), id.clone());
@@ -63,6 +64,29 @@ fn walk_items(
                         source_location: Some(line_loc(child)),
                         kind: Some(kind.trim_end_matches("_item").to_string()),
                     });
+                }
+                if kind == "impl_item" {
+                    let trait_node = child.child_by_field_name("trait");
+                    let type_node = child.child_by_field_name("type");
+                    if let (Some(t), Some(ty)) = (trait_node, type_node) {
+                        if let (Ok(trait_name), Ok(type_name)) = (
+                            t.utf8_text(src.as_bytes()),
+                            ty.utf8_text(src.as_bytes()),
+                        ) {
+                            let trait_leaf = trait_name.rsplit("::").next().unwrap_or(trait_name).trim();
+                            let trait_leaf = trait_leaf.split('<').next().unwrap_or(trait_leaf).trim();
+                            let type_leaf = type_name.rsplit("::").next().unwrap_or(type_name).trim();
+                            let type_leaf = type_leaf.split('<').next().unwrap_or(type_leaf).trim();
+                            let source_id = make_id(file, type_leaf);
+                            let target_id = format!("extern::{trait_leaf}");
+                            out.edges.push(Edge {
+                                source: source_id,
+                                target: target_id,
+                                relation: "implements".into(),
+                                confidence: Confidence::Inferred,
+                            });
+                        }
+                    }
                 }
             }
             "use_declaration" => {

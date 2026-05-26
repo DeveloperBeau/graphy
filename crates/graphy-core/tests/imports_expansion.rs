@@ -33,7 +33,8 @@ fn expand_braced_nested() {
 fn expand_braced_with_as_alias() {
     let mut got = expand_import_paths("a::{b as foo, c}");
     got.sort();
-    assert_eq!(got, vec!["a::b".to_string(), "a::c".to_string()]);
+    // canonical `a::b` and alias `foo` are both emitted; `a::c` unchanged.
+    assert_eq!(got, vec!["a::b".to_string(), "a::c".to_string(), "foo".to_string()]);
 }
 
 #[test]
