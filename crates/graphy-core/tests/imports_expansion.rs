@@ -137,3 +137,23 @@ fn java_wildcard_import_marked_as_glob() {
     assert!(externs.iter().any(|l| l == "java.util.*"),
         "expected java.util.* extern, got {:?}", externs);
 }
+
+#[test]
+fn expand_python_from_import() {
+    // The Python extractor wraps `from a import helper, other`'s name list
+    // in `{...}` form before calling expand_import_paths. This verifies
+    // the helper handles a bare-braces (no prefix) input cleanly.
+    let mut got = expand_import_paths("{helper, other}");
+    got.sort();
+    assert_eq!(got, vec!["helper".to_string(), "other".to_string()]);
+}
+
+#[test]
+fn expand_javascript_named() {
+    // The JS extractor passes the raw `named_imports` node text, which
+    // includes braces and whitespace: `{ Helper, Other }`. Verify the
+    // helper handles whitespace + bare-braces correctly.
+    let mut got = expand_import_paths("{ Helper, Other }");
+    got.sort();
+    assert_eq!(got, vec!["Helper".to_string(), "Other".to_string()]);
+}
