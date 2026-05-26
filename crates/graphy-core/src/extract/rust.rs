@@ -2,7 +2,8 @@
 //!
 //! Emits nodes for `fn`, `struct`, `enum`, `trait`, `impl`, `mod`, `const`,
 //! `static`, and `type` items, plus edges for `use` (imports), direct call
-//! expressions inside fn bodies, and `impl Trait for Type` (`implements`).
+//! expressions inside fn bodies, `impl Trait for Type` (`implements`), and
+//! parent-to-child structural relationships (`contains`).
 
 use std::collections::HashMap;
 use std::fs;
@@ -58,33 +59,43 @@ fn walk_items(
                     let id = make_id(file, &name);
                     symbols.insert(name.clone(), id.clone());
                     out.nodes.push(Node {
-                        id,
-                        label: name,
+                        id: id.clone(),
+                        label: name.clone(),
                         source_file: Some(file.to_string()),
                         source_location: Some(line_loc(child)),
                         kind: Some(kind.trim_end_matches("_item").to_string()),
                     });
+                    // Emit contains edges from mod to its direct child items.
+                    if kind == "mod_item" {
+                        emit_contains_from_body(child, src, file, &id, out, symbols);
+                    }
                 }
+                // Emit the implements edge for trait impls and contains edges
+                // from the impl type to each method in the body.
                 if kind == "impl_item" {
                     let trait_node = child.child_by_field_name("trait");
                     let type_node = child.child_by_field_name("type");
-                    if let (Some(t), Some(ty)) = (trait_node, type_node) {
-                        if let (Ok(trait_name), Ok(type_name)) = (
-                            t.utf8_text(src.as_bytes()),
-                            ty.utf8_text(src.as_bytes()),
-                        ) {
-                            let trait_leaf = trait_name.rsplit("::").next().unwrap_or(trait_name).trim();
-                            let trait_leaf = trait_leaf.split('<').next().unwrap_or(trait_leaf).trim();
+                    if let Some(ty) = type_node {
+                        if let Ok(type_name) = ty.utf8_text(src.as_bytes()) {
                             let type_leaf = type_name.rsplit("::").next().unwrap_or(type_name).trim();
                             let type_leaf = type_leaf.split('<').next().unwrap_or(type_leaf).trim();
-                            let source_id = make_id(file, type_leaf);
-                            let target_id = format!("extern::{trait_leaf}");
-                            out.edges.push(Edge {
-                                source: source_id,
-                                target: target_id,
-                                relation: "implements".into(),
-                                confidence: Confidence::Inferred,
-                            });
+                            let impl_type_id = make_id(file, type_leaf);
+                            // implements edge for trait impl.
+                            if let Some(t) = trait_node {
+                                if let Ok(trait_name) = t.utf8_text(src.as_bytes()) {
+                                    let trait_leaf = trait_name.rsplit("::").next().unwrap_or(trait_name).trim();
+                                    let trait_leaf = trait_leaf.split('<').next().unwrap_or(trait_leaf).trim();
+                                    let target_id = format!("extern::{trait_leaf}");
+                                    out.edges.push(Edge {
+                                        source: impl_type_id.clone(),
+                                        target: target_id,
+                                        relation: "implements".into(),
+                                        confidence: Confidence::Inferred,
+                                    });
+                                }
+                            }
+                            // contains edges from the impl type to each method.
+                            emit_contains_from_body(child, src, file, &impl_type_id, out, symbols);
                         }
                     }
                 }
@@ -115,6 +126,39 @@ fn walk_items(
             _ => {}
         }
         walk_items(child, src, file, out, symbols);
+    }
+}
+
+/// Emit `contains` edges from `parent_id` to every `function_item` found
+/// directly inside the body of `node`.  Used for both `impl_item` and
+/// `mod_item` bodies.
+fn emit_contains_from_body(
+    node: TsNode,
+    src: &str,
+    file: &str,
+    parent_id: &str,
+    out: &mut ExtractionOutput,
+    symbols: &mut HashMap<String, String>,
+) {
+    // tree-sitter-rust uses a "body" field for both mod_item and impl_item.
+    let body = match node.child_by_field_name("body") {
+        Some(b) => b,
+        None => return,
+    };
+    let mut cursor = body.walk();
+    for child in body.children(&mut cursor) {
+        if child.kind() == "function_item" {
+            if let Some(name) = name_of(child, src) {
+                let child_id = make_id(file, &name);
+                symbols.insert(name, child_id.clone());
+                out.edges.push(Edge {
+                    source: parent_id.to_string(),
+                    target: child_id,
+                    relation: "contains".into(),
+                    confidence: Confidence::Extracted,
+                });
+            }
+        }
     }
 }
 

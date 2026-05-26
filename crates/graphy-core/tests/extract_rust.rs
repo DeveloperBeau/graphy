@@ -293,3 +293,23 @@ fn impl_method_emitted_as_function_node() {
         out.nodes,
     );
 }
+
+#[test]
+fn impl_contains_edge_from_type_to_method() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub struct Foo;\nimpl Foo { pub fn bar() {} }\n",
+    );
+    let out = extract(&p).unwrap();
+    let contains: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "contains")
+        .collect();
+    assert!(
+        contains.iter().any(|e| e.source.ends_with("::Foo") && e.target.ends_with("::bar")),
+        "expected contains edge from Foo to bar; contains edges = {contains:#?}"
+    );
+}
