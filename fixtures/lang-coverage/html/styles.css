@@ -1,0 +1,15 @@
+/* Referenced by index.html and about.html via <link href> */
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+#main {
+  max-width: 800px;
+  margin: auto;
+}
+
+.card {
+  border: 1px solid #ccc;
+  padding: 1rem;
+}

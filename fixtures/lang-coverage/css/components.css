@@ -1,0 +1,25 @@
+/* Reusable component selectors */
+
+.btn {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+#nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-link {
+  text-decoration: none;
+}
+
+.nav-link:active {
+  font-weight: bold;
+}

@@ -1,0 +1,17 @@
+{
+  "name": "graphy-json-fixture",
+  "version": "1.0.0",
+  "description": "JSON fixture for lang-coverage Tier 4",
+  "main": "index.js",
+  "scripts": {
+    "test": "cargo test",
+    "build": "cargo build"
+  },
+  "dependencies": {
+    "serde": "1.0",
+    "anyhow": "1.0"
+  },
+  "schema": {
+    "$ref": "schema.json#/definitions/Config"
+  }
+}
