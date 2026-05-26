@@ -191,6 +191,35 @@ fn aliased_import_preserves_alias_name() {
     );
 }
 
+#[test]
+fn implements_edge_strips_generic_args_from_leaf() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub trait Greet<T> { fn hi(&self) -> T; }\npub struct Bot<X>(X);\nimpl Greet<u32> for Bot<u32> { fn hi(&self) -> u32 { 0 } }\n",
+    );
+    let out = extract(&p).unwrap();
+    let implements: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "implements")
+        .collect();
+    assert_eq!(implements.len(), 1, "expected one implements edge, got {implements:?}");
+    let e = implements[0];
+    // Source must be the struct id without generic args.
+    assert!(
+        e.source.ends_with("::Bot"),
+        "source must be ::Bot (no generics), got {}",
+        e.source
+    );
+    assert!(
+        e.target.ends_with("::Greet"),
+        "target must be ::Greet (no generics), got {}",
+        e.target
+    );
+}
+
 // ---------- hostile ----------
 
 #[test]

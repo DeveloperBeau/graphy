@@ -74,7 +74,9 @@ fn walk_items(
                             ty.utf8_text(src.as_bytes()),
                         ) {
                             let trait_leaf = trait_name.rsplit("::").next().unwrap_or(trait_name).trim();
+                            let trait_leaf = trait_leaf.split('<').next().unwrap_or(trait_leaf).trim();
                             let type_leaf = type_name.rsplit("::").next().unwrap_or(type_name).trim();
+                            let type_leaf = type_leaf.split('<').next().unwrap_or(type_leaf).trim();
                             let source_id = make_id(file, type_leaf);
                             let target_id = make_id(file, trait_leaf);
                             out.edges.push(Edge {
