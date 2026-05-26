@@ -187,8 +187,7 @@ pub fn cluster_seeded(
     if let Some(scc) = scc {
         // Widen the hot frontier to include every member of the same SCC
         // as any dirty node, so cycle participants are re-evaluated together.
-        let mut idx_to_id: HashMap<NodeIndex, String> =
-            HashMap::with_capacity(g.by_id.len());
+        let mut idx_to_id: HashMap<NodeIndex, String> = HashMap::with_capacity(g.by_id.len());
         for (id, &idx) in &g.by_id {
             idx_to_id.insert(idx, id.clone());
         }
@@ -196,10 +195,10 @@ pub fn cluster_seeded(
         for ni in dirty {
             if let Some(id) = idx_to_id.get(ni) {
                 for member_id in scc.component_of(id) {
-                    if let Some(&i) = g.by_id.get(member_id) {
-                        if let Some(&local_idx) = idx_of.get(&i) {
-                            additions.push(local_idx);
-                        }
+                    if let Some(&i) = g.by_id.get(member_id)
+                        && let Some(&local_idx) = idx_of.get(&i)
+                    {
+                        additions.push(local_idx);
                     }
                 }
             }
@@ -268,19 +267,29 @@ pub fn cluster_hierarchical_seeded(
     // nodes, we offset prior labels by `adj.len()` before densifying.
     let mut community: Vec<usize> = (0..adj.len()).collect(); // fresh identity labels
     for (idx, ni) in g.graph.node_indices().enumerate() {
-        if let Some(id) = idx_to_id.get(&ni) {
-            if let Some(&c) = prior.levels[0].node_to_super.get(id) {
-                // Offset by adj.len() so prior labels (0..k_prior) never
-                // collide with fresh identity labels (0..adj.len()).
-                community[idx] = adj.len() + c;
-            }
+        if let Some(id) = idx_to_id.get(&ni)
+            && let Some(&c) = prior.levels[0].node_to_super.get(id)
+        {
+            // Offset by adj.len() so prior labels (0..k_prior) never
+            // collide with fresh identity labels (0..adj.len()).
+            community[idx] = adj.len() + c;
         }
     }
     densify(&mut community); // remap to dense 0..k
 
     // First level: constrained local moving over the level-0 dirty set.
+    //
+    // `dirty_per_level[i]` holds indices in the PRIOR run's level-i input
+    // adjacency space. The current run's folded adjacency at level i may
+    // have a different size (because community membership at lower levels
+    // is recomputed fresh). Filter to indices that exist in the current
+    // `community` vector to avoid IOB in `constrained_local_moving`.
     if let Some(hot) = dirty_per_level.first() {
-        let hot_idx_set: HashSet<usize> = hot.iter().copied().collect();
+        let hot_idx_set: HashSet<usize> = hot
+            .iter()
+            .copied()
+            .filter(|&i| i < community.len())
+            .collect();
         constrained_local_moving(&adj, &mut community, total_weight, &hot_idx_set);
     }
     densify(&mut community);
@@ -301,7 +310,14 @@ pub fn cluster_hierarchical_seeded(
             community = (0..adj.len()).collect();
         }
         if let Some(hot) = dirty_per_level.get(level_idx) {
-            let hot_idx_set: HashSet<usize> = hot.iter().copied().collect();
+            // Same bounds filter as the level-0 case: prior level-i indices
+            // may exceed current level-i adj.len() when community structure
+            // diverges from the prior run.
+            let hot_idx_set: HashSet<usize> = hot
+                .iter()
+                .copied()
+                .filter(|&i| i < community.len())
+                .collect();
             constrained_local_moving(&adj, &mut community, total_weight, &hot_idx_set);
         }
         densify(&mut community);

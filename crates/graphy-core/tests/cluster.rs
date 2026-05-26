@@ -6,12 +6,19 @@ use graphy_core::graph::KnowledgeGraph;
 use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
 
 fn n(id: &str) -> Node {
-    Node { id: id.into(), label: id.into(), source_file: None, source_location: None, kind: None }
+    Node {
+        id: id.into(),
+        label: id.into(),
+        source_file: None,
+        source_location: None,
+        kind: None,
+    }
 }
 
 fn e(s: &str, t: &str) -> Edge {
     Edge {
-        source: s.into(), target: t.into(),
+        source: s.into(),
+        target: t.into(),
         relation: "calls".into(),
         confidence: Confidence::Extracted,
     }
@@ -72,8 +79,12 @@ fn two_dense_blocks_with_weak_bridge_yield_two_communities() {
     let ex = ExtractionOutput {
         nodes: vec![n("a"), n("b"), n("c"), n("d"), n("e"), n("f")],
         edges: vec![
-            e("a", "b"), e("b", "c"), e("a", "c"),
-            e("d", "e"), e("e", "f"), e("d", "f"),
+            e("a", "b"),
+            e("b", "c"),
+            e("a", "c"),
+            e("d", "e"),
+            e("e", "f"),
+            e("d", "f"),
             e("c", "d"),
         ],
     };
@@ -86,27 +97,37 @@ fn two_dense_blocks_with_weak_bridge_yield_two_communities() {
 
 #[test]
 fn cluster_seeded_scc_reduces_community_count_vs_no_scc() {
-    use graphy_core::scc::SccIndex;
     use graphy_core::cluster;
+    use graphy_core::scc::SccIndex;
     use graphy_core::schema::*;
     use std::collections::HashSet;
 
     let make_g = || {
         let ex = ExtractionOutput {
-            nodes: vec!["A", "B", "C", "D"].into_iter().map(|id| Node {
-                id: id.into(), label: id.into(),
-                source_file: None, source_location: None,
-                kind: Some("function".into()),
-            }).collect(),
-            edges: vec![
-                ("A", "B"), ("B", "C"), ("C", "D"), ("D", "A"),
-            ].into_iter().map(|(s, t)| Edge {
-                source: s.into(), target: t.into(),
-                relation: "calls".into(), confidence: Confidence::Extracted,
-            }).collect(),
+            nodes: vec!["A", "B", "C", "D"]
+                .into_iter()
+                .map(|id| Node {
+                    id: id.into(),
+                    label: id.into(),
+                    source_file: None,
+                    source_location: None,
+                    kind: Some("function".into()),
+                })
+                .collect(),
+            edges: vec![("A", "B"), ("B", "C"), ("C", "D"), ("D", "A")]
+                .into_iter()
+                .map(|(s, t)| Edge {
+                    source: s.into(),
+                    target: t.into(),
+                    relation: "calls".into(),
+                    confidence: Confidence::Extracted,
+                })
+                .collect(),
         };
         let mut g = build_graph(vec![ex]);
-        for w in g.graph.node_weights_mut() { w.community = None; }
+        for w in g.graph.node_weights_mut() {
+            w.community = None;
+        }
         g
     };
 
@@ -115,8 +136,8 @@ fn cluster_seeded_scc_reduces_community_count_vs_no_scc() {
     let mut g_nosc = make_g();
     let dirty_a_nosc = vec![g_nosc.by_id["A"]];
     cluster::cluster_seeded(&mut g_nosc, &dirty_a_nosc, None);
-    let comms_nosc: HashSet<Option<u32>> = g_nosc.graph.node_weights()
-        .map(|n| n.community).collect();
+    let comms_nosc: HashSet<Option<u32>> =
+        g_nosc.graph.node_weights().map(|n| n.community).collect();
 
     // Pass 2: with SCC. dirty=[A] expands to ALL of A,B,C,D — convergence
     // collapses them to at most 2 communities (often 1).
@@ -124,16 +145,19 @@ fn cluster_seeded_scc_reduces_community_count_vs_no_scc() {
     let dirty_a_sc = vec![g_sc.by_id["A"]];
     let scc = SccIndex::build(&g_sc);
     cluster::cluster_seeded(&mut g_sc, &dirty_a_sc, Some(&scc));
-    let comms_sc: HashSet<Option<u32>> = g_sc.graph.node_weights()
-        .map(|n| n.community).collect();
+    let comms_sc: HashSet<Option<u32>> = g_sc.graph.node_weights().map(|n| n.community).collect();
 
     assert!(
         comms_sc.len() <= comms_nosc.len(),
         "scc-on should produce <= communities than scc-off: with={}, without={}",
-        comms_sc.len(), comms_nosc.len()
+        comms_sc.len(),
+        comms_nosc.len()
     );
     // Stronger: scc-on should hit at most 2 communities (vs 3+ without).
     // NOTE: if HashMap iteration order changes and causes 3, weaken to <= 3.
-    assert!(comms_sc.len() <= 2,
-        "scc-on cluster_seeded should converge to <=2 communities, got {}", comms_sc.len());
+    assert!(
+        comms_sc.len() <= 2,
+        "scc-on cluster_seeded should converge to <=2 communities, got {}",
+        comms_sc.len()
+    );
 }

@@ -10,8 +10,7 @@ use super::common::{emit_def, emit_import, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_haskell::LANGUAGE.into())
@@ -48,8 +47,7 @@ fn walk(
                     emit_def(out, symbols, file, "function", n, child);
                 }
             }
-            "data_type" | "newtype" | "class" | "instance" | "type_synomym"
-            | "type_family" => {
+            "data_type" | "newtype" | "class" | "instance" | "type_synomym" | "type_family" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
                     emit_def(out, symbols, file, child.kind(), n, child);
                 }

@@ -1,27 +1,54 @@
 //! Strongly-connected component index tests.
 
+use graphy_core::build::build_graph;
 use graphy_core::graph::EdgeData;
 use graphy_core::scc::SccIndex;
 use graphy_core::schema::*;
-use graphy_core::build::build_graph;
 
 fn cycle3() -> graphy_core::graph::KnowledgeGraph {
     let ex = ExtractionOutput {
         nodes: vec![
-            Node { id: "A".into(), label: "A".into(), source_file: None,
-                source_location: None, kind: Some("function".into()) },
-            Node { id: "B".into(), label: "B".into(), source_file: None,
-                source_location: None, kind: Some("function".into()) },
-            Node { id: "C".into(), label: "C".into(), source_file: None,
-                source_location: None, kind: Some("function".into()) },
+            Node {
+                id: "A".into(),
+                label: "A".into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            },
+            Node {
+                id: "B".into(),
+                label: "B".into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            },
+            Node {
+                id: "C".into(),
+                label: "C".into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            },
         ],
         edges: vec![
-            Edge { source: "A".into(), target: "B".into(),
-                relation: "calls".into(), confidence: Confidence::Extracted },
-            Edge { source: "B".into(), target: "C".into(),
-                relation: "calls".into(), confidence: Confidence::Extracted },
-            Edge { source: "C".into(), target: "A".into(),
-                relation: "calls".into(), confidence: Confidence::Extracted },
+            Edge {
+                source: "A".into(),
+                target: "B".into(),
+                relation: "calls".into(),
+                confidence: Confidence::Extracted,
+            },
+            Edge {
+                source: "B".into(),
+                target: "C".into(),
+                relation: "calls".into(),
+                confidence: Confidence::Extracted,
+            },
+            Edge {
+                source: "C".into(),
+                target: "A".into(),
+                relation: "calls".into(),
+                confidence: Confidence::Extracted,
+            },
         ],
     };
     build_graph(vec![ex])
@@ -34,14 +61,21 @@ fn scc_simple_cycle_detected() {
     assert_eq!(scc.components.len(), 1);
     let mut comp = scc.components[0].clone();
     comp.sort();
-    assert_eq!(comp, vec!["A".to_string(), "B".to_string(), "C".to_string()]);
+    assert_eq!(
+        comp,
+        vec!["A".to_string(), "B".to_string(), "C".to_string()]
+    );
 }
 
 #[test]
 fn scc_component_of_inside_cycle() {
     let g = cycle3();
     let scc = SccIndex::build(&g);
-    let mut got: Vec<String> = scc.component_of("B").into_iter().map(String::from).collect();
+    let mut got: Vec<String> = scc
+        .component_of("B")
+        .into_iter()
+        .map(String::from)
+        .collect();
     got.sort();
     assert_eq!(got, vec!["A".to_string(), "B".to_string(), "C".to_string()]);
 }
@@ -50,14 +84,26 @@ fn scc_component_of_inside_cycle() {
 fn scc_acyclic_graph_has_no_multi_node_components() {
     let ex = ExtractionOutput {
         nodes: vec![
-            Node { id: "A".into(), label: "A".into(), source_file: None,
-                source_location: None, kind: Some("function".into()) },
-            Node { id: "B".into(), label: "B".into(), source_file: None,
-                source_location: None, kind: Some("function".into()) },
+            Node {
+                id: "A".into(),
+                label: "A".into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            },
+            Node {
+                id: "B".into(),
+                label: "B".into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            },
         ],
         edges: vec![Edge {
-            source: "A".into(), target: "B".into(),
-            relation: "calls".into(), confidence: Confidence::Extracted,
+            source: "A".into(),
+            target: "B".into(),
+            relation: "calls".into(),
+            confidence: Confidence::Extracted,
         }],
     };
     let g = build_graph(vec![ex]);
@@ -79,13 +125,16 @@ fn scc_persist_and_reload() {
 
 #[test]
 fn scc_load_returns_none_on_version_mismatch() {
-    use tempfile::tempdir;
     use std::fs;
+    use tempfile::tempdir;
     let dir = tempdir().unwrap();
     let cache = dir.path().join("graphy-out").join(".cache");
     fs::create_dir_all(&cache).unwrap();
-    fs::write(cache.join("scc.json"),
-        r#"{"components":[],"by_id":{},"version":99}"#).unwrap();
+    fs::write(
+        cache.join("scc.json"),
+        r#"{"components":[],"by_id":{},"version":99}"#,
+    )
+    .unwrap();
     assert!(SccIndex::load(dir.path()).is_none());
 }
 
@@ -96,8 +145,10 @@ fn scc_build_handles_thousand_nodes_under_one_second() {
     let mut edges = Vec::new();
     for i in 0..1000 {
         nodes.push(Node {
-            id: format!("n{i}"), label: format!("n{i}"),
-            source_file: None, source_location: None,
+            id: format!("n{i}"),
+            label: format!("n{i}"),
+            source_file: None,
+            source_location: None,
             kind: Some("function".into()),
         });
         if i > 0 {
@@ -111,8 +162,10 @@ fn scc_build_handles_thousand_nodes_under_one_second() {
     }
     // Close a 100-node cycle on tail.
     edges.push(Edge {
-        source: "n999".into(), target: "n900".into(),
-        relation: "calls".into(), confidence: Confidence::Extracted,
+        source: "n999".into(),
+        target: "n900".into(),
+        relation: "calls".into(),
+        confidence: Confidence::Extracted,
     });
     let g = build_graph(vec![ExtractionOutput { nodes, edges }]);
     let start = Instant::now();
@@ -128,18 +181,41 @@ fn scc_patch_after_adding_cycle_edge() {
     // Start acyclic: A → B → C.
     let ex = ExtractionOutput {
         nodes: vec![
-            Node { id: "A".into(), label: "A".into(), source_file: None,
-                source_location: None, kind: Some("function".into()) },
-            Node { id: "B".into(), label: "B".into(), source_file: None,
-                source_location: None, kind: Some("function".into()) },
-            Node { id: "C".into(), label: "C".into(), source_file: None,
-                source_location: None, kind: Some("function".into()) },
+            Node {
+                id: "A".into(),
+                label: "A".into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            },
+            Node {
+                id: "B".into(),
+                label: "B".into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            },
+            Node {
+                id: "C".into(),
+                label: "C".into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            },
         ],
         edges: vec![
-            Edge { source: "A".into(), target: "B".into(),
-                relation: "calls".into(), confidence: Confidence::Extracted },
-            Edge { source: "B".into(), target: "C".into(),
-                relation: "calls".into(), confidence: Confidence::Extracted },
+            Edge {
+                source: "A".into(),
+                target: "B".into(),
+                relation: "calls".into(),
+                confidence: Confidence::Extracted,
+            },
+            Edge {
+                source: "B".into(),
+                target: "C".into(),
+                relation: "calls".into(),
+                confidence: Confidence::Extracted,
+            },
         ],
     };
     let mut g = build_graph(vec![ex]);
@@ -149,16 +225,23 @@ fn scc_patch_after_adding_cycle_edge() {
     // Add the closing edge C → A.
     let a = g.by_id["A"];
     let c = g.by_id["C"];
-    g.graph.add_edge(c, a, EdgeData {
-        relation: "calls".into(),
-        confidence: Confidence::Extracted,
-    });
+    g.graph.add_edge(
+        c,
+        a,
+        EdgeData {
+            relation: "calls".into(),
+            confidence: Confidence::Extracted,
+        },
+    );
 
     scc.patch(&g, &["A".to_string(), "C".to_string()]);
     assert_eq!(scc.components.len(), 1);
     let mut comp = scc.components[0].clone();
     comp.sort();
-    assert_eq!(comp, vec!["A".to_string(), "B".to_string(), "C".to_string()]);
+    assert_eq!(
+        comp,
+        vec!["A".to_string(), "B".to_string(), "C".to_string()]
+    );
 }
 
 #[test]
@@ -166,40 +249,65 @@ fn scc_patch_after_removing_cycle_edge() {
     let mut g = cycle3();
     let mut scc = SccIndex::build(&g);
     assert_eq!(scc.components.len(), 1);
-    let c = g.by_id["C"]; let a = g.by_id["A"];
+    let c = g.by_id["C"];
+    let a = g.by_id["A"];
     let eid = g.graph.find_edge(c, a).unwrap();
     g.graph.remove_edge(eid);
     scc.patch(&g, &["A".to_string(), "C".to_string()]);
-    assert!(scc.components.is_empty(),
-        "cycle should be gone after edge removal");
+    assert!(
+        scc.components.is_empty(),
+        "cycle should be gone after edge removal"
+    );
 }
 
 #[test]
 fn scc_patch_merges_two_smaller_components() {
     // Two disjoint cycles: A↔B and C↔D.
     let ex = ExtractionOutput {
-        nodes: vec!["A","B","C","D"].into_iter().map(|id| Node {
-            id: id.into(), label: id.into(),
-            source_file: None, source_location: None,
-            kind: Some("function".into()),
-        }).collect(),
-        edges: vec![
-            ("A","B"), ("B","A"), ("C","D"), ("D","C"),
-        ].into_iter().map(|(s,t)| Edge {
-            source: s.into(), target: t.into(),
-            relation: "calls".into(), confidence: Confidence::Extracted,
-        }).collect(),
+        nodes: vec!["A", "B", "C", "D"]
+            .into_iter()
+            .map(|id| Node {
+                id: id.into(),
+                label: id.into(),
+                source_file: None,
+                source_location: None,
+                kind: Some("function".into()),
+            })
+            .collect(),
+        edges: vec![("A", "B"), ("B", "A"), ("C", "D"), ("D", "C")]
+            .into_iter()
+            .map(|(s, t)| Edge {
+                source: s.into(),
+                target: t.into(),
+                relation: "calls".into(),
+                confidence: Confidence::Extracted,
+            })
+            .collect(),
     };
     let mut g = build_graph(vec![ex]);
     let mut scc = SccIndex::build(&g);
     assert_eq!(scc.components.len(), 2);
 
     // Add B→C and D→B to merge them into one giant SCC.
-    let b = g.by_id["B"]; let c = g.by_id["C"]; let d = g.by_id["D"];
-    g.graph.add_edge(b, c, EdgeData {
-        relation: "calls".into(), confidence: Confidence::Extracted });
-    g.graph.add_edge(d, b, EdgeData {
-        relation: "calls".into(), confidence: Confidence::Extracted });
+    let b = g.by_id["B"];
+    let c = g.by_id["C"];
+    let d = g.by_id["D"];
+    g.graph.add_edge(
+        b,
+        c,
+        EdgeData {
+            relation: "calls".into(),
+            confidence: Confidence::Extracted,
+        },
+    );
+    g.graph.add_edge(
+        d,
+        b,
+        EdgeData {
+            relation: "calls".into(),
+            confidence: Confidence::Extracted,
+        },
+    );
 
     scc.patch(&g, &["B".to_string(), "C".to_string(), "D".to_string()]);
     assert_eq!(scc.components.len(), 1);

@@ -3,7 +3,6 @@
 //! HTML, CSS).
 
 use std::fs;
-use std::path::Path;
 
 use graphy_core::extract::extract;
 use tempfile::TempDir;
@@ -290,7 +289,12 @@ fn php_trait_interface_enum_method_call() {
         ".php",
         "<?php\ninterface I { function a(); }\ntrait T { function b() {} }\nenum E { case A; }\nclass C { function c() { $this->b(); } }\n",
     );
-    assert!(has_label(&out, "I") || has_label(&out, "T") || has_label(&out, "E") || has_label(&out, "C"));
+    assert!(
+        has_label(&out, "I")
+            || has_label(&out, "T")
+            || has_label(&out, "E")
+            || has_label(&out, "C")
+    );
 }
 
 #[test]
@@ -304,10 +308,7 @@ fn html_link_href_extracted() {
 
 #[test]
 fn html_self_closing_tag_handled() {
-    let out = run(
-        ".html",
-        "<img id=\"logo\" src=\"l.png\"/>",
-    );
+    let out = run(".html", "<img id=\"logo\" src=\"l.png\"/>");
     assert!(!out.nodes.is_empty() || !out.edges.is_empty());
 }
 

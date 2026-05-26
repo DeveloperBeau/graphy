@@ -72,8 +72,8 @@ fn walk_items(
     for child in node.children(&mut cursor) {
         let kind = child.kind();
         match kind {
-            "function_item" | "struct_item" | "enum_item" | "trait_item"
-            | "mod_item" | "impl_item" => {
+            "function_item" | "struct_item" | "enum_item" | "trait_item" | "mod_item"
+            | "impl_item" => {
                 if let Some(name) = name_of(child, src) {
                     let id = format!("{file}::{name}");
                     symbols.insert(name.to_string(), id.clone());
@@ -88,10 +88,7 @@ fn walk_items(
             }
             "use_declaration" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
-                let cleaned = text
-                    .trim_start_matches("use ")
-                    .trim_end_matches(';')
-                    .trim();
+                let cleaned = text.trim_start_matches("use ").trim_end_matches(';').trim();
                 for path in expand_import_paths(cleaned) {
                     let target = path.trim().to_string();
                     if !target.is_empty() {
@@ -127,11 +124,11 @@ fn add_call_edges(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_item" {
-            if let Some(name) = name_of(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls_in(child, src, &caller_id, out, symbols);
-            }
+        if child.kind() == "function_item"
+            && let Some(name) = name_of(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls_in(child, src, &caller_id, out, symbols);
         }
         add_call_edges(child, src, file, out, symbols);
     }
@@ -176,7 +173,11 @@ fn expand_import_paths(raw: &str) -> Vec<String> {
         return vec![raw.to_string()];
     };
     let prefix = raw[..open].trim_end_matches(':').to_string();
-    let prefix_with_sep = if prefix.is_empty() { String::new() } else { format!("{prefix}::") };
+    let prefix_with_sep = if prefix.is_empty() {
+        String::new()
+    } else {
+        format!("{prefix}::")
+    };
     let body_start = open + 1;
     let mut depth = 1usize;
     let mut end = body_start;
@@ -202,8 +203,14 @@ fn expand_import_paths(raw: &str) -> Vec<String> {
     let mut local_depth = 0usize;
     for c in body.chars() {
         match c {
-            '{' => { local_depth += 1; buf.push(c); }
-            '}' => { local_depth -= 1; buf.push(c); }
+            '{' => {
+                local_depth += 1;
+                buf.push(c);
+            }
+            '}' => {
+                local_depth -= 1;
+                buf.push(c);
+            }
             ',' if local_depth == 0 => {
                 let piece = buf.trim();
                 if !piece.is_empty() {

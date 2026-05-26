@@ -3,9 +3,7 @@
 use crate::graph::KnowledgeGraph;
 use crate::schema::ExtractionOutput;
 
-pub fn build_graph<I: IntoIterator<Item = ExtractionOutput>>(
-    extractions: I,
-) -> KnowledgeGraph {
+pub fn build_graph<I: IntoIterator<Item = ExtractionOutput>>(extractions: I) -> KnowledgeGraph {
     let mut g = KnowledgeGraph::new();
     for ex in extractions {
         for n in ex.nodes {

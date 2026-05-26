@@ -135,10 +135,7 @@ fn csharp_extracts_class_method_and_using() {
 
 #[test]
 fn csharp_extracts_record_and_interface() {
-    let out = run(
-        ".cs",
-        "interface IFoo {}\nrecord Bar(int x);",
-    );
+    let out = run(".cs", "interface IFoo {}\nrecord Bar(int x);");
     assert!(out.nodes.iter().any(|n| n.label == "IFoo"));
     assert!(out.nodes.iter().any(|n| n.label == "Bar"));
 }
@@ -147,10 +144,7 @@ fn csharp_extracts_record_and_interface() {
 
 #[test]
 fn bash_extracts_function_definition_and_source() {
-    let out = run(
-        ".sh",
-        "source ./lib.sh\nfn() { echo hi; }\nfn\n",
-    );
+    let out = run(".sh", "source ./lib.sh\nfn() { echo hi; }\nfn\n");
     assert!(out.nodes.iter().any(|n| n.label == "fn"));
     assert!(out.edges.iter().any(|e| e.relation == "imports"));
 }

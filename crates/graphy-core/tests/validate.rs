@@ -99,11 +99,8 @@ fn validate_handles_giant_input_in_reasonable_time() {
         ex.nodes.push(node(&format!("n{i}"), &format!("L{i}")));
     }
     for i in 0..50_000 {
-        ex.edges.push(edge(
-            &format!("n{i}"),
-            &format!("n{}", i + 1),
-            "calls",
-        ));
+        ex.edges
+            .push(edge(&format!("n{i}"), &format!("n{}", i + 1), "calls"));
     }
     validate(&ex).unwrap();
 }

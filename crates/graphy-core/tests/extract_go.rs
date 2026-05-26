@@ -24,10 +24,12 @@ fn extracts_func_and_type() {
 
 #[test]
 fn extracts_imports() {
-    let out = run(
-        "package x\nimport (\n  \"fmt\"\n  \"os\"\n)\nfunc F(){}\n",
-    );
-    let imports: Vec<_> = out.edges.iter().filter(|e| e.relation == "imports").collect();
+    let out = run("package x\nimport (\n  \"fmt\"\n  \"os\"\n)\nfunc F(){}\n");
+    let imports: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "imports")
+        .collect();
     assert!(imports.len() >= 2);
 }
 
@@ -53,24 +55,27 @@ fn empty_import_path_is_dropped_safely() {
     // tree-sitter parses `import ""` — verify our emit_import path
     // short-circuits on the empty trimmed string.
     let out = run("package x\nimport \"\"\nfunc f(){}\n");
-    let imports: Vec<_> = out.edges.iter().filter(|e| e.relation == "imports").collect();
-    assert!(imports.is_empty(), "empty import path should not yield an edge");
+    let imports: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "imports")
+        .collect();
+    assert!(
+        imports.is_empty(),
+        "empty import path should not yield an edge"
+    );
 }
 
 #[test]
 fn extracts_local_calls_inside_function_body() {
-    let out = run(
-        "package x\nfunc helper() {}\nfunc main() { helper(); helper() }\n",
-    );
+    let out = run("package x\nfunc helper() {}\nfunc main() { helper(); helper() }\n");
     let calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
     assert!(!calls.is_empty(), "expected call edges");
 }
 
 #[test]
 fn extracts_methods_invoking_each_other() {
-    let out = run(
-        "package x\ntype S struct{}\nfunc (s *S) a() {}\nfunc (s *S) b() { s.a() }\n",
-    );
+    let out = run("package x\ntype S struct{}\nfunc (s *S) a() {}\nfunc (s *S) b() { s.a() }\n");
     assert!(out.nodes.iter().any(|n| n.label == "a"));
     assert!(out.nodes.iter().any(|n| n.label == "b"));
 }
@@ -78,7 +83,9 @@ fn extracts_methods_invoking_each_other() {
 #[test]
 fn hostile_giant_go_file_handled() {
     let mut body = String::from("package x\n");
-    for i in 0..2500 { body.push_str(&format!("func F{i}() {{}}\n")); }
+    for i in 0..2500 {
+        body.push_str(&format!("func F{i}() {{}}\n"));
+    }
     let out = run(&body);
     assert!(out.nodes.len() >= 2500);
 }

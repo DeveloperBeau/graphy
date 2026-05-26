@@ -23,8 +23,20 @@ fn new_graph_is_empty() {
 #[test]
 fn ensure_node_dedupes_by_id() {
     let mut g = KnowledgeGraph::new();
-    let a = g.ensure_node("x", NodeData { label: "X".into(), ..Default::default() });
-    let b = g.ensure_node("x", NodeData { label: "ignored".into(), ..Default::default() });
+    let a = g.ensure_node(
+        "x",
+        NodeData {
+            label: "X".into(),
+            ..Default::default()
+        },
+    );
+    let b = g.ensure_node(
+        "x",
+        NodeData {
+            label: "ignored".into(),
+            ..Default::default()
+        },
+    );
     assert_eq!(a, b);
     assert_eq!(g.node_count(), 1);
 }

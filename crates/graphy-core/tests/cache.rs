@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use graphy_core::cache::Cache;
-use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
+use graphy_core::schema::{ExtractionOutput, Node};
 use tempfile::tempdir;
 
 fn ex(nodes: &[&str]) -> ExtractionOutput {
@@ -29,7 +29,7 @@ fn first_partition_marks_everything_uncached() {
     let p = dir.path().join("a.rs");
     fs::write(&p, "fn f(){}").unwrap();
     let mut cache = Cache::open(dir.path()).unwrap();
-    let part = cache.partition(&[p.clone()]);
+    let part = cache.partition(std::slice::from_ref(&p));
     assert!(part.cached.is_empty());
     assert_eq!(part.uncached, vec![p]);
 }
@@ -41,12 +41,12 @@ fn unchanged_file_returns_cached_output_on_second_run() {
     fs::write(&p, "fn f(){}").unwrap();
 
     let mut cache = Cache::open(dir.path()).unwrap();
-    let _ = cache.partition(&[p.clone()]);
+    let _ = cache.partition(std::slice::from_ref(&p));
     cache.save(&p, &ex(&["a"])).unwrap();
     cache.flush().unwrap();
 
     let mut reopen = Cache::open(dir.path()).unwrap();
-    let part = reopen.partition(&[p.clone()]);
+    let part = reopen.partition(std::slice::from_ref(&p));
     assert_eq!(part.cached.len(), 1);
     assert_eq!(part.cached[0].1.nodes[0].id, "a");
     assert!(part.uncached.is_empty());
@@ -59,14 +59,14 @@ fn content_change_invalidates_cache_entry() {
     fs::write(&p, "fn f(){}").unwrap();
 
     let mut cache = Cache::open(dir.path()).unwrap();
-    let _ = cache.partition(&[p.clone()]);
+    let _ = cache.partition(std::slice::from_ref(&p));
     cache.save(&p, &ex(&["a"])).unwrap();
     cache.flush().unwrap();
 
     // Mutate file → hash differs → entry invalidated.
     fs::write(&p, "fn g(){}").unwrap();
     let mut reopen = Cache::open(dir.path()).unwrap();
-    let part = reopen.partition(&[p.clone()]);
+    let part = reopen.partition(std::slice::from_ref(&p));
     assert!(part.cached.is_empty());
     assert_eq!(part.uncached.len(), 1);
 }
@@ -126,14 +126,16 @@ fn dedup_map_save_and_load_roundtrip_through_cache() {
     let p = dir.path().join("a.rs");
     fs::write(&p, "fn f(){}").unwrap();
     let mut c = Cache::open(dir.path()).unwrap();
-    let _ = c.partition(&[p.clone()]);
+    let _ = c.partition(std::slice::from_ref(&p));
     let m = DedupMap {
-        version: 1, for_extraction: "blake3:test".into(),
+        version: 1,
+        for_extraction: "blake3:test".into(),
         redirects: vec![],
         ambiguous_marked: vec!["abc".into()],
     };
     // Save() must run first so the manifest knows file -> hash mapping
-    c.save(&p, &graphy_core::schema::ExtractionOutput::default()).unwrap();
+    c.save(&p, &graphy_core::schema::ExtractionOutput::default())
+        .unwrap();
     c.save_dedup_map(&p, &m).unwrap();
     c.flush().unwrap();
     let c2 = Cache::open(dir.path()).unwrap();

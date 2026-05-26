@@ -49,12 +49,26 @@ fn walk(
         match child.kind() {
             "function" | "bind" | "signature" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "data_type" | "newtype" | "class" | "instance" | "type_synomym" | "type_family" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
-                    emit_def(out, symbols, file, child.kind(), n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        child.kind(),
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "import" => {

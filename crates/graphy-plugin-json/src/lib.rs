@@ -1,6 +1,6 @@
 //! JSON language plugin for graphy.
 
-use core::ffi::{c_char, c_uint};
+use core::ffi::c_char;
 
 use graphy_plugin_api::{
     ABI_VERSION, GraphyPluginExtractResult, GraphyPluginMetadata, STATUS_INTERNAL_ERROR,

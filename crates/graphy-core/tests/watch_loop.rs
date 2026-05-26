@@ -31,7 +31,9 @@ fn watch_rebuilds_after_a_tracked_file_change() {
         let _ = graphy_core::watch::watch(cfg);
     });
 
-    ready_rx.recv_timeout(Duration::from_secs(10)).expect("watch did not start");
+    ready_rx
+        .recv_timeout(Duration::from_secs(10))
+        .expect("watch did not start");
 
     let graph_path = path.join("graphy-out").join("graph.json");
     let baseline = fs::metadata(&graph_path).unwrap().modified().unwrap();
@@ -42,10 +44,10 @@ fn watch_rebuilds_after_a_tracked_file_change() {
 
     let deadline = Instant::now() + Duration::from_secs(8);
     while Instant::now() < deadline {
-        if let Ok(m) = fs::metadata(&graph_path) {
-            if m.modified().unwrap() > baseline {
-                return;
-            }
+        if let Ok(m) = fs::metadata(&graph_path)
+            && m.modified().unwrap() > baseline
+        {
+            return;
         }
         thread::sleep(Duration::from_millis(100));
     }

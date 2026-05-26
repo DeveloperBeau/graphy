@@ -50,7 +50,14 @@ fn walk(
             "subroutine" | "function" | "module" | "program" => {
                 let name = name_of(child, src).or_else(|| first_id(child, src));
                 if let Some(n) = name {
-                    emit_def(out, symbols, file, child.kind(), n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        child.kind(),
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "use_statement" | "include_statement" => {

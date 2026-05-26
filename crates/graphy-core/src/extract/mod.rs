@@ -60,9 +60,7 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
         "rs" => rust::extract(path),
         "py" => python::extract(path),
         "go" => go::extract(path),
-        "js" | "jsx" | "mjs" | "cjs" | "ejs" => {
-            js_ts::extract(path, js_ts::Flavor::Javascript)
-        }
+        "js" | "jsx" | "mjs" | "cjs" | "ejs" => js_ts::extract(path, js_ts::Flavor::Javascript),
         "ts" => js_ts::extract(path, js_ts::Flavor::Typescript),
         "tsx" => js_ts::extract(path, js_ts::Flavor::Tsx),
         "java" => java::extract(path),

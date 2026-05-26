@@ -10,8 +10,7 @@ use super::common::{emit_call, emit_def, emit_import};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_julia::LANGUAGE.into())
@@ -36,7 +35,11 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 fn julia_name<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
     let mut cursor = node.walk();
     node.children(&mut cursor).find_map(|c| match c.kind() {
-        "signature" => c.named_child(0)?.named_child(0)?.utf8_text(src.as_bytes()).ok(),
+        "signature" => c
+            .named_child(0)?
+            .named_child(0)?
+            .utf8_text(src.as_bytes())
+            .ok(),
         "type_head" => {
             let mut tc = c.walk();
             c.children(&mut tc).find_map(|tch| match tch.kind() {
@@ -105,11 +108,10 @@ fn walk_calls(
         if matches!(
             child.kind(),
             "function_definition" | "short_function_definition" | "macro_definition"
-        ) {
-            if let Some(name) = julia_name(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+        ) && let Some(name) = julia_name(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
         }
         walk_calls(child, src, file, out, symbols);
     }
@@ -133,11 +135,11 @@ fn collect_calls(
         if child.kind() == "signature" {
             continue;
         }
-        if child.kind() == "call_expression" {
-            if let Some(first) = child.named_child(0) {
-                let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+        if child.kind() == "call_expression"
+            && let Some(first) = child.named_child(0)
+        {
+            let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
         }
         collect_calls(child, src, caller_id, out, symbols);
     }

@@ -10,8 +10,7 @@ use super::common::{emit_call, emit_def, emit_import, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_lua::LANGUAGE.into())
@@ -95,11 +94,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_call" {
-            if let Some(fn_node) = child.child_by_field_name("name") {
-                let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+        if child.kind() == "function_call"
+            && let Some(fn_node) = child.child_by_field_name("name")
+        {
+            let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
         }
         collect_calls(child, src, caller_id, out, symbols);
     }

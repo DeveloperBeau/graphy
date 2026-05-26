@@ -10,8 +10,7 @@ use super::common::{emit_def, emit_import, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_dart::LANGUAGE.into())
@@ -43,20 +42,24 @@ fn walk(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         match child.kind() {
-            "function_signature" | "method_signature" | "getter_signature"
-            | "setter_signature" => {
+            "function_signature" | "method_signature" | "getter_signature" | "setter_signature" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
                     emit_def(out, symbols, file, "function", n, child);
                 }
             }
-            "class_definition" | "mixin_declaration" | "extension_declaration"
+            "class_definition"
+            | "mixin_declaration"
+            | "extension_declaration"
             | "enum_declaration" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
                     emit_def(
                         out,
                         symbols,
                         file,
-                        child.kind().trim_end_matches("_definition").trim_end_matches("_declaration"),
+                        child
+                            .kind()
+                            .trim_end_matches("_definition")
+                            .trim_end_matches("_declaration"),
                         n,
                         child,
                     );

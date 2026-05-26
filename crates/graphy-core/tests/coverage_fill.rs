@@ -44,10 +44,7 @@ fn run(suffix: &str, src: &str) -> ExtractionOutput {
 fn cluster_handles_self_loops() {
     let ex = ExtractionOutput {
         nodes: vec![n("a"), n("b")],
-        edges: vec![
-            e("a", "a"),
-            e("a", "b"),
-        ],
+        edges: vec![e("a", "a"), e("a", "b")],
     };
     let mut g = graphy_core::build::build_graph(vec![ex]);
     cluster(&mut g);
@@ -86,11 +83,8 @@ fn cluster_terminates_when_fold_is_a_fixed_point() {
     let ex = ExtractionOutput { nodes, edges };
     let mut g = graphy_core::build::build_graph(vec![ex]);
     cluster(&mut g);
-    let comms: std::collections::HashSet<_> = g
-        .graph
-        .node_weights()
-        .filter_map(|n| n.community)
-        .collect();
+    let comms: std::collections::HashSet<_> =
+        g.graph.node_weights().filter_map(|n| n.community).collect();
     assert_eq!(comms.len(), 2);
 }
 
@@ -101,8 +95,8 @@ fn serve_bfs_handles_diamond_with_revisited_nodes() {
     // a → b, a → c, b → c, c → d. From `a`, both `b` and `c` are enqueued.
     // When `b`'s outgoing edge to `c` is processed, `c` is already visited —
     // exercises the `visited.insert` false branch (closes the if body cleanly).
-    use serde_json::json;
     use graphy_core::serve::{Index, StoredGraph, handle_line};
+    use serde_json::json;
     let g = json!({
         "nodes": [
             { "id": "a", "label": "A" },
@@ -126,8 +120,11 @@ fn serve_bfs_handles_diamond_with_revisited_nodes() {
     let resp = handle_line(&idx, &serde_json::to_string(&req).unwrap());
     let v = serde_json::to_value(&resp).unwrap();
     let path: Vec<String> = v["result"]["path"]
-        .as_array().unwrap().iter()
-        .filter_map(|p| p.as_str().map(String::from)).collect();
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|p| p.as_str().map(String::from))
+        .collect();
     assert_eq!(path, vec!["a", "c", "d"]);
 }
 
@@ -136,8 +133,8 @@ fn serve_bfs_revisits_via_incoming_branch_diamond() {
     // c → a, c → b. From `a`, in-edges yield `c`; from `b`, in-edges also yield
     // `c` — second visit exercises the `visited.insert` false branch in the
     // in_edges loop.
-    use serde_json::json;
     use graphy_core::serve::{Index, StoredGraph, handle_line};
+    use serde_json::json;
     let g = json!({
         "nodes": [
             { "id": "a", "label": "A" }, { "id": "b", "label": "B" }, { "id": "c", "label": "C" }
@@ -156,8 +153,11 @@ fn serve_bfs_revisits_via_incoming_branch_diamond() {
     let resp = handle_line(&idx, &serde_json::to_string(&req).unwrap());
     let v = serde_json::to_value(&resp).unwrap();
     let path: Vec<String> = v["result"]["path"]
-        .as_array().unwrap().iter()
-        .filter_map(|p| p.as_str().map(String::from)).collect();
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|p| p.as_str().map(String::from))
+        .collect();
     assert_eq!(path, vec!["a", "c", "b"]);
 }
 
@@ -222,7 +222,7 @@ fn cache_partition_falls_back_to_uncached_when_payload_file_missing() {
     fs::write(&p, "fn f(){}").unwrap();
 
     let mut c1 = Cache::open(dir.path()).unwrap();
-    let _ = c1.partition(&[p.clone()]);
+    let _ = c1.partition(std::slice::from_ref(&p));
     c1.save(&p, &ExtractionOutput::default()).unwrap();
     c1.flush().unwrap();
 
@@ -236,7 +236,7 @@ fn cache_partition_falls_back_to_uncached_when_payload_file_missing() {
     }
 
     let mut c2 = Cache::open(dir.path()).unwrap();
-    let part = c2.partition(&[p.clone()]);
+    let part = c2.partition(std::slice::from_ref(&p));
     assert!(part.cached.is_empty(), "no cache hits with payload missing");
     assert_eq!(part.uncached, vec![p]);
 }
@@ -247,14 +247,14 @@ fn cache_save_skips_when_payload_already_present() {
     let p = dir.path().join("a.rs");
     fs::write(&p, "fn f(){}").unwrap();
     let mut c1 = Cache::open(dir.path()).unwrap();
-    let _ = c1.partition(&[p.clone()]);
+    let _ = c1.partition(std::slice::from_ref(&p));
     c1.save(&p, &ExtractionOutput::default()).unwrap();
     c1.flush().unwrap();
 
     // Re-open and save again with the same content — the if !target.exists()
     // branch should short-circuit the duplicate write.
     let mut c2 = Cache::open(dir.path()).unwrap();
-    let _ = c2.partition(&[p.clone()]);
+    let _ = c2.partition(std::slice::from_ref(&p));
     c2.save(&p, &ExtractionOutput::default()).unwrap();
     c2.flush().unwrap();
 }
@@ -292,10 +292,7 @@ fn ruby_calls_inside_methods_emit_call_edges() {
 fn ruby_parenthesized_call_inside_method_body_emits_edge() {
     // `helper()` with parens produces a `call` node (vs the bare-identifier
     // form which is just an `identifier`). Both must be recognised as calls.
-    let out = run(
-        ".rb",
-        "def first; helper(); end\ndef helper; end\n",
-    );
+    let out = run(".rb", "def first; helper(); end\ndef helper; end\n");
     assert!(out.edges.iter().any(|e| e.relation == "calls"));
 }
 
@@ -428,10 +425,7 @@ fn c_family_union_specifier_yields_node() {
 
 #[test]
 fn bash_function_body_calls_resolve_against_local_symbols() {
-    let out = run(
-        ".sh",
-        "helper() { echo h; }\nmain() { helper; helper; }\n",
-    );
+    let out = run(".sh", "helper() { echo h; }\nmain() { helper; helper; }\n");
     assert!(out.edges.iter().any(|e| e.relation == "calls"));
 }
 

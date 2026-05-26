@@ -71,7 +71,9 @@ fn validate_rejects_relative_path_climbing_above_cwd_root() {
     // Build a path with as many ".." as the cwd is deep, then one more.
     let depth = std::env::current_dir().unwrap().components().count();
     let mut bogus = std::path::PathBuf::new();
-    for _ in 0..(depth + 5) { bogus.push(".."); }
+    for _ in 0..(depth + 5) {
+        bogus.push("..");
+    }
     bogus.push("escape.json");
     let err = validate_graph_path(std::path::Path::new("/"), &bogus).unwrap_err();
     assert!(err.to_string().contains("escapes root"));

@@ -80,10 +80,7 @@ pub fn handle_event_batch(
     Some(result)
 }
 
-pub(crate) fn events_warrant_rebuild(
-    events: &[DebouncedEvent],
-    out_dir: &Path,
-) -> bool {
+pub(crate) fn events_warrant_rebuild(events: &[DebouncedEvent], out_dir: &Path) -> bool {
     for ev in events {
         if !matches!(
             ev.event.kind,
@@ -101,9 +98,7 @@ pub(crate) fn events_warrant_rebuild(
                 .and_then(|s| s.to_str())
                 .map(|s| s.to_ascii_lowercase())
                 .unwrap_or_default();
-            if CODE_EXTENSIONS.contains(ext.as_str())
-                || DOC_EXTENSIONS.contains(ext.as_str())
-            {
+            if CODE_EXTENSIONS.contains(ext.as_str()) || DOC_EXTENSIONS.contains(ext.as_str()) {
                 return true;
             }
         }

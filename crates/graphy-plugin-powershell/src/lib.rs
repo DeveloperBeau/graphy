@@ -44,7 +44,14 @@ fn walk(
         match child.kind() {
             "function_statement" | "function_definition" => {
                 if let Some(n) = first_identifier_text(child, src) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "class_statement" => {

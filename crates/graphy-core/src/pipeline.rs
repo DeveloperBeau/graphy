@@ -108,7 +108,7 @@ impl Pipeline {
             None
         };
 
-        let (mut extractions, files_cached) = if let Some(ref mut cache) = cache {
+        let (extractions, files_cached) = if let Some(ref mut cache) = cache {
             let part = cache.partition(&files);
             let cached_count = part.cached.len();
             let mut all: Vec<(PathBuf, _)> = part.cached;
@@ -148,13 +148,16 @@ impl Pipeline {
         let extractions: Vec<_> = extractions.into_iter().map(|(_, o)| o).collect();
         let mut graph = build_graph(extractions);
         let mut dedup_imports_resolved = 0usize;
+        let mut dedup_glob_imports_skipped = 0usize;
         if self.cfg.dedup {
             let report = crate::dedup::dedup(&mut graph);
             dedup_imports_resolved = report.imports_resolved;
+            dedup_glob_imports_skipped = report.glob_imports_skipped;
             info!(
                 imports = report.imports_resolved,
                 merged = report.reexports_merged,
                 ambiguous = report.ambiguous_groups,
+                globs = report.glob_imports_skipped,
                 "dedup pass"
             );
             if let Some(ref mut cache) = cache {
@@ -162,7 +165,7 @@ impl Pipeline {
                 // same `extern::X` node, not just the attributed source file.
                 let mut augmented = report.per_file_maps.clone();
                 for (file_key, extern_ids) in &file_extern_ids {
-                    for (_, map) in &report.per_file_maps {
+                    for map in report.per_file_maps.values() {
                         for r in &map.redirects {
                             if extern_ids.contains(&r.from) {
                                 let entry = augmented
@@ -186,10 +189,8 @@ impl Pipeline {
                 for file in &files {
                     let key = file.to_string_lossy().into_owned();
                     if !augmented.contains_key(&key) {
-                        let _ = cache.save_dedup_map(
-                            file,
-                            &crate::dedup::map::DedupMap::empty_for(""),
-                        );
+                        let _ =
+                            cache.save_dedup_map(file, &crate::dedup::map::DedupMap::empty_for(""));
                     }
                 }
                 cache.flush().ok();
@@ -218,8 +219,19 @@ impl Pipeline {
         } else {
             crate::cluster::cluster(&mut graph);
         }
+        // Full rebuild invalidates any prior incremental SCC index; delete it
+        // so the next incremental run rebuilds from the canonical graph.
+        let scc_path = self
+            .cfg
+            .out_root
+            .join("graphy-out")
+            .join(".cache")
+            .join("scc.json");
+        let _ = std::fs::remove_file(&scc_path);
         let mut analysis = analyze(&graph);
         analysis.dedup_imports_resolved = dedup_imports_resolved;
+        analysis.glob_imports_skipped = dedup_glob_imports_skipped;
+        analysis.modularity = crate::cluster::modularity(&graph);
         let paths = export(&self.cfg.out_root, &graph, &analysis)?;
 
         Ok(PipelineOutputs {

@@ -43,7 +43,14 @@ fn walk(
         match child.kind() {
             "function_declaration" => {
                 if let Some(n) = name_of(child, src) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "class_declaration" | "object_declaration" => {
@@ -60,7 +67,10 @@ fn walk(
             }
             "import_header" | "import_directive" | "import" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
-                let target = text.trim_start_matches("import").trim().trim_end_matches(';');
+                let target = text
+                    .trim_start_matches("import")
+                    .trim()
+                    .trim_end_matches(';');
                 emit_import(out, file, target, child.start_position().row);
             }
             _ => {}
@@ -78,11 +88,11 @@ fn walk_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_declaration" {
-            if let Some(name) = name_of(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+        if child.kind() == "function_declaration"
+            && let Some(name) = name_of(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
         }
         walk_calls(child, src, file, out, symbols);
     }
@@ -97,11 +107,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "call_expression" {
-            if let Some(first) = child.named_child(0) {
-                let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+        if child.kind() == "call_expression"
+            && let Some(first) = child.named_child(0)
+        {
+            let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
         }
         collect_calls(child, src, caller_id, out, symbols);
     }

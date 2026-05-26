@@ -10,8 +10,7 @@ use super::common::{emit_call, emit_def, emit_import};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_zig::LANGUAGE.into())
@@ -37,26 +36,26 @@ fn first_identifier<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
 fn builtin_import_arg<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
     let mut cursor = node.walk();
     let mut is_import = false;
-    node.children(&mut cursor).find_map(|c| {
-        match c.kind() {
-            "builtin_identifier" => {
-                if c.utf8_text(src.as_bytes()).ok() == Some("@import") {
-                    is_import = true;
-                }
-                None
+    node.children(&mut cursor).find_map(|c| match c.kind() {
+        "builtin_identifier" => {
+            if c.utf8_text(src.as_bytes()).ok() == Some("@import") {
+                is_import = true;
             }
-            "arguments" if is_import => {
-                let mut acur = c.walk();
-                c.children(&mut acur).find_map(|a| {
-                    if a.kind() != "string" { return None; }
-                    let mut scur = a.walk();
-                    a.children(&mut scur)
-                        .find(|s| s.kind() == "string_content")
-                        .and_then(|s| s.utf8_text(src.as_bytes()).ok())
-                })
-            }
-            _ => None,
+            None
         }
+        "arguments" if is_import => {
+            let mut acur = c.walk();
+            c.children(&mut acur).find_map(|a| {
+                if a.kind() != "string" {
+                    return None;
+                }
+                let mut scur = a.walk();
+                a.children(&mut scur)
+                    .find(|s| s.kind() == "string_content")
+                    .and_then(|s| s.utf8_text(src.as_bytes()).ok())
+            })
+        }
+        _ => None,
     })
 }
 
@@ -77,11 +76,11 @@ fn walk(
                 let mut found_import = false;
                 let mut acur = child.walk();
                 for c in child.children(&mut acur) {
-                    if c.kind() == "builtin_function" {
-                        if let Some(target) = builtin_import_arg(c, src) {
-                            emit_import(out, file, target, child);
-                            found_import = true;
-                        }
+                    if c.kind() == "builtin_function"
+                        && let Some(target) = builtin_import_arg(c, src)
+                    {
+                        emit_import(out, file, target, child);
+                        found_import = true;
                     }
                 }
                 if let (Some(n), true) = (name, found_import) {
@@ -126,11 +125,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "call_expression" {
-            if let Some(first) = child.named_child(0) {
-                let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+        if child.kind() == "call_expression"
+            && let Some(first) = child.named_child(0)
+        {
+            let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
         }
         collect_calls(child, src, caller_id, out, symbols);
     }
