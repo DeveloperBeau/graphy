@@ -64,7 +64,17 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
         "ts" => js_ts::extract(path, js_ts::Flavor::Typescript),
         "tsx" => js_ts::extract(path, js_ts::Flavor::Tsx),
         "java" => java::extract(path),
-        "c" | "h" => c_family::extract(path, c_family::Flavor::C),
+        "c" => c_family::extract(path, c_family::Flavor::C),
+        "h" => {
+            // Peek at the file contents to distinguish ObjC headers from plain C headers.
+            // ObjC headers use `@interface`, `@protocol`, or `@implementation`.
+            let peek = std::fs::read_to_string(path).unwrap_or_default();
+            if peek.contains("@interface") || peek.contains("@protocol") || peek.contains("@implementation") {
+                objc::extract(path)
+            } else {
+                c_family::extract(path, c_family::Flavor::C)
+            }
+        }
         "cpp" | "cc" | "cxx" | "hpp" => c_family::extract(path, c_family::Flavor::Cpp),
         "rb" => ruby::extract(path),
         "cs" => csharp::extract(path),

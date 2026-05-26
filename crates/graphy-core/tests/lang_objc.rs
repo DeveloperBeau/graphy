@@ -123,6 +123,50 @@ fn non_utf8_bytes_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Deferred closure: .h header file extraction ----------
+
+#[test]
+fn service_h_emits_class_node() {
+    let out = extract_file(&fp("src/Service.h"));
+    assert_extract_has(&out, "Service", "class");
+}
+
+#[test]
+fn service_h_emits_method_nodes() {
+    let out = extract_file(&fp("src/Service.h"));
+    let method_labels: Vec<_> = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("method"))
+        .map(|n| n.label.as_str())
+        .collect();
+    assert!(
+        method_labels.iter().any(|l| *l == "run"),
+        "method 'run' from Service.h not found; got {method_labels:?}"
+    );
+}
+
+#[test]
+fn helpers_h_emits_class_node() {
+    let out = extract_file(&fp("src/Helpers.h"));
+    assert_extract_has(&out, "Helpers", "class");
+}
+
+#[test]
+fn helpers_h_emits_method_nodes() {
+    let out = extract_file(&fp("src/Helpers.h"));
+    let method_labels: Vec<_> = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("method"))
+        .map(|n| n.label.as_str())
+        .collect();
+    assert!(
+        method_labels.iter().any(|l| *l == "formatName"),
+        "method 'formatName' from Helpers.h not found; got {method_labels:?}"
+    );
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
@@ -130,13 +174,23 @@ use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 #[test]
 fn pipeline_resolves_service_class() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    assert_node(&g, "Service", "class");
+    // After dedup a label appearing in both .h and .m gets "class?ambiguous"; match by prefix.
+    let has = g
+        .graph
+        .node_weights()
+        .any(|n| n.label == "Service" && n.kind.as_deref().map(|k| k.starts_with("class")).unwrap_or(false));
+    assert!(has, "Service class node missing from pipeline graph; nodes = {:#?}", g.graph.node_weights().map(|n| (&n.label, &n.kind)).collect::<Vec<_>>());
 }
 
 #[test]
 fn pipeline_resolves_helpers_class() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    assert_node(&g, "Helpers", "class");
+    // After dedup a label appearing in both .h and .m gets "class?ambiguous"; match by prefix.
+    let has = g
+        .graph
+        .node_weights()
+        .any(|n| n.label == "Helpers" && n.kind.as_deref().map(|k| k.starts_with("class")).unwrap_or(false));
+    assert!(has, "Helpers class node missing from pipeline graph; nodes = {:#?}", g.graph.node_weights().map(|n| (&n.label, &n.kind)).collect::<Vec<_>>());
 }
 
 #[test]
