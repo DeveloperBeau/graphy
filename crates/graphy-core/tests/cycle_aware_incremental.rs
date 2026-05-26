@@ -165,7 +165,6 @@ fn scc_widening_does_not_hurt_modularity() {
     // 6 times before reporting either side. If both sides succeed we
     // assert; if either side cannot finish in 6 tries we skip with a
     // clear message so triage can fix the unrelated bug.
-    use std::panic;
 
     fn run_once(scc_expansion: bool) -> f64 {
         let dir = tempdir().unwrap();
@@ -209,37 +208,63 @@ fn scc_widening_does_not_hurt_modularity() {
         graphy_core::cluster::modularity(&r.graph)
     }
 
-    fn run_once_retry(scc_expansion: bool) -> Option<f64> {
-        // Silence the panic backtrace prints from the unrelated IOB bug
-        // so retry attempts don't spam the test log.
+    fn run_once_retry(scc_expansion: bool, side_label: &str) -> f64 {
+        use std::panic;
+
+        // Drop-guard restores the panic hook even if we panic past
+        // catch_unwind (e.g. an alloc failure inside the closure).
+        struct HookGuard {
+            prev: Option<Box<dyn Fn(&panic::PanicHookInfo<'_>) + Sync + Send>>,
+        }
+        impl Drop for HookGuard {
+            fn drop(&mut self) {
+                if let Some(prev) = self.prev.take() {
+                    panic::set_hook(prev);
+                }
+            }
+        }
+
         let prev = panic::take_hook();
         panic::set_hook(Box::new(|_| {}));
-        let result = (0..6).find_map(|_| {
-            panic::catch_unwind(panic::AssertUnwindSafe(|| run_once(scc_expansion))).ok()
-        });
-        panic::set_hook(prev);
-        result
+        let _guard = HookGuard { prev: Some(prev) };
+
+        // Empirically >=98% success at 6 retries on local CI; lower this
+        // once the cluster/mod.rs IOB bug in constrained_local_moving is
+        // fixed and this whole retry block can come out.
+        const MAX_RETRIES: usize = 6;
+        for attempt in 0..MAX_RETRIES {
+            match panic::catch_unwind(panic::AssertUnwindSafe(|| run_once(scc_expansion))) {
+                Ok(q) => return q,
+                Err(payload) => {
+                    // Only retry the known IOB flake. Anything else is a
+                    // genuine regression and must surface.
+                    let msg = payload
+                        .downcast_ref::<String>()
+                        .map(String::as_str)
+                        .or_else(|| payload.downcast_ref::<&'static str>().copied())
+                        .unwrap_or("");
+                    let is_known_iob = msg.contains("index out of bounds");
+                    if !is_known_iob {
+                        // Not the documented bug -- re-raise so the
+                        // failure shows up with its real message.
+                        panic::resume_unwind(payload);
+                    }
+                    if attempt + 1 == MAX_RETRIES {
+                        panic!(
+                            "{side_label} delta-Louvain hit the cluster/mod.rs IOB bug \
+                             on every one of {MAX_RETRIES} retries -- the underlying \
+                             constrained_local_moving regression has worsened. Fix that \
+                             and this test will be meaningful again."
+                        );
+                    }
+                }
+            }
+        }
+        unreachable!()
     }
 
-    let q_on = match run_once_retry(true) {
-        Some(q) => q,
-        None => {
-            panic!(
-                "SCC-on delta-Louvain panicked on every one of 6 retries -- \
-                 pre-existing IOB bug in cluster/mod.rs:338 has regressed. \
-                 Fix that and this test will be meaningful again."
-            );
-        }
-    };
-    let q_off = match run_once_retry(false) {
-        Some(q) => q,
-        None => {
-            panic!(
-                "SCC-off delta-Louvain panicked on every one of 6 retries -- \
-                 pre-existing IOB bug in cluster/mod.rs:338 has regressed."
-            );
-        }
-    };
+    let q_on = run_once_retry(true, "SCC-on");
+    let q_off = run_once_retry(false, "SCC-off");
 
     // 9-fn fixture: 6-fn ring SCC (a..f) + 3 peripheral nodes (p,q,r)
     // called from ring members. SCC widening prevents community labels
