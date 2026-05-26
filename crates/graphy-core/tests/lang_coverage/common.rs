@@ -24,3 +24,27 @@ pub fn fixture_dir(lang: &str) -> PathBuf {
         .join("lang-coverage")
         .join(lang)
 }
+
+// ----- extraction helpers -----
+
+pub fn extract_file(path: &Path) -> ExtractionOutput {
+    extract(path).unwrap_or_else(|e| panic!("extract failed for {}: {e}", path.display()))
+}
+
+pub fn assert_extract_has(out: &ExtractionOutput, label: &str, kind: &str) {
+    let hit = out
+        .nodes
+        .iter()
+        .any(|n| n.label == label && n.kind.as_deref() == Some(kind));
+    if !hit {
+        let dump: Vec<(String, Option<String>)> = out
+            .nodes
+            .iter()
+            .map(|n| (n.label.clone(), n.kind.clone()))
+            .collect();
+        panic!(
+            "assert_extract_has failed: expected label={label:?} kind={kind:?}, \
+             extracted nodes = {dump:#?}"
+        );
+    }
+}
