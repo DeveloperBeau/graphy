@@ -4,7 +4,7 @@ package com.example
 import java.util.Map
 import java.util.ArrayList
 
-class Service {
+class Service extends Object implements Greet {
     String name
 
     Service(String name) {

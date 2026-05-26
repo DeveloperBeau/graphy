@@ -9,7 +9,7 @@ object ServiceFactory {
   def create(name: String): Service = new Service(name)
 }
 
-class Service(name: String) {
+class Service(name: String) extends BaseService with Greet {
   def run(): String = {
     val greeting = Helpers.formatName(name)
     greeting

@@ -53,6 +53,29 @@ fn empty_file_emits_zero_nodes() {
     assert!(out.edges.is_empty(), "empty.ps1 produced edges: {:#?}", out.edges);
 }
 
+// ---------- Deferred follow-up: dot-source as import ----------
+
+#[test]
+fn service_emits_dot_source_import() {
+    let out = extract_file(&fp("Service.ps1"));
+    // `. .\Helpers.ps1` should produce an import node and imports edge
+    let has_import = out
+        .nodes
+        .iter()
+        .any(|n| n.kind.as_deref() == Some("import") && n.label.contains("Helpers"));
+    assert!(
+        has_import,
+        "expected import node for dot-source Helpers.ps1; nodes = {:#?}",
+        out.nodes
+    );
+    let has_imports_edge = out.edges.iter().any(|e| e.relation == "imports");
+    assert!(
+        has_imports_edge,
+        "expected imports edge for dot-source; edges = {:#?}",
+        out.edges
+    );
+}
+
 // ---------- Edge cases ----------
 
 #[test]

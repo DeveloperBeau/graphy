@@ -56,6 +56,32 @@ fn walk(
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
                 emit_import(out, file, text.trim(), child);
             }
+            "command" => {
+                // Detect dot-source: command whose first child is a
+                // `command_invokation_operator` with text `.`.
+                let is_dot_source = {
+                    let mut cc = child.walk();
+                    child.children(&mut cc).any(|c| {
+                        c.kind() == "command_invokation_operator"
+                            && c.utf8_text(src.as_bytes())
+                                .map(|t| t.trim() == ".")
+                                .unwrap_or(false)
+                    })
+                };
+                if is_dot_source {
+                    // The path is in the `command_name_expr` or `command_name` child.
+                    let mut cc = child.walk();
+                    for item in child.children(&mut cc) {
+                        if matches!(item.kind(), "command_name_expr" | "command_name") {
+                            if let Ok(path_text) = item.utf8_text(src.as_bytes()) {
+                                let path_text = path_text.trim().trim_start_matches(".\\").trim_start_matches("./");
+                                emit_import(out, file, path_text, item);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
             _ => {}
         }
         walk(child, src, file, out, symbols);

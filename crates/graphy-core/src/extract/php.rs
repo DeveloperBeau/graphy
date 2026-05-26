@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use super::common::{emit_call, emit_def, emit_import, name_of};
+use super::common::{emit_call, emit_def, emit_import, emit_inherits, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
@@ -54,6 +54,37 @@ fn walk(
                         n,
                         child,
                     );
+                    // Emit inherits/implements edges from base_clause and class_interface_clause.
+                    let child_id = format!("{file}::{n}");
+                    let mut ec = child.walk();
+                    for gc in child.children(&mut ec) {
+                        match gc.kind() {
+                            "base_clause" => {
+                                // base_clause -> name (first `name` child is the parent class)
+                                let mut gc2 = gc.walk();
+                                for item in gc.children(&mut gc2) {
+                                    if item.kind() == "name" || item.kind() == "qualified_name" {
+                                        if let Ok(parent) = item.utf8_text(src.as_bytes()) {
+                                            emit_inherits(out, &child_id, parent, "inherits", item);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            "class_interface_clause" => {
+                                // class_interface_clause -> name nodes (interfaces)
+                                let mut gc2 = gc.walk();
+                                for item in gc.children(&mut gc2) {
+                                    if item.kind() == "name" || item.kind() == "qualified_name" {
+                                        if let Ok(parent) = item.utf8_text(src.as_bytes()) {
+                                            emit_inherits(out, &child_id, parent, "implements", item);
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
             "namespace_use_declaration" => {

@@ -6,7 +6,7 @@ use App\Helpers;
 use App\Greet;
 use App\State;
 
-class Service {
+class Service implements Greet {
     private string $name;
 
     public function __construct(string $name) {

@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use super::common::{emit_def, emit_import, name_of};
+use super::common::{emit_def, emit_import, emit_inherits, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
@@ -48,6 +48,7 @@ fn walk(
                 }
             }
             "class_definition"
+            | "class_declaration"
             | "mixin_declaration"
             | "extension_declaration"
             | "enum_declaration" => {
@@ -63,6 +64,75 @@ fn walk(
                         n,
                         child,
                     );
+                    // Emit inherits/implements edges from superclass, mixins, interfaces.
+                    let child_id = format!("{file}::{n}");
+                    let mut ec = child.walk();
+                    for gc in child.children(&mut ec) {
+                        match gc.kind() {
+                            "superclass" => {
+                                // superclass -> type -> type_identifier
+                                let mut gc2 = gc.walk();
+                                for item in gc.children(&mut gc2) {
+                                    if item.kind() == "type" {
+                                        let mut gc3 = item.walk();
+                                        for ti in item.children(&mut gc3) {
+                                            if ti.kind() == "type_identifier" {
+                                                if let Ok(parent) = ti.utf8_text(src.as_bytes()) {
+                                                    emit_inherits(out, &child_id, parent, "inherits", ti);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    } else if item.kind() == "type_identifier" {
+                                        if let Ok(parent) = item.utf8_text(src.as_bytes()) {
+                                            emit_inherits(out, &child_id, parent, "inherits", item);
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            "mixins" => {
+                                // mixins -> type -> type_identifier
+                                let mut gc2 = gc.walk();
+                                for item in gc.children(&mut gc2) {
+                                    if item.kind() == "type" {
+                                        let mut gc3 = item.walk();
+                                        for ti in item.children(&mut gc3) {
+                                            if ti.kind() == "type_identifier" {
+                                                if let Ok(parent) = ti.utf8_text(src.as_bytes()) {
+                                                    emit_inherits(out, &child_id, parent, "inherits", ti);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            "interfaces" => {
+                                // interfaces -> type_identifier (direct) or type -> type_identifier
+                                let mut gc2 = gc.walk();
+                                for item in gc.children(&mut gc2) {
+                                    if item.kind() == "type_identifier" {
+                                        if let Ok(parent) = item.utf8_text(src.as_bytes()) {
+                                            emit_inherits(out, &child_id, parent, "implements", item);
+                                        }
+                                    } else if item.kind() == "type" {
+                                        let mut gc3 = item.walk();
+                                        for ti in item.children(&mut gc3) {
+                                            if ti.kind() == "type_identifier" {
+                                                if let Ok(parent) = ti.utf8_text(src.as_bytes()) {
+                                                    emit_inherits(out, &child_id, parent, "implements", ti);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
             "import_or_export" | "import_specification" => {

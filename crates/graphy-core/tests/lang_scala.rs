@@ -117,6 +117,37 @@ fn empty_file_emits_zero_nodes() {
     assert!(out.edges.is_empty(), "empty.scala produced edges: {:#?}", out.edges);
 }
 
+// ---------- Deferred follow-up: extends/with inheritance edges ----------
+
+#[test]
+fn service_emits_inherits_edge_for_extends() {
+    let out = extract_file(&fp("src/Service.scala"));
+    // class Service extends BaseService with Greet => inherits edges
+    let has_inherits = out
+        .edges
+        .iter()
+        .any(|e| e.relation == "inherits" && e.target.contains("BaseService"));
+    assert!(
+        has_inherits,
+        "expected inherits edge to BaseService; edges = {:#?}",
+        out.edges
+    );
+}
+
+#[test]
+fn service_emits_inherits_edge_for_with() {
+    let out = extract_file(&fp("src/Service.scala"));
+    let has_with = out
+        .edges
+        .iter()
+        .any(|e| e.relation == "inherits" && e.target.contains("Greet"));
+    assert!(
+        has_with,
+        "expected inherits edge to Greet (with clause); edges = {:#?}",
+        out.edges
+    );
+}
+
 // ---------- Edge cases ----------
 
 #[test]

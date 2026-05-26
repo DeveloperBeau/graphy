@@ -84,6 +84,23 @@ fn empty_file_emits_no_user_nodes() {
     );
 }
 
+// ---------- Deferred follow-up: extends/implements inheritance edges ----------
+
+#[test]
+fn service_emits_implements_edge() {
+    let out = extract_file(&fp("src/Service.php"));
+    // class Service implements Greet
+    let has_implements = out
+        .edges
+        .iter()
+        .any(|e| e.relation == "implements" && e.target.contains("Greet"));
+    assert!(
+        has_implements,
+        "expected implements edge to Greet; edges = {:#?}",
+        out.edges
+    );
+}
+
 // ---------- Edge cases ----------
 
 #[test]

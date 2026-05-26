@@ -84,6 +84,37 @@ fn empty_file_emits_zero_nodes() {
     assert!(out.edges.is_empty(), "empty.groovy produced edges: {:#?}", out.edges);
 }
 
+// ---------- Deferred follow-up: extends/implements inheritance edges ----------
+
+#[test]
+fn service_emits_inherits_edge_for_extends() {
+    let out = extract_file(&fp("src/Service.groovy"));
+    // class Service extends Object implements Greet
+    let has_inherits = out
+        .edges
+        .iter()
+        .any(|e| e.relation == "inherits" && e.target.contains("Object"));
+    assert!(
+        has_inherits,
+        "expected inherits edge to Object; edges = {:#?}",
+        out.edges
+    );
+}
+
+#[test]
+fn service_emits_implements_edge() {
+    let out = extract_file(&fp("src/Service.groovy"));
+    let has_implements = out
+        .edges
+        .iter()
+        .any(|e| e.relation == "implements" && e.target.contains("Greet"));
+    assert!(
+        has_implements,
+        "expected implements edge to Greet; edges = {:#?}",
+        out.edges
+    );
+}
+
 // ---------- Edge cases ----------
 
 #[test]

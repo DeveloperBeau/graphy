@@ -90,6 +90,24 @@ fn empty_file_emits_zero_nodes() {
     assert!(out.edges.is_empty(), "empty.ex produced edges: {:#?}", out.edges);
 }
 
+// ---------- Deferred follow-up: defstruct node ----------
+
+#[test]
+fn types_emits_struct_node() {
+    let out = extract_file(&fp("lib/types.ex"));
+    // defstruct [:name, :active] inside Types module should emit a struct node
+    // labeled with the enclosing module name ("Types")
+    let has_struct = out
+        .nodes
+        .iter()
+        .any(|n| n.kind.as_deref() == Some("struct") && n.label == "Types");
+    assert!(
+        has_struct,
+        "expected struct node labeled Types; nodes = {:#?}",
+        out.nodes
+    );
+}
+
 // ---------- Edge cases ----------
 
 #[test]

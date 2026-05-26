@@ -3,7 +3,7 @@ import 'dart:io';
 import 'helpers.dart' show Helpers;
 import 'types.dart' as types;
 
-class Service {
+class Service implements Greet {
   final String name;
 
   Service(this.name);

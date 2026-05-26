@@ -1,5 +1,7 @@
 defmodule Types do
-  # feature: defmodule, def, defp
+  # feature: defmodule, def, defp, defstruct
+  defstruct [:name, :active]
+
   @max_retries 3
 
   def max_retries, do: @max_retries
