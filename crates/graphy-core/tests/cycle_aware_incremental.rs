@@ -218,22 +218,20 @@ fn scc_widening_does_not_hurt_modularity() {
     let q_on = match run_once_retry(true) {
         Some(q) => q,
         None => {
-            eprintln!(
-                "SKIP: SCC-on delta-Louvain panicked on every retry — \
-                 unrelated pre-existing IOB bug in cluster/mod.rs:338. \
+            panic!(
+                "SCC-on delta-Louvain panicked on every one of 6 retries -- \
+                 pre-existing IOB bug in cluster/mod.rs:338 has regressed. \
                  Fix that and this test will be meaningful again."
             );
-            return;
         }
     };
     let q_off = match run_once_retry(false) {
         Some(q) => q,
         None => {
-            eprintln!(
-                "SKIP: SCC-off delta-Louvain panicked on every retry — \
-                 unrelated pre-existing IOB bug in cluster/mod.rs:338."
+            panic!(
+                "SCC-off delta-Louvain panicked on every one of 6 retries -- \
+                 pre-existing IOB bug in cluster/mod.rs:338 has regressed."
             );
-            return;
         }
     };
 
