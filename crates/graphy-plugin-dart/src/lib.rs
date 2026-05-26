@@ -49,17 +49,27 @@ fn walk(
         match child.kind() {
             "function_signature" | "method_signature" | "getter_signature" | "setter_signature" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
-            "class_definition" | "mixin_declaration" | "extension_declaration"
+            "class_definition"
+            | "mixin_declaration"
+            | "extension_declaration"
             | "enum_declaration" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
                     emit_def(
                         out,
                         symbols,
                         file,
-                        child.kind()
+                        child
+                            .kind()
                             .trim_end_matches("_definition")
                             .trim_end_matches("_declaration"),
                         n,

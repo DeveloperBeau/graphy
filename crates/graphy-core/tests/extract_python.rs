@@ -23,7 +23,11 @@ fn extracts_imports() {
     let p = dir.path().join("x.py");
     fs::write(&p, "import os\nfrom typing import List\n").unwrap();
     let out = extract(&p).unwrap();
-    let imports: Vec<_> = out.edges.iter().filter(|e| e.relation == "imports").collect();
+    let imports: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "imports")
+        .collect();
     assert!(imports.len() >= 2);
 }
 
@@ -58,7 +62,9 @@ fn hostile_giant_file_handled() {
     let dir = tempdir().unwrap();
     let p = dir.path().join("big.py");
     let mut body = String::new();
-    for i in 0..3000 { body.push_str(&format!("def f{i}(): pass\n")); }
+    for i in 0..3000 {
+        body.push_str(&format!("def f{i}(): pass\n"));
+    }
     fs::write(&p, body).unwrap();
     let out = extract(&p).unwrap();
     assert!(out.nodes.len() >= 3000);

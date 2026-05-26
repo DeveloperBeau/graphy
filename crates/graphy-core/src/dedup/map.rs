@@ -52,16 +52,9 @@ pub fn apply_dedup_map(out: &mut ExtractionOutput, map: &DedupMap) {
     if map.redirects.is_empty() && map.ambiguous_marked.is_empty() {
         return;
     }
-    let redirects: HashMap<&str, &Redirect> = map
-        .redirects
-        .iter()
-        .map(|r| (r.from.as_str(), r))
-        .collect();
-    let ambiguous: HashSet<&str> = map
-        .ambiguous_marked
-        .iter()
-        .map(|s| s.as_str())
-        .collect();
+    let redirects: HashMap<&str, &Redirect> =
+        map.redirects.iter().map(|r| (r.from.as_str(), r)).collect();
+    let ambiguous: HashSet<&str> = map.ambiguous_marked.iter().map(|s| s.as_str()).collect();
 
     // Drop nodes that were redirected (their canonical sibling lives elsewhere).
     out.nodes.retain(|n| !redirects.contains_key(n.id.as_str()));

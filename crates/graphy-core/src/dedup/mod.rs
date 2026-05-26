@@ -46,6 +46,11 @@ pub struct DedupReport {
     /// graph versions. Tracked separately from `imports_resolved` because
     /// splits are node creations, not import-to-definition redirects.
     pub compound_externs_split: usize,
+    /// Number of `extern::*` glob nodes (e.g. `use a::*`, `from a import *`)
+    /// that resolution skipped because they are unresolvable without scope
+    /// analysis. Glob nodes remain on the graph.
+    #[serde(default)]
+    pub glob_imports_skipped: usize,
     pub per_file_maps: HashMap<String, DedupMap>,
 }
 
@@ -55,7 +60,9 @@ pub fn dedup(g: &mut KnowledgeGraph) -> DedupReport {
     let split = pre_split_compound_externs(g);
     let mut per_file_maps: HashMap<String, DedupMap> = HashMap::new();
     let mut report = DedupReport::default();
-    report.imports_resolved = resolve_imports(g, &mut per_file_maps);
+    let (resolved, glob_skipped) = resolve_imports(g, &mut per_file_maps);
+    report.imports_resolved = resolved;
+    report.glob_imports_skipped = glob_skipped;
     let (merged, ambiguous) = collapse_aliases(g, &mut per_file_maps);
     // `split` counts new node creations, not import-to-definition redirects.
     // Store it in its own field so callers can distinguish the two.
@@ -73,7 +80,10 @@ fn ensure_map<'a>(maps: &'a mut HashMap<String, DedupMap>, file: &str) -> &'a mu
 
 // ---------- pass 1: extern imports -> local defs ----------
 
-fn resolve_imports(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, DedupMap>) -> usize {
+fn resolve_imports(
+    g: &mut KnowledgeGraph,
+    per_file_maps: &mut HashMap<String, DedupMap>,
+) -> (usize, usize) {
     // Build a multi-key index: every non-extern node is registered under
     // each progressive suffix of its qualified path. For a node `helper`
     // in `src/foo/bar.rs` the keys are: `helper`, `bar::helper`,
@@ -97,11 +107,20 @@ fn resolve_imports(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, D
     }
 
     let mut redirects: Vec<(NodeIndex, NodeIndex, String, Option<String>)> = Vec::new();
+    let mut glob_skipped = 0usize;
     for extern_id in &extern_ids {
-        let Some(&extern_idx) = g.by_id.get(extern_id) else { continue };
+        let Some(&extern_idx) = g.by_id.get(extern_id) else {
+            continue;
+        };
         let label = g.graph[extern_idx].label.clone();
+        if crate::extract::common::is_glob(&label) {
+            glob_skipped += 1;
+            continue;
+        }
         let source_file = g.graph[extern_idx].source_file.clone();
-        let Some(target) = best_match(&suffix_index, &label) else { continue };
+        let Some(target) = best_match(&suffix_index, &label) else {
+            continue;
+        };
         if target == extern_idx {
             continue;
         }
@@ -124,23 +143,25 @@ fn resolve_imports(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, D
             });
         }
     }
-    count
+    (count, glob_skipped)
 }
 
 /// Every progressive suffix of a node's qualified path. Path components
 /// come from the file path (parents → file stem), label is appended last.
 fn qualified_suffixes(data: &NodeData) -> Vec<String> {
     let mut out = vec![data.label.clone()];
-    let Some(file) = data.source_file.as_deref() else { return out };
+    let Some(file) = data.source_file.as_deref() else {
+        return out;
+    };
     let stem = std::path::Path::new(file);
     let mut parts: Vec<String> = stem
         .components()
         .filter_map(|c| c.as_os_str().to_str().map(String::from))
         .collect();
-    if let Some(last) = parts.last_mut() {
-        if let Some(dot) = last.rfind('.') {
-            last.truncate(dot);
-        }
+    if let Some(last) = parts.last_mut()
+        && let Some(dot) = last.rfind('.')
+    {
+        last.truncate(dot);
     }
     // Drop leading "/" or drive-letter components — they're not part of a
     // logical qualified path.
@@ -161,10 +182,7 @@ fn qualified_suffixes(data: &NodeData) -> Vec<String> {
 /// We progressively shorten the right side until a single candidate is
 /// found, then return it. Leaf-only matches still work; collisions on
 /// leaf are resolved by a longer prefix in the qualified path.
-fn best_match(
-    index: &HashMap<String, Vec<NodeIndex>>,
-    extern_label: &str,
-) -> Option<NodeIndex> {
+fn best_match(index: &HashMap<String, Vec<NodeIndex>>, extern_label: &str) -> Option<NodeIndex> {
     let cleaned = extern_label
         .trim()
         .trim_start_matches("use ")
@@ -178,10 +196,10 @@ fn best_match(
     }
     for k in (1..=parts.len()).rev() {
         let key = parts[parts.len() - k..].join("::");
-        if let Some(candidates) = index.get(&key) {
-            if candidates.len() == 1 {
-                return Some(candidates[0]);
-            }
+        if let Some(candidates) = index.get(&key)
+            && candidates.len() == 1
+        {
+            return Some(candidates[0]);
         }
     }
     None
@@ -189,7 +207,10 @@ fn best_match(
 
 // ---------- pass 2: re-export / alias collapse + ambiguity ----------
 
-fn collapse_aliases(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, DedupMap>) -> (usize, usize) {
+fn collapse_aliases(
+    g: &mut KnowledgeGraph,
+    per_file_maps: &mut HashMap<String, DedupMap>,
+) -> (usize, usize) {
     let mut groups: HashMap<(String, String), Vec<NodeIndex>> = HashMap::new();
     for ni in g.graph.node_indices() {
         let data = &g.graph[ni];
@@ -260,14 +281,6 @@ fn collapse_aliases(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, 
 
 // ---------- helpers ----------
 
-fn leaf_name(label: &str) -> &str {
-    label
-        .rsplit(|c: char| matches!(c, ':' | '.' | '>' | '/'))
-        .next()
-        .unwrap_or(label)
-        .trim()
-}
-
 fn id_of(g: &KnowledgeGraph, idx: NodeIndex) -> String {
     g.by_id
         .iter()
@@ -275,12 +288,7 @@ fn id_of(g: &KnowledgeGraph, idx: NodeIndex) -> String {
         .unwrap_or_default()
 }
 
-fn redirect_node(
-    g: &mut KnowledgeGraph,
-    from: NodeIndex,
-    to: NodeIndex,
-    original_id: &str,
-) {
+fn redirect_node(g: &mut KnowledgeGraph, from: NodeIndex, to: NodeIndex, original_id: &str) {
     // Hoist alias.
     {
         let target = &mut g.graph[to];
@@ -335,7 +343,6 @@ fn redirect_node(
     g.graph.remove_node(from);
 }
 
-
 fn has_connecting_import(
     g: &crate::graph::DiGraph<NodeData, crate::graph::EdgeData>,
     members: &[NodeIndex],
@@ -345,10 +352,10 @@ fn has_connecting_import(
         for nbr in g.neighbors(a) {
             if set.contains(&nbr) {
                 // Confirm the edge between them is an import.
-                if let Some(e) = g.find_edge(a, nbr) {
-                    if g[e].relation == "imports" {
-                        return true;
-                    }
+                if let Some(e) = g.find_edge(a, nbr)
+                    && g[e].relation == "imports"
+                {
+                    return true;
                 }
             }
         }
@@ -361,9 +368,13 @@ fn highest_in_degree(
     members: &[NodeIndex],
 ) -> NodeIndex {
     let mut best = members[0];
-    let mut best_score = g.neighbors_directed(best, petgraph::Direction::Incoming).count();
+    let mut best_score = g
+        .neighbors_directed(best, petgraph::Direction::Incoming)
+        .count();
     for &m in &members[1..] {
-        let s = g.neighbors_directed(m, petgraph::Direction::Incoming).count();
+        let s = g
+            .neighbors_directed(m, petgraph::Direction::Incoming)
+            .count();
         if s > best_score {
             best_score = s;
             best = m;
@@ -402,7 +413,9 @@ fn pre_split_compound_externs(g: &mut KnowledgeGraph) -> usize {
 
     let mut count = 0;
     for compound_id in compound_ids {
-        let Some(&compound_idx) = g.by_id.get(&compound_id) else { continue };
+        let Some(&compound_idx) = g.by_id.get(&compound_id) else {
+            continue;
+        };
         let label = g.graph[compound_idx].label.clone();
         let source_file = g.graph[compound_idx].source_file.clone();
         let source_location = g.graph[compound_idx].source_location.clone();
@@ -413,8 +426,7 @@ fn pre_split_compound_externs(g: &mut KnowledgeGraph) -> usize {
         }
 
         // Insert a simple extern node for every expanded path.
-        let mut new_indices: Vec<petgraph::graph::NodeIndex> =
-            Vec::with_capacity(expanded.len());
+        let mut new_indices: Vec<petgraph::graph::NodeIndex> = Vec::with_capacity(expanded.len());
         for path in &expanded {
             let new_id = format!("extern::{path}");
             let idx = g.ensure_node(

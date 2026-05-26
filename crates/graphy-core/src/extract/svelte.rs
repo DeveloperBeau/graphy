@@ -8,8 +8,7 @@ use tree_sitter::{Node as TsNode, Parser};
 use crate::schema::{ExtractionOutput, Node};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_svelte_ng::LANGUAGE.into())
@@ -26,10 +25,7 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 fn walk(node: TsNode, file: &str, out: &mut ExtractionOutput) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if matches!(
-            child.kind(),
-            "script_element" | "style_element"
-        ) {
+        if matches!(child.kind(), "script_element" | "style_element") {
             out.nodes.push(Node {
                 id: format!("{file}::{}", child.kind()),
                 label: child.kind().trim_end_matches("_element").to_string(),

@@ -43,24 +43,28 @@ fn walk(
         match child.kind() {
             "function_declaration" | "function_definition" | "local_function" => {
                 if let Some(n) = name_of(child, src) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "function_call" => {
                 // top-level require()
-                if let Some(fn_node) = child.child_by_field_name("name") {
-                    if let Ok(text) = fn_node.utf8_text(src.as_bytes()) {
-                        if text == "require" {
-                            if let Some(args) = child.child_by_field_name("arguments") {
-                                if let Ok(arg_text) = args.utf8_text(src.as_bytes()) {
-                                    let trimmed = arg_text
-                                        .trim_matches(|c: char| matches!(c, '(' | ')' | ' '))
-                                        .trim_matches(|c| matches!(c, '"' | '\''));
-                                    emit_import(out, file, trimmed, child.start_position().row);
-                                }
-                            }
-                        }
-                    }
+                if let Some(fn_node) = child.child_by_field_name("name")
+                    && let Ok(text) = fn_node.utf8_text(src.as_bytes())
+                    && text == "require"
+                    && let Some(args) = child.child_by_field_name("arguments")
+                    && let Ok(arg_text) = args.utf8_text(src.as_bytes())
+                {
+                    let trimmed = arg_text
+                        .trim_matches(|c: char| matches!(c, '(' | ')' | ' '))
+                        .trim_matches(|c| matches!(c, '"' | '\''));
+                    emit_import(out, file, trimmed, child.start_position().row);
                 }
             }
             _ => {}
@@ -99,12 +103,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_call" {
-            if let Some(fn_node) = child.child_by_field_name("name") {
-                if let Ok(text) = fn_node.utf8_text(src.as_bytes()) {
-                    emit_call(out, symbols, caller_id, text);
-                }
-            }
+        if child.kind() == "function_call"
+            && let Some(fn_node) = child.child_by_field_name("name")
+            && let Ok(text) = fn_node.utf8_text(src.as_bytes())
+        {
+            emit_call(out, symbols, caller_id, text);
         }
         collect_calls(child, src, caller_id, out, symbols);
     }

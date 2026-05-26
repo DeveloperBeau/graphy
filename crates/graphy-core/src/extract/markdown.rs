@@ -8,8 +8,7 @@ use tree_sitter::{Node as TsNode, Parser};
 use crate::schema::{Confidence, Edge, ExtractionOutput, Node};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_md::LANGUAGE.into())
@@ -49,7 +48,8 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
     }
     // Inline link extraction lives in the inline tree which tree-sitter-md
     // exposes through a separate parse phase; for v0 we keep headings only.
-    let _ = Edge { // referenced for trait import side-effects
+    let _ = Edge {
+        // referenced for trait import side-effects
         source: String::new(),
         target: String::new(),
         relation: String::new(),

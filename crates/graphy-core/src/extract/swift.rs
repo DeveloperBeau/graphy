@@ -15,8 +15,7 @@ use super::common::{emit_call, emit_def, emit_import};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_swift::LANGUAGE.into())
@@ -44,7 +43,9 @@ fn swift_name<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
 
 fn classify(kind: &str) -> Option<&'static str> {
     match kind {
-        "function_declaration" | "init_declaration" | "deinit_declaration"
+        "function_declaration"
+        | "init_declaration"
+        | "deinit_declaration"
         | "protocol_function_declaration" => Some("function"),
         "class_declaration" => Some("class"),
         "protocol_declaration" => Some("protocol"),
@@ -61,16 +62,16 @@ fn walk(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if let Some(kind) = classify(child.kind()) {
-            if let Some(n) = swift_name(child, src) {
-                emit_def(out, symbols, file, kind, n, child);
-            }
+        if let Some(kind) = classify(child.kind())
+            && let Some(n) = swift_name(child, src)
+        {
+            emit_def(out, symbols, file, kind, n, child);
         }
-        if child.kind() == "import_declaration" {
-            if let Some(first) = child.named_child(0) {
-                let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_import(out, file, text, child);
-            }
+        if child.kind() == "import_declaration"
+            && let Some(first) = child.named_child(0)
+        {
+            let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_import(out, file, text, child);
         }
         walk(child, src, file, out, symbols);
     }
@@ -106,11 +107,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "call_expression" {
-            if let Some(first) = child.named_child(0) {
-                let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+        if child.kind() == "call_expression"
+            && let Some(first) = child.named_child(0)
+        {
+            let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
         }
         collect_calls(child, src, caller_id, out, symbols);
     }

@@ -25,20 +25,29 @@ fn serve_loop_handles_blank_lines_and_eof() {
         &p,
         serde_json::to_string(&json!({
             "nodes": [{ "id": "a", "label": "A" }], "edges": []
-        })).unwrap(),
-    ).unwrap();
+        }))
+        .unwrap(),
+    )
+    .unwrap();
     let mut child = Command::new(graphy_bin())
-        .arg("serve").arg("--graph").arg(&p)
-        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null())
-        .spawn().unwrap();
+        .arg("serve")
+        .arg("--graph")
+        .arg(&p)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let mut reader = BufReader::new(child.stdout.take().unwrap());
-    writeln!(stdin, "").unwrap();
+    writeln!(stdin).unwrap();
     writeln!(
         stdin,
         "{}",
-        serde_json::to_string(&json!({ "jsonrpc": "2.0", "id": 99, "method": "initialize" })).unwrap()
-    ).unwrap();
+        serde_json::to_string(&json!({ "jsonrpc": "2.0", "id": 99, "method": "initialize" }))
+            .unwrap()
+    )
+    .unwrap();
     drop(stdin);
     let mut line = String::new();
     reader.read_line(&mut line).unwrap();

@@ -254,6 +254,37 @@ End-user install:
 curl -fsSL <release-url>/install.sh | sh
 ```
 
+## Analysis output
+
+Every run writes `graphy-out/stats.json` alongside the report. Notable
+fields:
+
+- `dedup_imports_resolved` -- count of cross-file extern imports that
+  the dedup pass resolved to canonical defs in this run.
+- `glob_imports_skipped` -- count of `use a::*` / `from a import *`
+  extern nodes left unresolved during dedup (scope analysis required).
+- `modularity` -- Newman modularity of the final clustered graph.
+
+## Benchmarks
+
+`bench/compare.sh` is the release perf harness. It runs every fixture
+under `fixtures/` three times each (configurable), records best-of-N
+wall time and worst-of-N peak RSS, and writes a markdown summary to
+`bench/comparison.md`.
+
+```bash
+bash bench/compare.sh fixtures bench/comparison.md 3
+```
+
+Opt-in assertion gates:
+
+- `BENCH_ASSERT=1` -- fails the bench run if any fixture's warm
+  `dedup_imports_resolved` exceeds 20% of its cold count (i.e. the
+  post-dedup cache is not delivering at least an 80% reduction).
+- `BENCH_ASSERT_SCC=1` -- opt-in gate that fails the bench run if any
+  fixture's SCC-on warm wall time exceeds 1.10x the SCC-off warm wall
+  time. Manual / opt-in (timing-sensitive on busy machines).
+
 ## Tests
 
 200+ integration tests covering every pipeline stage, both extractor and plugin paths, plus hostile-input cases (XSS in labels, NUL injection, ANSI escapes, RTL override, oversized labels, path traversal, symlink escape, sha256-mismatched plugins, gigantic files, deep nesting, malformed source, gitignore bypass, target-as-directory writes, read-only output dirs).

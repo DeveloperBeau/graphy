@@ -8,8 +8,7 @@ use tree_sitter::{Node as TsNode, Parser};
 use crate::schema::{Confidence, Edge, ExtractionOutput, Node};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_css::LANGUAGE.into())

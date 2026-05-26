@@ -37,7 +37,6 @@ use tracing::{debug, info};
 use crate::analyze::analyze;
 use crate::build::build_graph;
 use crate::cache::Cache;
-use crate::cluster;
 use crate::detect::{DetectOptions, collect_files};
 use crate::export::export;
 use crate::extract::extract_all;
@@ -91,7 +90,6 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     let mut graph = match prior_graph {
         Some(g) => g,
         None => {
-            report.fallback_to_full = true;
             return run_full(cfg, &part, &mut cache, start, cached_count);
         }
     };
@@ -101,7 +99,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         .uncached
         .iter()
         .map(|p| p.to_string_lossy().into_owned())
-        .chain(removed_strs.into_iter())
+        .chain(removed_strs)
         .collect();
     let (stripped_ids, edges_stripped) = strip_contributions(&mut graph, &stripped);
     report.nodes_stripped = stripped_ids.len();
@@ -206,13 +204,16 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     // otherwise the delta-Louvain seed sees them as fresh dirty nodes
     // and assigns them their own communities — inflating the count.
     let mut dedup_imports_resolved = 0usize;
+    let mut dedup_glob_imports_skipped = 0usize;
     if cfg.dedup {
         let dr = crate::dedup::dedup(&mut graph);
         dedup_imports_resolved = dr.imports_resolved;
+        dedup_glob_imports_skipped = dr.glob_imports_skipped;
         info!(
             imports = dr.imports_resolved,
             merged = dr.reexports_merged,
             ambiguous = dr.ambiguous_groups,
+            globs = dr.glob_imports_skipped,
             "dedup pass (incremental)"
         );
         // Build the write-back maps: start from the existing (prior) per-file
@@ -226,7 +227,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         // the redirects that were correctly applied (and thus not re-resolved).
         let all_redirects_union: Vec<crate::dedup::map::Redirect> = {
             let mut union: Vec<crate::dedup::map::Redirect> = merged.redirects.clone();
-            for (_, map) in &dr.per_file_maps {
+            for map in dr.per_file_maps.values() {
                 for r in &map.redirects {
                     if !union.iter().any(|x| x.from == r.from) {
                         union.push(r.clone());
@@ -284,10 +285,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         for file in &part.uncached {
             let key = file.to_string_lossy().into_owned();
             if !written.contains(&key) && !dr.per_file_maps.contains_key(&key) {
-                let _ = cache.save_dedup_map(
-                    file,
-                    &crate::dedup::map::DedupMap::empty_for(""),
-                );
+                let _ = cache.save_dedup_map(file, &crate::dedup::map::DedupMap::empty_for(""));
             }
         }
         cache.flush().ok();
@@ -335,6 +333,8 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
 
     let mut analysis = analyze(&graph);
     analysis.dedup_imports_resolved = dedup_imports_resolved;
+    analysis.glob_imports_skipped = dedup_glob_imports_skipped;
+    analysis.modularity = crate::cluster::modularity(&graph);
     let paths = export(&cfg.out_root, &graph, &analysis)?;
     let elapsed_ms = start.elapsed().as_millis();
 
@@ -363,13 +363,19 @@ fn load_prior_graph(out_root: &Path) -> Option<KnowledgeGraph> {
             .and_then(|v| v.as_str())
             .unwrap_or(&id)
             .to_string();
-        let source_file = n.get("source_file").and_then(|v| v.as_str()).map(String::from);
+        let source_file = n
+            .get("source_file")
+            .and_then(|v| v.as_str())
+            .map(String::from);
         let source_location = n
             .get("source_location")
             .and_then(|v| v.as_str())
             .map(String::from);
         let kind = n.get("kind").and_then(|v| v.as_str()).map(String::from);
-        let community = n.get("community").and_then(|v| v.as_u64()).map(|v| v as u32);
+        let community = n
+            .get("community")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as u32);
         let aliases: Vec<String> = n
             .get("aliases")
             .and_then(|v| v.as_array())
@@ -399,7 +405,10 @@ fn load_prior_graph(out_root: &Path) -> Option<KnowledgeGraph> {
             .and_then(|v| v.as_str())
             .unwrap_or("uses")
             .to_string();
-        let conf_str = e.get("confidence").and_then(|v| v.as_str()).unwrap_or("EXTRACTED");
+        let conf_str = e
+            .get("confidence")
+            .and_then(|v| v.as_str())
+            .unwrap_or("EXTRACTED");
         let confidence = match conf_str {
             "EXTRACTED" => crate::schema::Confidence::Extracted,
             "INFERRED" => crate::schema::Confidence::Inferred,
@@ -431,10 +440,10 @@ fn removed_files(prior: &Option<KnowledgeGraph>, files: &[PathBuf]) -> Vec<PathB
         .collect();
     let mut removed = HashSet::new();
     for n in g.graph.node_weights() {
-        if let Some(sf) = &n.source_file {
-            if !current.contains(sf.as_str()) {
-                removed.insert(sf.clone());
-            }
+        if let Some(sf) = &n.source_file
+            && !current.contains(sf.as_str())
+        {
+            removed.insert(sf.clone());
         }
     }
     removed.into_iter().map(PathBuf::from).collect()
@@ -444,10 +453,10 @@ fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (Vec<
     // Identify nodes to drop.
     let mut victims: HashSet<petgraph::graph::NodeIndex> = HashSet::new();
     for ni in g.graph.node_indices() {
-        if let Some(sf) = &g.graph[ni].source_file {
-            if files.contains(sf.as_str()) {
-                victims.insert(ni);
-            }
+        if let Some(sf) = &g.graph[ni].source_file
+            && files.contains(sf.as_str())
+        {
+            victims.insert(ni);
         }
     }
     // Plus any node whose id starts with the removed file (covers the
@@ -459,10 +468,10 @@ fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (Vec<
             victims.insert(ni);
             continue;
         }
-        if let Some((file, _)) = id.split_once("::") {
-            if files.contains(file) {
-                victims.insert(ni);
-            }
+        if let Some((file, _)) = id.split_once("::")
+            && files.contains(file)
+        {
+            victims.insert(ni);
         }
     }
 
@@ -559,20 +568,23 @@ fn run_full(
     let mut graph = build_graph(extractions);
 
     let mut dedup_imports_resolved = 0usize;
+    let mut dedup_glob_imports_skipped = 0usize;
     if cfg.dedup {
         let report = crate::dedup::dedup(&mut graph);
         dedup_imports_resolved = report.imports_resolved;
+        dedup_glob_imports_skipped = report.glob_imports_skipped;
         info!(
             imports = report.imports_resolved,
             merged = report.reexports_merged,
             ambiguous = report.ambiguous_groups,
+            globs = report.glob_imports_skipped,
             "dedup pass (run_full fallback)"
         );
         // Fan out each redirect to every file that contributed the same
         // extern id, then persist the maps.
         let mut augmented = report.per_file_maps.clone();
         for (file_key, extern_ids) in &file_extern_ids {
-            for (_, map) in &report.per_file_maps {
+            for map in report.per_file_maps.values() {
                 for r in &map.redirects {
                     if extern_ids.contains(&r.from) {
                         let entry = augmented
@@ -592,10 +604,7 @@ fn run_full(
         for file in &all_paths {
             let key = file.to_string_lossy().into_owned();
             if !augmented.contains_key(&key) {
-                let _ = cache.save_dedup_map(
-                    file,
-                    &crate::dedup::map::DedupMap::empty_for(""),
-                );
+                let _ = cache.save_dedup_map(file, &crate::dedup::map::DedupMap::empty_for(""));
             }
         }
         cache.flush().ok();
@@ -615,6 +624,8 @@ fn run_full(
     }
     let mut analysis = analyze(&graph);
     analysis.dedup_imports_resolved = dedup_imports_resolved;
+    analysis.glob_imports_skipped = dedup_glob_imports_skipped;
+    analysis.modularity = crate::cluster::modularity(&graph);
     let paths = export(&cfg.out_root, &graph, &analysis)?;
 
     Ok(PipelineOutputs {
@@ -696,10 +707,7 @@ fn cluster_incrementally(
     const QUALITY_GATE_ABS: f64 = 0.02;
     let new_q = crate::cluster::levels::compute_modularity(g);
     let drop = prior_modularity.map(|prev| prev - new_q).unwrap_or(0.0);
-    let prev_abs = prior_modularity
-        .map(|p| p.abs())
-        .unwrap_or(1.0)
-        .max(1e-9);
+    let prev_abs = prior_modularity.map(|p| p.abs()).unwrap_or(1.0).max(1e-9);
     let ratio_drop = drop / prev_abs;
 
     if drop > QUALITY_GATE_ABS && ratio_drop > QUALITY_GATE_RATIO {

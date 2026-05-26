@@ -9,13 +9,22 @@ use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
 use tempfile::tempdir;
 
 fn n(id: &str) -> Node {
-    Node { id: id.into(), label: id.into(), source_file: None, source_location: None, kind: None }
+    Node {
+        id: id.into(),
+        label: id.into(),
+        source_file: None,
+        source_location: None,
+        kind: None,
+    }
 }
 
 #[test]
 fn export_writes_three_files_with_expected_names() {
     let dir = tempdir().unwrap();
-    let ex = ExtractionOutput { nodes: vec![n("a")], edges: vec![] };
+    let ex = ExtractionOutput {
+        nodes: vec![n("a")],
+        edges: vec![],
+    };
     let g = build_graph(vec![ex]);
     let a = analyze(&g);
     let paths = export(dir.path(), &g, &a).unwrap();
@@ -42,7 +51,10 @@ fn graph_json_is_pretty_and_parses() {
     let a = analyze(&g);
     let paths = export(dir.path(), &g, &a).unwrap();
     let body = fs::read_to_string(&paths.graph_json).unwrap();
-    assert!(body.contains('\n'), "pretty-printed JSON should contain newlines");
+    assert!(
+        body.contains('\n'),
+        "pretty-printed JSON should contain newlines"
+    );
     let _: serde_json::Value = serde_json::from_str(&body).unwrap();
 }
 
@@ -63,10 +75,18 @@ fn graph_html_is_self_contained_interactive_viewer() {
     let ex = ExtractionOutput {
         nodes: vec![n("hub"), n("a"), n("b")],
         edges: vec![
-            Edge { source: "hub".into(), target: "a".into(),
-                relation: "calls".into(), confidence: Confidence::Inferred },
-            Edge { source: "hub".into(), target: "b".into(),
-                relation: "imports".into(), confidence: Confidence::Extracted },
+            Edge {
+                source: "hub".into(),
+                target: "a".into(),
+                relation: "calls".into(),
+                confidence: Confidence::Inferred,
+            },
+            Edge {
+                source: "hub".into(),
+                target: "b".into(),
+                relation: "imports".into(),
+                confidence: Confidence::Extracted,
+            },
         ],
     };
     let g = build_graph(vec![ex]);
@@ -75,8 +95,14 @@ fn graph_html_is_self_contained_interactive_viewer() {
     let html = fs::read_to_string(&paths.graph_html).unwrap();
 
     // No external resources — the viewer must run offline.
-    assert!(!html.contains("http://"), "should not link to external resources");
-    assert!(!html.contains("https://"), "should not link to external resources");
+    assert!(
+        !html.contains("http://"),
+        "should not link to external resources"
+    );
+    assert!(
+        !html.contains("https://"),
+        "should not link to external resources"
+    );
 
     // Inline data + interactive scaffolding.
     assert!(html.contains("const DATA ="));
@@ -92,7 +118,10 @@ fn graph_html_is_self_contained_interactive_viewer() {
 #[test]
 fn export_overwrites_existing_outputs() {
     let dir = tempdir().unwrap();
-    let g1 = build_graph(vec![ExtractionOutput { nodes: vec![n("a")], edges: vec![] }]);
+    let g1 = build_graph(vec![ExtractionOutput {
+        nodes: vec![n("a")],
+        edges: vec![],
+    }]);
     let a1 = analyze(&g1);
     let _ = export(dir.path(), &g1, &a1).unwrap();
 
@@ -121,9 +150,7 @@ fn export_surfaces_io_error_when_graph_json_path_is_a_directory() {
     let err = export(dir.path(), &g, &a).unwrap_err();
     let msg = err.to_string().to_lowercase();
     assert!(
-        msg.contains("is a directory")
-            || msg.contains("directory")
-            || msg.contains("permission"),
+        msg.contains("is a directory") || msg.contains("directory") || msg.contains("permission"),
         "unexpected error: {msg}"
     );
 }

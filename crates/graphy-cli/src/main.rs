@@ -112,7 +112,9 @@ enum PluginsAction {
 
 fn main() -> Result<()> {
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+        )
         .with_target(false)
         .compact()
         .init();
@@ -124,20 +126,40 @@ fn main() -> Result<()> {
             println!("rust target: {}", std::env::consts::ARCH);
             Ok(())
         }
-        Some(Command::Run { path, docs, out, no_dedup, full, no_scc_expansion, no_hierarchical }) => {
-            run(path, docs, out, no_dedup, full, no_scc_expansion, no_hierarchical)
-        }
+        Some(Command::Run {
+            path,
+            docs,
+            out,
+            no_dedup,
+            full,
+            no_scc_expansion,
+            no_hierarchical,
+        }) => run(
+            path,
+            docs,
+            out,
+            no_dedup,
+            full,
+            no_scc_expansion,
+            no_hierarchical,
+        ),
         Some(Command::Watch { path, docs, out }) => watch(path, docs, out),
         Some(Command::Serve { graph }) => {
-            let graph = graph.unwrap_or_else(|| {
-                PathBuf::from("graphy-out").join("graph.json")
-            });
+            let graph = graph.unwrap_or_else(|| PathBuf::from("graphy-out").join("graph.json"));
             graphy_core::serve::serve(&graph)
         }
         Some(Command::Plugins { action }) => plugins_cmd(action),
         None => {
             let path = cli.path.unwrap_or_else(|| PathBuf::from("."));
-            run(path, cli.docs, cli.out, cli.no_dedup, cli.full, cli.no_scc_expansion, cli.no_hierarchical)
+            run(
+                path,
+                cli.docs,
+                cli.out,
+                cli.no_dedup,
+                cli.full,
+                cli.no_scc_expansion,
+                cli.no_hierarchical,
+            )
         }
     }
 }
@@ -150,7 +172,7 @@ fn plugins_cmd(action: PluginsAction) -> Result<()> {
                 println!("no plugins registered");
                 return Ok(());
             }
-            println!("{:<28} {:<10} {}", "PLUGIN", "VERSION", "EXTENSIONS");
+            println!("{:<28} {:<10} EXTENSIONS", "PLUGIN", "VERSION");
             for entry in reg.entries() {
                 println!(
                     "{:<28} {:<10} {}",

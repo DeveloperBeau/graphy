@@ -19,19 +19,16 @@ macro_rules! ext_set {
 
 pub static CODE_EXTENSIONS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     ext_set!(
-        "py", "ts", "tsx", "js", "jsx", "mjs", "ejs", "ets", "go", "rs",
-        "java", "groovy", "gradle", "cpp", "cc", "cxx", "c", "h", "hpp",
-        "rb", "swift", "kt", "kts", "cs", "scala", "php", "lua", "luau",
-        "toc", "zig", "ps1", "ex", "exs", "m", "mm", "jl", "vue", "svelte",
-        "astro", "dart", "v", "sv", "sql", "r", "f", "f90", "f95", "f03",
-        "f08", "pas", "pp", "dpr", "dpk", "lpr", "inc", "dfm", "lfm", "lpk",
-        "sh", "bash", "json",
+        "py", "ts", "tsx", "js", "jsx", "mjs", "ejs", "ets", "go", "rs", "java", "groovy",
+        "gradle", "cpp", "cc", "cxx", "c", "h", "hpp", "rb", "swift", "kt", "kts", "cs", "scala",
+        "php", "lua", "luau", "toc", "zig", "ps1", "ex", "exs", "m", "mm", "jl", "vue", "svelte",
+        "astro", "dart", "v", "sv", "sql", "r", "f", "f90", "f95", "f03", "f08", "pas", "pp",
+        "dpr", "dpk", "lpr", "inc", "dfm", "lfm", "lpk", "sh", "bash", "json",
     )
 });
 
-pub static DOC_EXTENSIONS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-    ext_set!("md", "mdx", "qmd", "txt", "rst", "yaml", "yml")
-});
+pub static DOC_EXTENSIONS: Lazy<HashSet<&'static str>> =
+    Lazy::new(|| ext_set!("md", "mdx", "qmd", "txt", "rst", "yaml", "yml"));
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DetectOptions {
@@ -110,7 +107,10 @@ mod tests {
         fs::write(dir.path().join("readme.md"), "# hi").unwrap();
         let files = collect_files(
             dir.path(),
-            DetectOptions { include_docs: true, ..Default::default() },
+            DetectOptions {
+                include_docs: true,
+                ..Default::default()
+            },
         );
         assert_eq!(files.len(), 1);
     }

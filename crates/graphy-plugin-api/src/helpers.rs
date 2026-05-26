@@ -98,7 +98,7 @@ pub fn emit_call(
     callee_text: &str,
 ) {
     let leaf = callee_text
-        .rsplit(|c: char| matches!(c, '.' | ':' | '>' | ' '))
+        .rsplit(['.', ':', '>', ' '])
         .next()
         .unwrap_or(callee_text);
     if let Some(target_id) = symbols.get(leaf) {

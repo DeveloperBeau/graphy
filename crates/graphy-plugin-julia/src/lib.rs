@@ -61,7 +61,14 @@ fn walk(
         match child.kind() {
             "function_definition" | "short_function_definition" | "macro_definition" => {
                 if let Some(n) = julia_name(child, src) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "struct_definition" | "abstract_definition" | "primitive_definition" => {
@@ -97,11 +104,10 @@ fn walk_calls(
         if matches!(
             child.kind(),
             "function_definition" | "short_function_definition" | "macro_definition"
-        ) {
-            if let Some(name) = julia_name(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+        ) && let Some(name) = julia_name(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
         }
         walk_calls(child, src, file, out, symbols);
     }
@@ -119,12 +125,11 @@ fn collect_calls(
         if child.kind() == "signature" {
             continue;
         }
-        if child.kind() == "call_expression" {
-            if let Some(first) = child.named_child(0) {
-                if let Ok(text) = first.utf8_text(src.as_bytes()) {
-                    emit_call(out, symbols, caller_id, text);
-                }
-            }
+        if child.kind() == "call_expression"
+            && let Some(first) = child.named_child(0)
+            && let Ok(text) = first.utf8_text(src.as_bytes())
+        {
+            emit_call(out, symbols, caller_id, text);
         }
         collect_calls(child, src, caller_id, out, symbols);
     }

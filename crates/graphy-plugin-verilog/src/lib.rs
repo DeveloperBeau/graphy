@@ -59,7 +59,14 @@ fn walk(
             }
             "function_declaration" | "task_declaration" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "class_declaration" | "interface_declaration" | "package_declaration" => {

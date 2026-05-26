@@ -11,7 +11,11 @@ use super::events_warrant_rebuild;
 
 fn evt(kind: EventKind, paths: Vec<PathBuf>) -> DebouncedEvent {
     DebouncedEvent {
-        event: Event { kind, paths, attrs: Default::default() },
+        event: Event {
+            kind,
+            paths,
+            attrs: Default::default(),
+        },
         time: Instant::now(),
     }
 }
@@ -117,8 +121,8 @@ fn unknown_extension_does_not_trigger() {
 
 #[test]
 fn handle_event_batch_skips_when_no_relevant_change() {
-    use crate::pipeline::PipelineConfig;
     use super::handle_event_batch;
+    use crate::pipeline::PipelineConfig;
     let dir = tempfile::tempdir().unwrap();
     let cfg = PipelineConfig::new(dir.path());
     let out_dir = dir.path().join("graphy-out");
@@ -128,9 +132,9 @@ fn handle_event_batch_skips_when_no_relevant_change() {
 
 #[test]
 fn handle_event_batch_runs_pipeline_when_code_changes() {
-    use std::fs;
-    use crate::pipeline::PipelineConfig;
     use super::handle_event_batch;
+    use crate::pipeline::PipelineConfig;
+    use std::fs;
     let dir = tempfile::tempdir().unwrap();
     fs::write(dir.path().join("a.rs"), "pub fn f(){}\n").unwrap();
     let cfg = PipelineConfig::new(dir.path());
@@ -139,17 +143,16 @@ fn handle_event_batch_runs_pipeline_when_code_changes() {
         EventKind::Modify(ModifyKind::Any),
         vec![dir.path().join("a.rs")],
     );
-    let result = handle_event_batch(&cfg, &out_dir, &[event])
-        .expect("rebuild should have run");
+    let result = handle_event_batch(&cfg, &out_dir, &[event]).expect("rebuild should have run");
     let outputs = result.expect("pipeline should have succeeded");
     assert!(outputs.analysis.node_count >= 1);
 }
 
 #[test]
 fn handle_event_batch_surfaces_pipeline_error() {
-    use std::fs;
-    use crate::pipeline::PipelineConfig;
     use super::handle_event_batch;
+    use crate::pipeline::PipelineConfig;
+    use std::fs;
     // Force the pipeline write to fail by pre-creating graph.json as a directory.
     let dir = tempfile::tempdir().unwrap();
     fs::write(dir.path().join("a.rs"), "pub fn f(){}\n").unwrap();
@@ -162,7 +165,6 @@ fn handle_event_batch_surfaces_pipeline_error() {
         EventKind::Modify(ModifyKind::Any),
         vec![dir.path().join("a.rs")],
     );
-    let result = handle_event_batch(&cfg, &out_dir, &[event])
-        .expect("rebuild should have run");
+    let result = handle_event_batch(&cfg, &out_dir, &[event]).expect("rebuild should have run");
     assert!(result.is_err(), "expected pipeline error path");
 }

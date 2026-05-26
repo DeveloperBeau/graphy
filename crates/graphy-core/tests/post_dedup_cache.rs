@@ -1,7 +1,7 @@
-use graphy_core::dedup::map::{DedupMap, Redirect};
 use graphy_core::dedup::map::apply_dedup_map;
-use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
+use graphy_core::dedup::map::{DedupMap, Redirect};
 use graphy_core::pipeline::{Pipeline, PipelineConfig};
+use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
 use std::fs;
 use tempfile::tempdir;
 
@@ -28,7 +28,8 @@ fn warm_run_imports_resolved_is_le_cold() {
     fs::write(
         dir.path().join("b.rs"),
         "use crate::a::helper;\npub fn caller(){ helper(); }\n",
-    ).unwrap();
+    )
+    .unwrap();
     let cfg = PipelineConfig::new(dir.path());
 
     // Cold run.
@@ -75,12 +76,20 @@ fn dedup_map_roundtrips_through_serde() {
 fn dedup_map_apply_redirects_node_drop_and_edge_retarget() {
     let mut out = ExtractionOutput {
         nodes: vec![
-            Node { id: "extern::a::b".into(), label: "b".into(),
-                source_file: Some("src/x.rs".into()), source_location: Some("L1".into()),
-                kind: Some("import".into()) },
-            Node { id: "src/x.rs::caller".into(), label: "caller".into(),
-                source_file: Some("src/x.rs".into()), source_location: Some("L5".into()),
-                kind: Some("function".into()) },
+            Node {
+                id: "extern::a::b".into(),
+                label: "b".into(),
+                source_file: Some("src/x.rs".into()),
+                source_location: Some("L1".into()),
+                kind: Some("import".into()),
+            },
+            Node {
+                id: "src/x.rs::caller".into(),
+                label: "caller".into(),
+                source_file: Some("src/x.rs".into()),
+                source_location: Some("L5".into()),
+                kind: Some("function".into()),
+            },
         ],
         edges: vec![Edge {
             source: "src/x.rs::caller".into(),
@@ -90,7 +99,8 @@ fn dedup_map_apply_redirects_node_drop_and_edge_retarget() {
         }],
     };
     let m = DedupMap {
-        version: 1, for_extraction: "blake3:1".into(),
+        version: 1,
+        for_extraction: "blake3:1".into(),
         redirects: vec![Redirect {
             from: "extern::a::b".into(),
             to: "src/a.rs::b".into(),
@@ -108,8 +118,13 @@ fn dedup_map_apply_redirects_node_drop_and_edge_retarget() {
 #[test]
 fn dedup_map_apply_no_op_on_empty_map() {
     let mut out = ExtractionOutput {
-        nodes: vec![Node { id: "x".into(), label: "x".into(),
-            source_file: None, source_location: None, kind: None }],
+        nodes: vec![Node {
+            id: "x".into(),
+            label: "x".into(),
+            source_file: None,
+            source_location: None,
+            kind: None,
+        }],
         edges: vec![],
     };
     apply_dedup_map(&mut out, &DedupMap::empty_for("blake3:0"));
@@ -119,13 +134,18 @@ fn dedup_map_apply_no_op_on_empty_map() {
 #[test]
 fn dedup_map_apply_marks_ambiguous() {
     let mut out = ExtractionOutput {
-        nodes: vec![Node { id: "src/c.rs::helper".into(), label: "helper".into(),
-            source_file: Some("src/c.rs".into()), source_location: Some("L1".into()),
-            kind: Some("function".into()) }],
+        nodes: vec![Node {
+            id: "src/c.rs::helper".into(),
+            label: "helper".into(),
+            source_file: Some("src/c.rs".into()),
+            source_location: Some("L1".into()),
+            kind: Some("function".into()),
+        }],
         edges: vec![],
     };
     let m = DedupMap {
-        version: 1, for_extraction: "blake3:1".into(),
+        version: 1,
+        for_extraction: "blake3:1".into(),
         redirects: vec![],
         ambiguous_marked: vec!["src/c.rs::helper".into()],
     };
@@ -138,15 +158,23 @@ fn dedup_map_apply_handles_unknown_redirect_target() {
     // A redirect whose `from` id is not present in the extraction should
     // be ignored without panic.
     let mut out = ExtractionOutput {
-        nodes: vec![Node { id: "real".into(), label: "real".into(),
-            source_file: None, source_location: None, kind: None }],
+        nodes: vec![Node {
+            id: "real".into(),
+            label: "real".into(),
+            source_file: None,
+            source_location: None,
+            kind: None,
+        }],
         edges: vec![],
     };
     let m = DedupMap {
-        version: 1, for_extraction: "blake3:1".into(),
+        version: 1,
+        for_extraction: "blake3:1".into(),
         redirects: vec![Redirect {
-            from: "ghost".into(), to: "elsewhere".into(),
-            edge_relation: None, confidence_downgrade: false,
+            from: "ghost".into(),
+            to: "elsewhere".into(),
+            edge_relation: None,
+            confidence_downgrade: false,
         }],
         ambiguous_marked: vec![],
     };
@@ -158,32 +186,36 @@ fn dedup_map_apply_handles_unknown_redirect_target() {
 fn incremental_run_writes_dedup_map_files() {
     let dir = tempdir().unwrap();
     fs::write(dir.path().join("a.rs"), "pub fn helper(){}\n").unwrap();
-    fs::write(dir.path().join("b.rs"),
-        "use crate::a::helper;\npub fn caller(){ helper(); }\n").unwrap();
+    fs::write(
+        dir.path().join("b.rs"),
+        "use crate::a::helper;\npub fn caller(){ helper(); }\n",
+    )
+    .unwrap();
     let cfg = PipelineConfig::new(dir.path());
     let _ = Pipeline::new(cfg.clone()).run().unwrap();
     // Trigger an incremental pass.
     let _ = Pipeline::new(cfg).run().unwrap();
     // At least one .dedup.json file should be on disk by now.
     let cache_dir = dir.path().join("graphy-out").join(".cache");
-    let entries: Vec<_> = fs::read_dir(&cache_dir).unwrap()
+    let entries: Vec<_> = fs::read_dir(&cache_dir)
+        .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_name().to_string_lossy().ends_with(".dedup.json"))
         .collect();
-    assert!(!entries.is_empty(),
-        "expected at least one .dedup.json file in {cache_dir:?}");
+    assert!(
+        !entries.is_empty(),
+        "expected at least one .dedup.json file in {cache_dir:?}"
+    );
     // And the content should be a parseable DedupMap.
     let body = fs::read_to_string(entries[0].path()).unwrap();
-    let _map: graphy_core::dedup::map::DedupMap =
-        serde_json::from_str(&body).unwrap();
+    let _map: graphy_core::dedup::map::DedupMap = serde_json::from_str(&body).unwrap();
     // For this fixture (b.rs imports from a.rs), we expect a redirect to
     // be recorded on b.rs's map. But we don't know whether entries[0] is
     // a.rs or b.rs without sorting, so just check at least one map has
     // non-empty redirects.
     let any_populated: bool = entries.iter().any(|e| {
         let body = fs::read_to_string(e.path()).unwrap();
-        let m: graphy_core::dedup::map::DedupMap =
-            serde_json::from_str(&body).unwrap();
+        let m: graphy_core::dedup::map::DedupMap = serde_json::from_str(&body).unwrap();
         !m.redirects.is_empty()
     });
     assert!(any_populated, "expected at least one map with redirects");
@@ -202,12 +234,15 @@ fn dedup_map_invalidated_on_file_content_change() {
     // current hash filename — open the manifest and verify the entry points
     // at the new hash.
     let manifest = serde_json::from_str::<serde_json::Value>(
-        &fs::read_to_string(dir.path().join("graphy-out/.cache/manifest.json")).unwrap()
-    ).unwrap();
+        &fs::read_to_string(dir.path().join("graphy-out/.cache/manifest.json")).unwrap(),
+    )
+    .unwrap();
     let current_hash = manifest["entries"][a.to_string_lossy().as_ref()]
-        .as_str().unwrap();
-    let map_path = dir.path().join(format!(
-        "graphy-out/.cache/{}.dedup.json", current_hash));
+        .as_str()
+        .unwrap();
+    let map_path = dir
+        .path()
+        .join(format!("graphy-out/.cache/{}.dedup.json", current_hash));
     assert!(map_path.exists(), "fresh dedup map should be written");
 }
 
@@ -215,23 +250,28 @@ fn dedup_map_invalidated_on_file_content_change() {
 fn dedup_map_survives_unrelated_file_change() {
     let dir = tempdir().unwrap();
     fs::write(dir.path().join("a.rs"), "pub fn helper(){}\n").unwrap();
-    fs::write(dir.path().join("b.rs"),
-        "use crate::a::helper;\npub fn caller(){ helper(); }\n").unwrap();
+    fs::write(
+        dir.path().join("b.rs"),
+        "use crate::a::helper;\npub fn caller(){ helper(); }\n",
+    )
+    .unwrap();
     let cfg = PipelineConfig::new(dir.path());
     let _ = Pipeline::new(cfg.clone()).run().unwrap();
     // Capture b.rs's dedup map hash.
-    let manifest_before = std::fs::read_to_string(
-        dir.path().join("graphy-out/.cache/manifest.json")).unwrap();
-    let hash_b_before: serde_json::Value =
-        serde_json::from_str(&manifest_before).unwrap();
+    let manifest_before =
+        std::fs::read_to_string(dir.path().join("graphy-out/.cache/manifest.json")).unwrap();
+    let hash_b_before: serde_json::Value = serde_json::from_str(&manifest_before).unwrap();
     // Touch a.rs only.
-    fs::write(dir.path().join("a.rs"),
-        "pub fn helper(){}\npub fn extra(){}\n").unwrap();
+    fs::write(
+        dir.path().join("a.rs"),
+        "pub fn helper(){}\npub fn extra(){}\n",
+    )
+    .unwrap();
     let _ = Pipeline::new(cfg).run().unwrap();
     let manifest_after: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(
-            dir.path().join("graphy-out/.cache/manifest.json")).unwrap()
-    ).unwrap();
+        &std::fs::read_to_string(dir.path().join("graphy-out/.cache/manifest.json")).unwrap(),
+    )
+    .unwrap();
     let b_path = dir.path().join("b.rs");
     let b_key = b_path.to_string_lossy().to_string();
     assert_eq!(
@@ -251,10 +291,16 @@ fn ambiguous_marked_survives_warm_run() {
     // Note: a.rs and b.rs intentionally have DIFFERENT content so the cache
     // assigns each a distinct content-hash and a distinct .dedup.json file.
     let dir = tempdir().unwrap();
-    fs::write(dir.path().join("a.rs"),
-        "// module a\npub fn helper() -> u32 { 1 }\n").unwrap();
-    fs::write(dir.path().join("b.rs"),
-        "// module b\npub fn helper() -> u32 { 2 }\n").unwrap();
+    fs::write(
+        dir.path().join("a.rs"),
+        "// module a\npub fn helper() -> u32 { 1 }\n",
+    )
+    .unwrap();
+    fs::write(
+        dir.path().join("b.rs"),
+        "// module b\npub fn helper() -> u32 { 2 }\n",
+    )
+    .unwrap();
     let cfg = PipelineConfig::new(dir.path());
     let _ = Pipeline::new(cfg.clone()).run().unwrap();
     // Second run; ambiguous_marked must survive.
@@ -265,14 +311,17 @@ fn ambiguous_marked_survives_warm_run() {
     let mut total_ambiguous = 0;
     for entry in fs::read_dir(&cache_dir).unwrap().filter_map(|e| e.ok()) {
         let name = entry.file_name().to_string_lossy().into_owned();
-        if !name.ends_with(".dedup.json") { continue; }
+        if !name.ends_with(".dedup.json") {
+            continue;
+        }
         let body = fs::read_to_string(entry.path()).unwrap();
-        let map: graphy_core::dedup::map::DedupMap =
-            serde_json::from_str(&body).unwrap();
+        let map: graphy_core::dedup::map::DedupMap = serde_json::from_str(&body).unwrap();
         total_ambiguous += map.ambiguous_marked.len();
     }
-    assert!(total_ambiguous >= 2,
-        "expected ambiguous_marked entries on at least 2 files (a.rs, b.rs), got {total_ambiguous}");
+    assert!(
+        total_ambiguous >= 2,
+        "expected ambiguous_marked entries on at least 2 files (a.rs, b.rs), got {total_ambiguous}"
+    );
 }
 
 #[test]
@@ -280,8 +329,11 @@ fn run_full_fallback_path_dedups() {
     // Simulate the fallback case: graph.json on disk but unparseable.
     let dir = tempdir().unwrap();
     fs::write(dir.path().join("a.rs"), "pub fn helper(){}\n").unwrap();
-    fs::write(dir.path().join("b.rs"),
-        "use crate::a::helper;\npub fn caller(){ helper(); }\n").unwrap();
+    fs::write(
+        dir.path().join("b.rs"),
+        "use crate::a::helper;\npub fn caller(){ helper(); }\n",
+    )
+    .unwrap();
     let out_dir = dir.path().join("graphy-out");
     fs::create_dir_all(&out_dir).unwrap();
     // Write a deliberately broken graph.json to force the fallback.
@@ -289,10 +341,11 @@ fn run_full_fallback_path_dedups() {
     let cfg = PipelineConfig::new(dir.path());
     let _r = Pipeline::new(cfg).run().unwrap();
     // The export'd stats.json should reflect a dedup pass having run.
-    let stats: serde_json::Value = serde_json::from_str(
-        &fs::read_to_string(out_dir.join("stats.json")).unwrap()
-    ).unwrap();
+    let stats: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(out_dir.join("stats.json")).unwrap()).unwrap();
     let resolved = stats["dedup_imports_resolved"].as_u64().unwrap_or(0);
-    assert!(resolved >= 1,
-        "run_full fallback must dedup; got dedup_imports_resolved={resolved}");
+    assert!(
+        resolved >= 1,
+        "run_full fallback must dedup; got dedup_imports_resolved={resolved}"
+    );
 }

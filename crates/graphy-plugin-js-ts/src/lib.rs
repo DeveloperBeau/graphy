@@ -53,7 +53,14 @@ fn walk_defs(
         match child.kind() {
             "function_declaration" | "generator_function_declaration" => {
                 if let Some(n) = name_of(child, src) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "class_declaration"
@@ -80,9 +87,7 @@ fn walk_defs(
                 let source_node = child
                     .child_by_field_name("source")
                     .expect("import_statement has source field");
-                let text = source_node
-                    .utf8_text(src.as_bytes())
-                    .expect("utf8 source");
+                let text = source_node.utf8_text(src.as_bytes()).expect("utf8 source");
                 let module = text.trim_matches(|c| matches!(c, '"' | '\''));
                 let names = js_imported_names(child, src, module);
                 if names.is_empty() {
@@ -153,7 +158,9 @@ fn js_imported_names(node: TsNode, src: &str, module: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     let mut cursor = node.walk();
     for c in node.children(&mut cursor) {
-        if c.kind() != "import_clause" { continue; }
+        if c.kind() != "import_clause" {
+            continue;
+        }
         let mut sub = c.walk();
         for sc in c.children(&mut sub) {
             match sc.kind() {
@@ -196,7 +203,11 @@ fn expand_import_paths(raw: &str) -> Vec<String> {
         return vec![raw.to_string()];
     };
     let prefix = raw[..open].trim_end_matches(':').to_string();
-    let prefix_with_sep = if prefix.is_empty() { String::new() } else { format!("{prefix}::") };
+    let prefix_with_sep = if prefix.is_empty() {
+        String::new()
+    } else {
+        format!("{prefix}::")
+    };
     let body_start = open + 1;
     let mut depth = 1usize;
     let mut end = body_start;
@@ -222,8 +233,14 @@ fn expand_import_paths(raw: &str) -> Vec<String> {
     let mut local_depth = 0usize;
     for c in body.chars() {
         match c {
-            '{' => { local_depth += 1; buf.push(c); }
-            '}' => { local_depth -= 1; buf.push(c); }
+            '{' => {
+                local_depth += 1;
+                buf.push(c);
+            }
+            '}' => {
+                local_depth -= 1;
+                buf.push(c);
+            }
             ',' if local_depth == 0 => {
                 let piece = buf.trim();
                 if !piece.is_empty() {

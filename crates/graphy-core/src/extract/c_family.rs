@@ -16,14 +16,15 @@ pub enum Flavor {
 }
 
 pub fn extract(path: &Path, flavor: Flavor) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let lang: Language = match flavor {
         Flavor::C => tree_sitter_c::LANGUAGE.into(),
         Flavor::Cpp => tree_sitter_cpp::LANGUAGE.into(),
     };
     let mut parser = Parser::new();
-    parser.set_language(&lang).context("load tree-sitter-c/cpp")?;
+    parser
+        .set_language(&lang)
+        .context("load tree-sitter-c/cpp")?;
     let tree = parser
         .parse(&src, None)
         .expect("tree-sitter parse() returns Some when language is set");
@@ -69,8 +70,7 @@ fn walk(
                     emit_def(out, symbols, file, "function", n, child);
                 }
             }
-            "struct_specifier" | "class_specifier" | "union_specifier"
-            | "enum_specifier" => {
+            "struct_specifier" | "class_specifier" | "union_specifier" | "enum_specifier" => {
                 if let Some(n) = name_of(child, src) {
                     emit_def(
                         out,
@@ -105,11 +105,11 @@ fn walk_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "function_definition" {
-            if let Some(name) = declarator_name(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+        if child.kind() == "function_definition"
+            && let Some(name) = declarator_name(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
         }
         walk_calls(child, src, file, out, symbols);
     }
@@ -124,11 +124,11 @@ fn collect_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "call_expression" {
-            if let Some(fn_node) = child.child_by_field_name("function") {
-                let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+        if child.kind() == "call_expression"
+            && let Some(fn_node) = child.child_by_field_name("function")
+        {
+            let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
         }
         collect_calls(child, src, caller_id, out, symbols);
     }

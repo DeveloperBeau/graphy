@@ -35,11 +35,7 @@ fn add_new_file_splices_into_existing_graph() {
     let cfg = PipelineConfig::new(dir.path());
 
     let r1 = Pipeline::new(cfg.clone()).run().unwrap();
-    touch(
-        dir.path(),
-        "b.rs",
-        "pub fn g(){}\npub fn h(){ g(); }\n",
-    );
+    touch(dir.path(), "b.rs", "pub fn g(){}\npub fn h(){ g(); }\n");
     let r2 = Pipeline::new(cfg).run().unwrap();
 
     assert!(r2.analysis.node_count > r1.analysis.node_count);
@@ -106,11 +102,7 @@ fn full_flag_bypasses_incremental_and_still_converges() {
 #[test]
 fn dedup_disabled_preserves_extern_nodes() {
     let dir = tempdir().unwrap();
-    touch(
-        dir.path(),
-        "a.rs",
-        "pub fn helper(){}\n",
-    );
+    touch(dir.path(), "a.rs", "pub fn helper(){}\n");
     touch(
         dir.path(),
         "b.rs",
@@ -171,7 +163,9 @@ fn hierarchical_delta_modularity_within_5_percent_of_fresh() {
     // First run: full pass, populates louvain-levels.json.
     let mut cfg = graphy_core::pipeline::PipelineConfig::new(&fixture);
     cfg.out_root = dir.path().to_path_buf();
-    let r1 = graphy_core::pipeline::Pipeline::new(cfg.clone()).run().unwrap();
+    let r1 = graphy_core::pipeline::Pipeline::new(cfg.clone())
+        .run()
+        .unwrap();
     let q_fresh = compute_modularity(&r1.graph);
 
     // Touch one file (under fixture, then restore).
@@ -203,12 +197,17 @@ fn hierarchical_delta_persists_levels_after_run() {
     cfg.hierarchical_clustering = true;
     let _ = Pipeline::new(cfg).run().unwrap();
     let p = dir.path().join("graphy-out/.cache/louvain-levels.json");
-    assert!(p.exists(), "louvain-levels.json should exist after first run");
+    assert!(
+        p.exists(),
+        "louvain-levels.json should exist after first run"
+    );
     let body = fs::read_to_string(&p).unwrap();
-    let parsed: graphy_core::cluster::levels::LouvainLevels =
-        serde_json::from_str(&body).unwrap();
+    let parsed: graphy_core::cluster::levels::LouvainLevels = serde_json::from_str(&body).unwrap();
     assert_eq!(parsed.version, 1);
-    assert!(!parsed.levels.is_empty(), "expected at least one recorded level");
+    assert!(
+        !parsed.levels.is_empty(),
+        "expected at least one recorded level"
+    );
 }
 
 #[test]

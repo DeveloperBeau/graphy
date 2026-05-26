@@ -18,15 +18,16 @@ pub enum Flavor {
 }
 
 pub fn extract(path: &Path, flavor: Flavor) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let lang: Language = match flavor {
         Flavor::Javascript => tree_sitter_javascript::LANGUAGE.into(),
         Flavor::Typescript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
         Flavor::Tsx => tree_sitter_typescript::LANGUAGE_TSX.into(),
     };
     let mut parser = Parser::new();
-    parser.set_language(&lang).context("load tree-sitter language")?;
+    parser
+        .set_language(&lang)
+        .context("load tree-sitter language")?;
     let tree = parser
         .parse(&src, None)
         .expect("tree-sitter parse() returns Some when language is set");
@@ -55,10 +56,19 @@ fn walk_defs(
                     emit_def(out, symbols, file, "function", n, child);
                 }
             }
-            "class_declaration" | "interface_declaration" | "type_alias_declaration"
+            "class_declaration"
+            | "interface_declaration"
+            | "type_alias_declaration"
             | "enum_declaration" => {
                 if let Some(n) = name_of(child, src) {
-                    emit_def(out, symbols, file, child.kind().trim_end_matches("_declaration"), n, child);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        child.kind().trim_end_matches("_declaration"),
+                        n,
+                        child,
+                    );
                 }
             }
             "method_definition" => {
@@ -118,7 +128,9 @@ fn js_imported_names(node: TsNode, src: &str, module: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     let mut cursor = node.walk();
     for c in node.children(&mut cursor) {
-        if c.kind() != "import_clause" { continue; }
+        if c.kind() != "import_clause" {
+            continue;
+        }
         let mut sub = c.walk();
         for sc in c.children(&mut sub) {
             match sc.kind() {

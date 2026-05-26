@@ -19,9 +19,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use anyhow::{Context, Result, anyhow};
-use graphy_plugin_api::{
-    ABI_VERSION, GraphyPluginExtractResult, GraphyPluginMetadata, STATUS_OK,
-};
+use graphy_plugin_api::{ABI_VERSION, GraphyPluginExtractResult, STATUS_OK};
 use libloading::{Library, Symbol};
 use tracing::{debug, warn};
 
@@ -29,7 +27,6 @@ use crate::manifest::{Manifest, PluginEntry, sha256_of};
 use crate::schema::ExtractionOutput;
 
 type AbiVersionFn = unsafe extern "C" fn() -> u32;
-type MetadataFn = unsafe extern "C" fn() -> *const GraphyPluginMetadata;
 type ExtractFn = unsafe extern "C" fn(
     path_utf8: *const core::ffi::c_char,
     path_len: usize,
@@ -174,8 +171,7 @@ impl PluginRegistry {
 
     fn invoke(&self, target: EntryWithDir, path: &Path) -> Result<ExtractionOutput> {
         let plugin = self.load_or_get(&target)?;
-        let source = std::fs::read(path)
-            .with_context(|| format!("read {}", path.display()))?;
+        let source = std::fs::read(path).with_context(|| format!("read {}", path.display()))?;
         let path_str = path.to_string_lossy();
         let path_bytes = path_str.as_bytes();
         let result = unsafe {
@@ -200,9 +196,7 @@ impl PluginRegistry {
         let parsed: ExtractionOutput = if result.json_data.is_null() || result.json_len == 0 {
             ExtractionOutput::default()
         } else {
-            let slice = unsafe {
-                std::slice::from_raw_parts(result.json_data, result.json_len)
-            };
+            let slice = unsafe { std::slice::from_raw_parts(result.json_data, result.json_len) };
             serde_json::from_slice(slice).context("parse plugin JSON output")?
         };
         unsafe { (plugin.free)(result) };
@@ -232,10 +226,10 @@ fn default_search_paths() -> Vec<PathBuf> {
         dirs.push(data.join("graphy").join("plugins"));
     }
     dirs.push(PathBuf::from("graphy-plugins"));
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            dirs.push(parent.join("plugins"));
-        }
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(parent) = exe.parent()
+    {
+        dirs.push(parent.join("plugins"));
     }
     dirs
 }
@@ -251,8 +245,8 @@ fn open_and_verify(dir: &Path, entry: &PluginEntry) -> Result<LoadedPlugin> {
             actual
         ));
     }
-    let lib = unsafe { Library::new(&path) }
-        .with_context(|| format!("dlopen {}", path.display()))?;
+    let lib =
+        unsafe { Library::new(&path) }.with_context(|| format!("dlopen {}", path.display()))?;
     let version_fn: Symbol<AbiVersionFn> = unsafe { lib.get(b"graphy_plugin_abi_version") }
         .context("missing graphy_plugin_abi_version")?;
     let v = unsafe { version_fn() };
@@ -261,10 +255,10 @@ fn open_and_verify(dir: &Path, entry: &PluginEntry) -> Result<LoadedPlugin> {
             "plugin ABI mismatch: plugin={v} host={ABI_VERSION}"
         ));
     }
-    let extract_sym: Symbol<ExtractFn> = unsafe { lib.get(b"graphy_plugin_extract") }
-        .context("missing graphy_plugin_extract")?;
-    let free_sym: Symbol<FreeFn> = unsafe { lib.get(b"graphy_plugin_free") }
-        .context("missing graphy_plugin_free")?;
+    let extract_sym: Symbol<ExtractFn> =
+        unsafe { lib.get(b"graphy_plugin_extract") }.context("missing graphy_plugin_extract")?;
+    let free_sym: Symbol<FreeFn> =
+        unsafe { lib.get(b"graphy_plugin_free") }.context("missing graphy_plugin_free")?;
     let extract = *extract_sym;
     let free = *free_sym;
     Ok(LoadedPlugin {

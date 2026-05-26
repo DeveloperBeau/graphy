@@ -15,7 +15,11 @@ fn confidence_serializes_as_uppercase() {
 
 #[test]
 fn confidence_roundtrips_through_json() {
-    for c in [Confidence::Extracted, Confidence::Inferred, Confidence::Ambiguous] {
+    for c in [
+        Confidence::Extracted,
+        Confidence::Inferred,
+        Confidence::Ambiguous,
+    ] {
         let s = serde_json::to_string(&c).unwrap();
         let back: Confidence = serde_json::from_str(&s).unwrap();
         assert_eq!(c, back);

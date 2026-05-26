@@ -15,8 +15,7 @@ use super::common::{emit_call, emit_def, emit_import};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_ruby::LANGUAGE.into())
@@ -93,11 +92,11 @@ fn walk_calls(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if matches!(child.kind(), "method" | "singleton_method") {
-            if let Some(name) = ruby_name(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+        if matches!(child.kind(), "method" | "singleton_method")
+            && let Some(name) = ruby_name(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
         }
         walk_calls(child, src, file, out, symbols);
     }

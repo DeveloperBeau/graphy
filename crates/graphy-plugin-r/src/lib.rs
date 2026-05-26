@@ -43,28 +43,32 @@ fn walk(
             if parts.len() >= 2 {
                 let lhs = parts[0];
                 let rhs = parts[parts.len() - 1];
-                if rhs.kind() == "function_definition" || rhs.kind() == "function" {
-                    if let Ok(name) = lhs.utf8_text(src.as_bytes()) {
-                        emit_def(out, symbols, file, "function", name, child.start_position().row);
-                    }
+                if (rhs.kind() == "function_definition" || rhs.kind() == "function")
+                    && let Ok(name) = lhs.utf8_text(src.as_bytes())
+                {
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        name,
+                        child.start_position().row,
+                    );
                 }
             }
         }
-        if matches!(child.kind(), "call") {
-            if let Some(name_node) = child.child_by_field_name("function") {
-                if let Ok(text) = name_node.utf8_text(src.as_bytes()) {
-                    if matches!(text, "library" | "require" | "source") {
-                        if let Some(args) = child.child_by_field_name("arguments") {
-                            let raw = args
-                                .utf8_text(src.as_bytes())
-                                .unwrap_or("")
-                                .trim_matches(|c: char| matches!(c, '(' | ')' | ' '))
-                                .trim_matches(|c| matches!(c, '"' | '\''));
-                            emit_import(out, file, raw, child.start_position().row);
-                        }
-                    }
-                }
-            }
+        if matches!(child.kind(), "call")
+            && let Some(name_node) = child.child_by_field_name("function")
+            && let Ok(text) = name_node.utf8_text(src.as_bytes())
+            && matches!(text, "library" | "require" | "source")
+            && let Some(args) = child.child_by_field_name("arguments")
+        {
+            let raw = args
+                .utf8_text(src.as_bytes())
+                .unwrap_or("")
+                .trim_matches(|c: char| matches!(c, '(' | ')' | ' '))
+                .trim_matches(|c| matches!(c, '"' | '\''));
+            emit_import(out, file, raw, child.start_position().row);
         }
         walk(child, src, file, out, symbols);
     }

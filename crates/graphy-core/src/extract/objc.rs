@@ -10,8 +10,7 @@ use super::common::{emit_def, emit_import, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_objc::LANGUAGE.into())
@@ -53,8 +52,11 @@ fn walk(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         match child.kind() {
-            "class_interface" | "class_implementation" | "protocol_declaration"
-            | "category_interface" | "category_implementation" => {
+            "class_interface"
+            | "class_implementation"
+            | "protocol_declaration"
+            | "category_interface"
+            | "category_implementation" => {
                 if let Some(n) = name_of(child, src).or_else(|| declarator_name(child, src)) {
                     emit_def(out, symbols, file, "class", n, child);
                 }
