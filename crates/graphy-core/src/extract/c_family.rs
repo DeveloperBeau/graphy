@@ -84,10 +84,22 @@ fn walk(
             }
             "namespace_definition" => {
                 // C++ only: `namespace foo { ... }`
+                // Use a file-independent canonical id so the same namespace
+                // declared across multiple translation units collapses to a
+                // single node during graph construction (ensure_node dedupes
+                // by id) rather than accumulating ambiguous duplicates.
                 if let Some(n) = child.child_by_field_name("name")
                     .and_then(|n| n.utf8_text(src.as_bytes()).ok())
                 {
-                    emit_def(out, symbols, file, "namespace", n, child);
+                    let canonical_id = format!("namespace::{n}");
+                    out.nodes.push(crate::schema::Node {
+                        id: canonical_id.clone(),
+                        label: n.to_string(),
+                        source_file: Some(file.to_string()),
+                        source_location: Some(super::common::line_loc(child)),
+                        kind: Some("namespace".to_string()),
+                    });
+                    symbols.insert(n.to_string(), canonical_id);
                 }
             }
             "preproc_include" => {

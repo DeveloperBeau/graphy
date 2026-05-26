@@ -152,3 +152,26 @@ fn pipeline_does_not_emit_local_call_to_cout() {
         .count();
     assert_eq!(bad, 0, "unexpected pipeline call edge to cout");
 }
+
+#[test]
+fn pipeline_deduplicates_namespace_to_single_node() {
+    // The `graphy` namespace appears in types.hpp, helpers.cpp and service.cpp.
+    // After dedup it must collapse to exactly one node (not marked ambiguous).
+    let (g, _guard) = run_pipeline(&fixture_dir(LANG));
+    let namespace_nodes: Vec<_> = g
+        .graph
+        .node_weights()
+        .filter(|n| n.label == "graphy" && n.kind.as_deref().map_or(false, |k| k.starts_with("namespace")))
+        .collect();
+    assert_eq!(
+        namespace_nodes.len(),
+        1,
+        "expected exactly 1 'graphy' namespace node after dedup, got {}: {namespace_nodes:#?}",
+        namespace_nodes.len()
+    );
+    let kind = namespace_nodes[0].kind.as_deref().unwrap_or("");
+    assert!(
+        !kind.contains("ambiguous"),
+        "'graphy' namespace node is marked ambiguous: kind={kind:?}"
+    );
+}
