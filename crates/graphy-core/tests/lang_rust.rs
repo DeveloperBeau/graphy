@@ -164,6 +164,55 @@ fn types_emits_enum_trait_alias_const_static() {
 }
 
 #[test]
+fn types_emits_macro_node_for_make_greeting() {
+    let out = extract_file(&fp("src/types.rs"));
+    assert_extract_has(&out, "make_greeting", "macro");
+}
+
+#[test]
+fn service_emits_method_nodes_for_impl_service() {
+    let out = extract_file(&fp("src/service.rs"));
+    // impl Service { fn new(...), fn run(...) } -> each method emitted as
+    // a function node.
+    assert_extract_has(&out, "new", "function");
+    assert_extract_has(&out, "run", "function");
+}
+
+#[test]
+fn service_emits_contains_edges_from_service_to_methods() {
+    let out = extract_file(&fp("src/service.rs"));
+    let contains: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "contains")
+        .collect();
+    // Service contains `new` and `run`.
+    assert!(
+        contains.iter().any(|e| e.source.ends_with("::Service") && e.target.ends_with("::new")),
+        "missing contains edge Service -> new; contains = {contains:#?}"
+    );
+    assert!(
+        contains.iter().any(|e| e.source.ends_with("::Service") && e.target.ends_with("::run")),
+        "missing contains edge Service -> run; contains = {contains:#?}"
+    );
+}
+
+#[test]
+fn service_emits_references_edge_from_run_to_io_result() {
+    let out = extract_file(&fp("src/service.rs"));
+    // `fn run(&self) -> IoResult<()>` -> references edge from run to IoResult.
+    let refs: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "references")
+        .collect();
+    assert!(
+        refs.iter().any(|e| e.source.ends_with("::run") && e.target.contains("IoResult")),
+        "missing references edge run -> IoResult; refs = {refs:#?}"
+    );
+}
+
+#[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.rs"));
     assert!(out.nodes.is_empty(), "empty.rs produced nodes: {:#?}", out.nodes);

@@ -270,3 +270,86 @@ fn huge_file_completes_in_reasonable_time() {
     let out = extract(&p).unwrap();
     assert!(out.nodes.len() >= 5_000);
 }
+
+// ---------- deferred follow-ups (Tier 0) ----------
+
+#[test]
+fn impl_method_emitted_as_function_node() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub struct Foo;\nimpl Foo { pub fn bar() {} }\n",
+    );
+    let out = extract(&p).unwrap();
+    let labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
+    assert!(
+        labels.contains(&"bar"),
+        "expected method 'bar' as function node; got {labels:?}"
+    );
+    assert!(
+        out.nodes.iter().any(|n| n.label == "bar" && n.kind.as_deref() == Some("function")),
+        "method node must have kind 'function'; nodes = {:#?}",
+        out.nodes,
+    );
+}
+
+#[test]
+fn impl_contains_edge_from_type_to_method() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub struct Foo;\nimpl Foo { pub fn bar() {} }\n",
+    );
+    let out = extract(&p).unwrap();
+    let contains: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "contains")
+        .collect();
+    assert!(
+        contains.iter().any(|e| e.source.ends_with("::Foo") && e.target.ends_with("::bar")),
+        "expected contains edge from Foo to bar; contains edges = {contains:#?}"
+    );
+}
+
+#[test]
+fn function_references_edges_from_param_and_return_types() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub struct Bar;\npub struct Baz;\nfn foo(x: Bar) -> Baz { todo!() }\n",
+    );
+    let out = extract(&p).unwrap();
+    let refs: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "references")
+        .collect();
+    assert!(
+        refs.iter().any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Bar")),
+        "expected references edge from foo to Bar; refs = {refs:#?}"
+    );
+    assert!(
+        refs.iter().any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Baz")),
+        "expected references edge from foo to Baz; refs = {refs:#?}"
+    );
+}
+
+#[test]
+fn macro_rules_emits_macro_node() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "macro_rules! foo { () => {} }\n",
+    );
+    let out = extract(&p).unwrap();
+    assert!(
+        out.nodes.iter().any(|n| n.label == "foo" && n.kind.as_deref() == Some("macro")),
+        "expected macro node labelled 'foo'; nodes = {:#?}",
+        out.nodes,
+    );
+}
