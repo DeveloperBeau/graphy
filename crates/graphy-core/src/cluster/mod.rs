@@ -279,8 +279,18 @@ pub fn cluster_hierarchical_seeded(
     densify(&mut community); // remap to dense 0..k
 
     // First level: constrained local moving over the level-0 dirty set.
+    //
+    // `dirty_per_level[i]` holds indices in the PRIOR run's level-i input
+    // adjacency space. The current run's folded adjacency at level i may
+    // have a different size (because community membership at lower levels
+    // is recomputed fresh). Filter to indices that exist in the current
+    // `community` vector to avoid IOB in `constrained_local_moving`.
     if let Some(hot) = dirty_per_level.first() {
-        let hot_idx_set: HashSet<usize> = hot.iter().copied().collect();
+        let hot_idx_set: HashSet<usize> = hot
+            .iter()
+            .copied()
+            .filter(|&i| i < community.len())
+            .collect();
         constrained_local_moving(&adj, &mut community, total_weight, &hot_idx_set);
     }
     densify(&mut community);
@@ -301,7 +311,14 @@ pub fn cluster_hierarchical_seeded(
             community = (0..adj.len()).collect();
         }
         if let Some(hot) = dirty_per_level.get(level_idx) {
-            let hot_idx_set: HashSet<usize> = hot.iter().copied().collect();
+            // Same bounds filter as the level-0 case: prior level-i indices
+            // may exceed current level-i adj.len() when community structure
+            // diverges from the prior run.
+            let hot_idx_set: HashSet<usize> = hot
+                .iter()
+                .copied()
+                .filter(|&i| i < community.len())
+                .collect();
             constrained_local_moving(&adj, &mut community, total_weight, &hot_idx_set);
         }
         densify(&mut community);
