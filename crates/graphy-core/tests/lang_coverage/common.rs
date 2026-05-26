@@ -76,11 +76,15 @@ pub fn run_pipeline(root: &Path) -> (KnowledgeGraph, TempDir) {
 
 // ----- extraction edge helpers (internal) -----
 
+/// Returns the canonical id of the first node whose label matches.
+/// Assumes labels are unique within the extraction scope; if duplicates
+/// exist, the first encountered wins. Pass through `assert_node` first
+/// if you need to disambiguate.
 fn id_for_label(out: &ExtractionOutput, label: &str) -> Option<String> {
     out.nodes.iter().find(|n| n.label == label).map(|n| n.id.clone())
 }
 
-pub fn assert_extract_edge(out: &ExtractionOutput, relation: &str, src_label: &str, dst_label: &str) {
+pub fn assert_extract_edge(out: &ExtractionOutput, src_label: &str, dst_label: &str, relation: &str) {
     let src_id = id_for_label(out, src_label);
     let dst_id = id_for_label(out, dst_label);
     let hit = if let (Some(s), Some(d)) = (src_id.as_ref(), dst_id.as_ref()) {
@@ -106,6 +110,9 @@ pub fn assert_extract_edge(out: &ExtractionOutput, relation: &str, src_label: &s
 
 // ----- graph-level assertion helpers -----
 
+/// Returns the first node with the given label, or None if absent.
+/// Callers decide how to handle missing nodes; this helper is intended
+/// for read-only inspection where the caller wants control.
 pub fn find_node<'a>(g: &'a KnowledgeGraph, label: &str) -> Option<&'a NodeData> {
     g.graph.node_weights().find(|n| n.label == label)
 }
@@ -128,6 +135,9 @@ pub fn assert_node(g: &KnowledgeGraph, label: &str, kind: &str) {
     }
 }
 
+/// Returns the petgraph node index of the first node whose label matches.
+/// Assumes labels are unique within the graph; if duplicates exist (e.g.
+/// pre-dedup or across files), the first encountered wins.
 fn node_id_for_label(g: &KnowledgeGraph, label: &str) -> Option<petgraph::graph::NodeIndex> {
     g.graph
         .node_indices()
@@ -164,18 +174,26 @@ pub fn assert_edge(g: &KnowledgeGraph, src_label: &str, dst_label: &str, relatio
 pub fn assert_no_edge(g: &KnowledgeGraph, src_label: &str, dst_label: &str) {
     let src = node_id_for_label(g, src_label);
     let dst = node_id_for_label(g, dst_label);
-    if let (Some(s), Some(d)) = (src, dst) {
-        let any = g.graph.edges_connecting(s, d).next().is_some();
-        if any {
-            let edges: Vec<String> = g
-                .graph
-                .edges_connecting(s, d)
-                .map(|e| e.weight().relation.clone())
-                .collect();
+    let (s, d) = match (src, dst) {
+        (Some(s), Some(d)) => (s, d),
+        _ => {
+            let labels: Vec<&str> = g.graph.node_weights().map(|n| n.label.as_str()).collect();
             panic!(
-                "assert_no_edge failed: src={src_label:?} dst={dst_label:?}; \
-                 unexpected edges present with relations {edges:?}"
+                "assert_no_edge failed: missing node label(s) src={src_label:?} dst={dst_label:?}; \
+                 graph labels = {labels:?}"
             );
         }
+    };
+    let any = g.graph.edges_connecting(s, d).next().is_some();
+    if any {
+        let edges: Vec<String> = g
+            .graph
+            .edges_connecting(s, d)
+            .map(|e| e.weight().relation.clone())
+            .collect();
+        panic!(
+            "assert_no_edge failed: src={src_label:?} dst={dst_label:?}; \
+             unexpected edges present with relations {edges:?}"
+        );
     }
 }

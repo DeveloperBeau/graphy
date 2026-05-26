@@ -33,7 +33,7 @@ fn assert_extract_edge_finds_calls_edge() {
     let p = dir.path().join("x.rs");
     std::fs::write(&p, "fn helper() {}\nfn main() { helper(); }\n").unwrap();
     let out = common::extract_file(&p);
-    common::assert_extract_edge(&out, "calls", "main", "helper");
+    common::assert_extract_edge(&out, "main", "helper", "calls");
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn assert_extract_edge_panics_with_edge_dump_on_miss() {
     let p = dir.path().join("x.rs");
     std::fs::write(&p, "fn helper() {}\nfn main() { helper(); }\n").unwrap();
     let out = common::extract_file(&p);
-    common::assert_extract_edge(&out, "calls", "main", "missing");
+    common::assert_extract_edge(&out, "main", "missing", "calls");
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn graph_assertions_work_against_pipeline_output() {
     let (g, _guard) = common::run_pipeline(dir.path());
     common::assert_node(&g, "helper", "function");
     common::assert_edge(&g, "main_fn", "helper", "calls");
-    common::assert_no_edge(&g, "main_fn", "nonexistent");
+    common::assert_no_edge(&g, "helper", "main_fn");
 }
 
 #[test]
@@ -82,4 +82,18 @@ fn assert_node_panics_with_graph_dump_on_miss() {
     std::fs::write(dir.path().join("src/lib.rs"), "pub fn helper() {}\n").unwrap();
     let (g, _guard) = common::run_pipeline(dir.path());
     common::assert_node(&g, "ghost", "function");
+}
+
+#[test]
+#[should_panic(expected = "assert_no_edge failed: missing node label")]
+fn assert_no_edge_panics_when_a_label_is_missing() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::create_dir_all(dir.path().join("src")).unwrap();
+    std::fs::write(
+        dir.path().join("src/lib.rs"),
+        "pub fn helper() {}\npub fn main_fn() { helper(); }\n",
+    )
+    .unwrap();
+    let (g, _guard) = common::run_pipeline(dir.path());
+    common::assert_no_edge(&g, "main_fn", "nonexistent");
 }
