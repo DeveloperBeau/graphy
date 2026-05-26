@@ -198,23 +198,77 @@ JSON is the boundary payload so plugins keep their own internal types. The `defi
 | Erlang         | `.erl`, `.hrl`                                       |
 | TOML           | `.toml`                                              |
 
-Each plugin emits nodes for top-level definitions, edges for imports (`use` / `import` / `require` / `#include` / `@import`), and call-graph edges (`Confidence::Inferred`) for direct invocations that resolve to a local symbol.
+### Node kinds
+
+Each plugin emits nodes for top-level definitions of its language:
+
+| Kind             | Languages where supported                                          |
+|------------------|--------------------------------------------------------------------|
+| `function`       | every language with named functions / methods / subroutines        |
+| `class`          | OO languages (Python, Java, Kotlin, Swift, C#, C++, Ruby, ...)     |
+| `struct`         | Rust, Swift, C, C++, Go, Zig, Julia                                |
+| `enum`           | Rust, Swift, C, C++, Java, Kotlin, C#, TS, PHP, Zig                |
+| `trait`          | Rust                                                               |
+| `interface`      | Kotlin, Java, C#, TS, PHP, Dart, Groovy                            |
+| `protocol`       | Swift, ObjC                                                        |
+| `impl`           | Rust                                                               |
+| `mod` / `module` | Rust, Erlang, Elixir, OCaml, Haskell, Julia, Fortran               |
+| `namespace`      | C++, C#                                                            |
+| `const`/`static` | Rust, Swift, Java, ...                                             |
+| `type`           | Rust, OCaml, Haskell, TS (type alias), C (typedef)                 |
+| `macro`          | Rust (`macro_rules!`)                                              |
+| `record`         | Java, C#, Erlang                                                   |
+| `mixin`          | Dart                                                               |
+| `import`         | every language with module-level imports                           |
+| `pair` / `key`   | TOML (key in section), JSON/YAML keys                              |
+
+### Edge relations
+
+Five edge relations are emitted, per-language as applicable:
+
+| Relation     | Meaning                                                              |
+|--------------|----------------------------------------------------------------------|
+| `imports`    | `use` / `import` / `require` / `#include` / `@import`                |
+| `calls`      | Direct invocations resolving to a local symbol (`Confidence::Inferred`) |
+| `inherits`   | `class A: B` / `extends` / `: BaseClass` / Haskell `class ... where` |
+| `implements` | `impl Trait for Type` / `implements I` / `: IFoo` (C#) / ObjC `<P>`  |
+| `contains`   | Parent-child structural (mod → fn, impl → method, class → method)    |
+| `references` | Type usage in function signatures (parameters + return types)        |
+
+After deduplication the pipeline collapses `extern::<Name>` stubs onto canonical local definitions, so cross-file `imports`/`implements`/`references` resolve to the real target node.
 
 ### Imports
 
 Braced and glob import forms are expanded into one extern node per
 imported symbol so dedup can resolve each independently:
 
-| Source                            | Externs emitted               |
-|-----------------------------------|--------------------------------|
-| `use crate::a::{helper, other};`  | `helper`, `other`              |
-| `from a import x, y`              | `a.x`, `a.y`                   |
-| `import { A, B } from "./m"`      | `./m/A`, `./m/B`               |
-| `import java.util.*;`             | `java.util.*` (glob preserved) |
+| Source                            | Externs emitted                       |
+|-----------------------------------|----------------------------------------|
+| `use crate::a::{helper, other};`  | `helper`, `other`                      |
+| `use std::io::Result as IoResult;`| `std::io::Result`, `IoResult`          |
+| `from a import x, y`              | `a.x`, `a.y`                           |
+| `import { A, B } from "./m"`      | `./m/A`, `./m/B`                       |
+| `import java.util.*;`             | `java.util.*` (glob preserved)         |
+
+Aliased imports emit both the canonical path AND the alias as separate externs so either lookup resolves through dedup.
 
 Glob imports (`a::*`, `from a import *`, `import * as ns from "..."`,
 `java.util.*`) are kept intact and surface in the report as ambiguous
 candidates.
+
+### Format-specific extraction
+
+Markup and data formats follow an adapted shape:
+
+| Format     | Nodes                                | Edges                                        |
+|------------|--------------------------------------|----------------------------------------------|
+| HTML       | id-bearing elements                  | `<a href>`, `<script src>`, `<link href>`    |
+| CSS        | selectors (class, id, element)       | `@import`                                    |
+| SQL        | tables / views / indexes (DDL)       | `references` for inline `REFERENCES` (FK)    |
+| JSON       | top-level + nested keys              | `$ref` -> referenced schema node             |
+| YAML       | keys at all depths                   | `references` for `*anchor` / `<<: *anchor`   |
+| TOML       | sections + per-section `pair` nodes  | -                                            |
+| Markdown   | headings                             | `references` for `[text](other.md)` links    |
 
 ## Layout
 
@@ -225,8 +279,9 @@ graphy/
 │   ├── graphy-core/                 # pipeline + lazy loader + manifest
 │   ├── graphy-cli/                  # binary
 │   ├── graphy-plugin-api/           # C ABI + define_plugin! macro + helpers
-│   └── graphy-plugin-*/             # 37 language cdylib crates
-├── fixtures/                        # synthesized sample projects
+│   └── plugins/
+│       └── graphy-plugin-*/         # 37 language cdylib crates
+├── fixtures/                        # synthesized sample projects + lang-coverage fixtures
 ├── bench/compare.sh                 # release perf harness
 ├── tools/package-release.sh         # build + tarball release
 └── install.sh                       # curl-able installer
@@ -287,12 +342,23 @@ Opt-in assertion gates:
 
 ## Tests
 
-200+ integration tests covering every pipeline stage, both extractor and plugin paths, plus hostile-input cases (XSS in labels, NUL injection, ANSI escapes, RTL override, oversized labels, path traversal, symlink escape, sha256-mismatched plugins, gigantic files, deep nesting, malformed source, gitignore bypass, target-as-directory writes, read-only output dirs).
+600+ integration tests covering every pipeline stage, both extractor and plugin paths, plus hostile-input cases (XSS in labels, NUL injection, ANSI escapes, RTL override, oversized labels, path traversal, symlink escape, sha256-mismatched plugins, gigantic files, deep nesting, malformed source, gitignore bypass, target-as-directory writes, read-only output dirs).
 
 ```bash
 cargo test
 cargo llvm-cov --summary-only
 ```
+
+### Per-language coverage harness
+
+Each shipped language has a dedicated integration binary at `crates/graphy-core/tests/lang_<lang>.rs` and a multi-file fixture at `fixtures/lang-coverage/<lang>/`. Tests run in two tiers per language:
+
+- **Tier 1 (per-file extract)** - `extract(path)` on each fixture file, asserting every checklist node `kind` and edge `relation` the extractor claims to emit.
+- **Tier 2 (full pipeline)** - `Pipeline::new(cfg).run()` on the fixture root with hermetic `tempdir` output, asserting cross-file imports resolve through dedup, external calls produce no local edge, inheritance/implements/contains edges survive resolution, and a node-count floor guards against silent regressions.
+
+Shared helpers live in `crates/graphy-core/tests/lang_coverage/common.rs` (`fixture_dir`, `extract_file`, `assert_extract_has`, `assert_extract_edge`, `run_pipeline`, `assert_node`, `assert_edge`, `assert_no_edge`).
+
+Per-language capability audits with feature checklists, supported-vs-deferred tables, and commit references for closed gaps are tracked outside this repo.
 
 ## License
 
