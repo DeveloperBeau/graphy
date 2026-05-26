@@ -151,6 +151,22 @@ fn extracts_type_alias_items() {
     assert!(out.nodes.iter().any(|n| n.label == "Id" && n.kind.as_deref() == Some("type")));
 }
 
+#[test]
+fn extracts_implements_edge_for_impl_trait_for_type() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub trait Greet { fn hi(&self); }\npub struct Bot;\nimpl Greet for Bot { fn hi(&self) {} }\n",
+    );
+    let out = extract(&p).unwrap();
+    let implements: Vec<_> = out.edges.iter().filter(|e| e.relation == "implements").collect();
+    assert_eq!(implements.len(), 1, "expected one implements edge, got {:?}", implements);
+    let e = implements[0];
+    assert!(e.source.ends_with("::Bot"), "source = {}", e.source);
+    assert!(e.target.ends_with("::Greet"), "target = {}", e.target);
+}
+
 // ---------- hostile ----------
 
 #[test]

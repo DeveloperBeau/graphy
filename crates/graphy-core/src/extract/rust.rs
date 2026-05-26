@@ -65,6 +65,27 @@ fn walk_items(
                         kind: Some(kind.trim_end_matches("_item").to_string()),
                     });
                 }
+                if kind == "impl_item" {
+                    let trait_node = child.child_by_field_name("trait");
+                    let type_node = child.child_by_field_name("type");
+                    if let (Some(t), Some(ty)) = (trait_node, type_node) {
+                        if let (Ok(trait_name), Ok(type_name)) = (
+                            t.utf8_text(src.as_bytes()),
+                            ty.utf8_text(src.as_bytes()),
+                        ) {
+                            let trait_leaf = trait_name.rsplit("::").next().unwrap_or(trait_name).trim();
+                            let type_leaf = type_name.rsplit("::").next().unwrap_or(type_name).trim();
+                            let source_id = make_id(file, type_leaf);
+                            let target_id = make_id(file, trait_leaf);
+                            out.edges.push(Edge {
+                                source: source_id,
+                                target: target_id,
+                                relation: "implements".into(),
+                                confidence: Confidence::Inferred,
+                            });
+                        }
+                    }
+                }
             }
             "use_declaration" => {
                 let text = child
