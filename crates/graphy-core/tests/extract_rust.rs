@@ -124,6 +124,25 @@ fn malformed_source_does_not_panic() {
     let _ = out.nodes.len();
 }
 
+// ---------- gap remediation ----------
+
+#[test]
+fn extracts_const_and_static_items() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub const MAX: u32 = 10;\npub static NAME: &str = \"x\";\n",
+    );
+    let out = extract(&p).unwrap();
+    let kinds: Vec<_> = out.nodes.iter().filter_map(|n| n.kind.as_deref()).collect();
+    assert!(kinds.contains(&"const"), "expected const node, got {kinds:?}");
+    assert!(kinds.contains(&"static"), "expected static node, got {kinds:?}");
+    let labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
+    assert!(labels.contains(&"MAX"));
+    assert!(labels.contains(&"NAME"));
+}
+
 // ---------- hostile ----------
 
 #[test]

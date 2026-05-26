@@ -53,7 +53,7 @@ fn walk_items(
         let kind = child.kind();
         match kind {
             "function_item" | "struct_item" | "enum_item" | "trait_item"
-            | "mod_item" | "impl_item" => {
+            | "mod_item" | "impl_item" | "const_item" | "static_item" => {
                 if let Some(name) = name_of(child, src) {
                     let id = make_id(file, &name);
                     symbols.insert(name.clone(), id.clone());
