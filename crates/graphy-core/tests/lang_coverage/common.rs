@@ -48,3 +48,31 @@ pub fn assert_extract_has(out: &ExtractionOutput, label: &str, kind: &str) {
         );
     }
 }
+
+fn id_for_label(out: &ExtractionOutput, label: &str) -> Option<String> {
+    out.nodes.iter().find(|n| n.label == label).map(|n| n.id.clone())
+}
+
+pub fn assert_extract_edge(out: &ExtractionOutput, relation: &str, src_label: &str, dst_label: &str) {
+    let src_id = id_for_label(out, src_label);
+    let dst_id = id_for_label(out, dst_label);
+    let hit = if let (Some(s), Some(d)) = (src_id.as_ref(), dst_id.as_ref()) {
+        out.edges
+            .iter()
+            .any(|e| e.relation == relation && &e.source == s && &e.target == d)
+    } else {
+        false
+    };
+    if !hit {
+        let edge_dump: Vec<(String, String, String)> = out
+            .edges
+            .iter()
+            .map(|e| (e.relation.clone(), e.source.clone(), e.target.clone()))
+            .collect();
+        panic!(
+            "assert_extract_edge failed: relation={relation:?} src_label={src_label:?} \
+             dst_label={dst_label:?} (src_id={src_id:?}, dst_id={dst_id:?}); \
+             extracted edges = {edge_dump:#?}"
+        );
+    }
+}

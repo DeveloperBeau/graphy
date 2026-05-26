@@ -26,3 +26,22 @@ fn assert_extract_has_panics_with_lang_context_on_miss() {
     let out = common::extract_file(&p);
     common::assert_extract_has(&out, "nope", "function");
 }
+
+#[test]
+fn assert_extract_edge_finds_calls_edge() {
+    let dir = tempfile::tempdir().unwrap();
+    let p = dir.path().join("x.rs");
+    std::fs::write(&p, "fn helper() {}\nfn main() { helper(); }\n").unwrap();
+    let out = common::extract_file(&p);
+    common::assert_extract_edge(&out, "calls", "main", "helper");
+}
+
+#[test]
+#[should_panic(expected = "assert_extract_edge failed")]
+fn assert_extract_edge_panics_with_edge_dump_on_miss() {
+    let dir = tempfile::tempdir().unwrap();
+    let p = dir.path().join("x.rs");
+    std::fs::write(&p, "fn helper() {}\nfn main() { helper(); }\n").unwrap();
+    let out = common::extract_file(&p);
+    common::assert_extract_edge(&out, "calls", "main", "missing");
+}
