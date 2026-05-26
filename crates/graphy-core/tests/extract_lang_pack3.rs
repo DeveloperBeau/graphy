@@ -220,3 +220,4 @@ fn toml_empty_safe() {
     let out = run(".toml", "");
     assert!(out.nodes.is_empty());
 }
+

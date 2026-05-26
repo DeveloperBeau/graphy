@@ -48,17 +48,6 @@ fn config_emits_nested_key_nodes() {
 }
 
 #[test]
-fn config_emits_no_edges() {
-    // YAML extractor does not emit any edges (no anchor/alias edges).
-    let out = extract_file(&fp("config.yaml"));
-    assert!(
-        out.edges.is_empty(),
-        "expected no edges from config.yaml; edges = {:#?}",
-        out.edges
-    );
-}
-
-#[test]
 fn anchors_emits_anchor_key_nodes() {
     let out = extract_file(&fp("anchors.yaml"));
     // Top-level anchored mapping: defaults, production, staging
@@ -76,13 +65,45 @@ fn anchors_emits_nested_anchor_fields() {
     assert_extract_has(&out, "enabled", "yaml_key");
 }
 
+// ---------- Anchor/alias reference edges ----------
+//
+// Anchor/alias extraction is now implemented. The extractor emits `references`
+// edges from alias users back to the anchored key. This closes the YAML
+// anchor/alias deferred item.
+
 #[test]
-fn anchors_emits_no_alias_edges() {
-    // Anchor/alias references do NOT produce edges in current extractor.
+fn anchors_production_references_defaults() {
+    // `production` uses `<<: *defaults` so it should reference the `defaults` key.
+    let out = extract_file(&fp("anchors.yaml"));
+    assert_extract_edge(&out, "production", "defaults", "references");
+}
+
+#[test]
+fn anchors_staging_references_defaults() {
+    // `staging` uses `<<: *defaults` similarly.
+    let out = extract_file(&fp("anchors.yaml"));
+    assert_extract_edge(&out, "staging", "defaults", "references");
+}
+
+#[test]
+fn anchors_emits_references_edges() {
+    // At least one references edge exists from anchors.yaml.
     let out = extract_file(&fp("anchors.yaml"));
     assert!(
+        !out.edges.is_empty(),
+        "expected anchor/alias reference edges from anchors.yaml; none found"
+    );
+    let refs: Vec<_> = out.edges.iter().filter(|e| e.relation == "references").collect();
+    assert!(!refs.is_empty(), "expected references edges; got: {:#?}", out.edges);
+}
+
+#[test]
+fn config_emits_no_edges() {
+    // config.yaml has no anchors/aliases; still expects no edges.
+    let out = extract_file(&fp("config.yaml"));
+    assert!(
         out.edges.is_empty(),
-        "expected no edges from anchors.yaml (anchor/alias edges not implemented); edges = {:#?}",
+        "expected no edges from config.yaml; edges = {:#?}",
         out.edges
     );
 }
@@ -140,13 +161,20 @@ fn pipeline_emits_anchor_section_nodes() {
 }
 
 #[test]
-fn pipeline_emits_no_edges() {
-    // YAML extractor produces no edges; pipeline output should be edge-free.
+fn pipeline_emits_anchor_alias_edges() {
+    // Anchor/alias edges from anchors.yaml appear in the merged graph.
+    let (g, _guard) = run_pipeline(&fixture_dir(LANG));
+    assert_edge(&g, "production", "defaults", "references");
+    assert_edge(&g, "staging", "defaults", "references");
+}
+
+#[test]
+fn pipeline_emits_references_edges() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let edge_count = g.graph.edge_references().count();
-    assert_eq!(
-        edge_count, 0,
-        "expected 0 edges for YAML-only fixture; got {edge_count}"
+    assert!(
+        edge_count > 0,
+        "expected anchor/alias reference edges in pipeline output; got 0"
     );
 }
 
