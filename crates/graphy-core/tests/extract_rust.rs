@@ -167,6 +167,18 @@ fn extracts_implements_edge_for_impl_trait_for_type() {
     assert!(e.target.ends_with("::Greet"), "target = {}", e.target);
 }
 
+#[test]
+fn aliased_import_preserves_alias_name() {
+    let dir = tempdir().unwrap();
+    let p = write(dir.path(), "x.rs", "use std::io::Result as IoResult;\nfn f() {}\n");
+    let out = extract(&p).unwrap();
+    let labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
+    assert!(
+        labels.iter().any(|l| l.contains("Result") || l.contains("IoResult")),
+        "expected aliased import to be visible in nodes, got {labels:?}"
+    );
+}
+
 // ---------- hostile ----------
 
 #[test]
