@@ -41,7 +41,7 @@ fn walk(
                     emit_def(out, symbols, file, "function", n, child);
                 }
             }
-            "class_declaration" | "object_declaration" => {
+            "class_declaration" | "object_declaration" | "interface_declaration" => {
                 if let Some(n) = name_of(child, src) {
                     emit_def(
                         out,
