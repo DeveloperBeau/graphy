@@ -1,0 +1,36 @@
+@import url("theme.css");
+@import "components.css";
+
+/* Element selector */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Id selector */
+#main {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Class selector */
+.card {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Compound / descendant selector */
+.card .title {
+  font-weight: bold;
+}
+
+/* Pseudo-class selector */
+a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+  }
+}
