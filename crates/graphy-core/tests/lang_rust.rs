@@ -127,13 +127,23 @@ fn service_emits_implements_edge_for_greet_for_service() {
 #[test]
 fn service_does_not_emit_call_to_external_println() {
     let out = extract_file(&fp("src/service.rs"));
-    // `println!` is a macro and `println` is not defined locally; no `calls` edge to it.
-    let calls: Vec<_> = out
-        .edges
+    let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
+    // Anchor the assertion: at least one `calls` edge must exist in service.rs
+    // (Service::run calls format_name). Without this, the negative assertion below
+    // would pass trivially if the call-edge subsystem were silently broken.
+    assert!(
+        !all_calls.is_empty(),
+        "no `calls` edges from service.rs — exclusion check would be vacuous; edges = {:#?}",
+        out.edges
+    );
+    let println_calls: Vec<_> = all_calls
         .iter()
-        .filter(|e| e.relation == "calls" && e.target.contains("println"))
+        .filter(|e| e.target.contains("println"))
         .collect();
-    assert!(calls.is_empty(), "unexpected call edge to println: {calls:#?}");
+    assert!(
+        println_calls.is_empty(),
+        "unexpected call edge to println: {println_calls:#?}"
+    );
 }
 
 #[test]
@@ -157,7 +167,7 @@ fn types_emits_enum_trait_alias_const_static() {
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.rs"));
     assert!(out.nodes.is_empty(), "empty.rs produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty());
+    assert!(out.edges.is_empty(), "empty.rs produced edges: {:#?}", out.edges);
 }
 
 // ---------- Edge cases (inline, no fixture file) ----------
@@ -177,4 +187,15 @@ fn non_utf8_bytes_with_rs_suffix_do_not_crash() {
     std::fs::write(&p, [0xff_u8, 0xfe, 0xfd, 0x00, 0x01]).unwrap();
     // Either Ok(empty/partial) or Err - never a panic.
     let _ = graphy_core::extract::extract(&p);
+}
+
+#[test]
+fn fixture_dir_points_at_expected_path() {
+    let p = fixture_dir(LANG);
+    let s = p.to_string_lossy();
+    assert!(
+        s.ends_with("fixtures/lang-coverage/rust"),
+        "fixture_dir(rust) returned unexpected path: {s}"
+    );
+    assert!(p.join("src/lib.rs").exists(), "expected fixture file missing: {}", p.display());
 }
