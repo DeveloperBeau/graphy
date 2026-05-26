@@ -79,7 +79,7 @@ fn walk_items(
                             let type_leaf = type_name.rsplit("::").next().unwrap_or(type_name).trim();
                             let type_leaf = type_leaf.split('<').next().unwrap_or(type_leaf).trim();
                             let source_id = make_id(file, type_leaf);
-                            let target_id = make_id(file, trait_leaf);
+                            let target_id = format!("extern::{trait_leaf}");
                             out.edges.push(Edge {
                                 source: source_id,
                                 target: target_id,
