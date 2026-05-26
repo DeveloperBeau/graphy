@@ -2,8 +2,9 @@
 //!
 //! Emits nodes for `fn`, `struct`, `enum`, `trait`, `impl`, `mod`, `const`,
 //! `static`, and `type` items, plus edges for `use` (imports), direct call
-//! expressions inside fn bodies, `impl Trait for Type` (`implements`), and
-//! parent-to-child structural relationships (`contains`).
+//! expressions inside fn bodies, `impl Trait for Type` (`implements`),
+//! parent-to-child structural relationships (`contains`), and type usage in
+//! function signatures (`references`).
 
 use std::collections::HashMap;
 use std::fs;
@@ -65,6 +66,10 @@ fn walk_items(
                         source_location: Some(line_loc(child)),
                         kind: Some(kind.trim_end_matches("_item").to_string()),
                     });
+                    // Emit references edges from function parameters and return type.
+                    if kind == "function_item" {
+                        emit_references_edges(child, src, file, &id, out);
+                    }
                     // Emit contains edges from mod to its direct child items.
                     if kind == "mod_item" {
                         emit_contains_from_body(child, src, file, &id, out, symbols);
@@ -160,6 +165,107 @@ fn emit_contains_from_body(
             }
         }
     }
+}
+
+/// Emit `references` edges from `fn_id` to each named type mentioned in the
+/// function's parameter list and return type.
+fn emit_references_edges(
+    fn_node: TsNode,
+    src: &str,
+    file: &str,
+    fn_id: &str,
+    out: &mut ExtractionOutput,
+) {
+    // Walk parameters field.
+    if let Some(params) = fn_node.child_by_field_name("parameters") {
+        let mut cursor = params.walk();
+        for param in params.children(&mut cursor) {
+            if param.kind() == "parameter" {
+                if let Some(ty_node) = param.child_by_field_name("type") {
+                    emit_type_reference(ty_node, src, file, fn_id, out);
+                }
+            }
+        }
+    }
+    // Walk return_type field.
+    if let Some(ret) = fn_node.child_by_field_name("return_type") {
+        emit_type_reference(ret, src, file, fn_id, out);
+    }
+}
+
+/// Emit a single `references` edge from `source_id` to the type named by
+/// `type_node`, stripping generic arguments.  Emits both an extern target
+/// (for unresolved types) and a local target (so dedup can collapse to a
+/// locally defined type).
+fn emit_type_reference(
+    type_node: TsNode,
+    src: &str,
+    file: &str,
+    source_id: &str,
+    out: &mut ExtractionOutput,
+) {
+    let type_name = extract_type_leaf(type_node, src);
+    if let Some(name) = type_name {
+        if is_primitive_or_ignored(&name) {
+            return;
+        }
+        let extern_target = format!("extern::{name}");
+        out.edges.push(Edge {
+            source: source_id.to_string(),
+            target: extern_target,
+            relation: "references".into(),
+            confidence: Confidence::Inferred,
+        });
+        // Local target lets dedup resolve to a node defined in the same file.
+        let local_target = make_id(file, &name);
+        out.edges.push(Edge {
+            source: source_id.to_string(),
+            target: local_target,
+            relation: "references".into(),
+            confidence: Confidence::Inferred,
+        });
+    }
+}
+
+/// Recursively extract the leaf type name from a type AST node.
+fn extract_type_leaf<'a>(node: TsNode<'a>, src: &'a str) -> Option<String> {
+    match node.kind() {
+        "type_identifier" | "identifier" => {
+            node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string())
+        }
+        "generic_type" => {
+            // First named child is the base type, e.g. Vec<T> -> Vec.
+            node.named_child(0).and_then(|c| extract_type_leaf(c, src))
+        }
+        "scoped_type_identifier" => {
+            // Take the last path segment and strip generics.
+            node.utf8_text(src.as_bytes()).ok().map(|s| {
+                s.rsplit("::").next().unwrap_or(s).split('<').next().unwrap_or(s).to_string()
+            })
+        }
+        "reference_type" | "mutable_specifier" => {
+            // Walk children to find the inner type (e.g. &T -> T).
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                if let Some(name) = extract_type_leaf(child, src) {
+                    return Some(name);
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+/// Returns true for types that should not produce `references` edges because
+/// they are either Rust primitives or well-known built-in names.
+fn is_primitive_or_ignored(name: &str) -> bool {
+    matches!(
+        name,
+        "bool" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
+            | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
+            | "f32" | "f64" | "str" | "String" | "char" | "()" | "Self" | "self"
+    )
 }
 
 fn name_of(node: TsNode, src: &str) -> Option<String> {

@@ -313,3 +313,27 @@ fn impl_contains_edge_from_type_to_method() {
         "expected contains edge from Foo to bar; contains edges = {contains:#?}"
     );
 }
+
+#[test]
+fn function_references_edges_from_param_and_return_types() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub struct Bar;\npub struct Baz;\nfn foo(x: Bar) -> Baz { todo!() }\n",
+    );
+    let out = extract(&p).unwrap();
+    let refs: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "references")
+        .collect();
+    assert!(
+        refs.iter().any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Bar")),
+        "expected references edge from foo to Bar; refs = {refs:#?}"
+    );
+    assert!(
+        refs.iter().any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Baz")),
+        "expected references edge from foo to Baz; refs = {refs:#?}"
+    );
+}
