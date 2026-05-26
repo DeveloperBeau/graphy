@@ -10,3 +10,5 @@ graphy-out/
 .DS_Store
 /Cargo.lock.bak
 **/graphy-out/
+CLAUDE.local.md
+bench/comparison.md
