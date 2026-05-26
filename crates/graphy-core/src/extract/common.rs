@@ -59,6 +59,36 @@ pub fn emit_import(out: &mut ExtractionOutput, file: &str, target: &str, node: T
     });
 }
 
+/// Emit an `inherits` or `implements` edge from `child_id` to an external
+/// parent/interface symbol. Uses `Extracted` confidence since the
+/// relationship is stated explicitly in the source syntax.
+pub fn emit_inherits(
+    out: &mut ExtractionOutput,
+    child_id: &str,
+    parent_name: &str,
+    relation: &str,
+    node: TsNode,
+) {
+    let parent_name = parent_name.trim();
+    if parent_name.is_empty() {
+        return;
+    }
+    let target_id = format!("extern::{parent_name}");
+    out.nodes.push(Node {
+        id: target_id.clone(),
+        label: parent_name.to_string(),
+        source_file: None,
+        source_location: Some(line_loc(node)),
+        kind: Some("extern".into()),
+    });
+    out.edges.push(Edge {
+        source: child_id.to_string(),
+        target: target_id,
+        relation: relation.to_string(),
+        confidence: Confidence::Extracted,
+    });
+}
+
 pub fn emit_call(
     out: &mut ExtractionOutput,
     symbols: &HashMap<String, String>,
