@@ -172,12 +172,15 @@ fn scc_widening_does_not_hurt_modularity() {
         let rec_py = dir.path().join("rec.py");
         fs::write(
             &rec_py,
-            "def a(): return b()\n\
-             def b(): return c()\n\
-             def c(): return d()\n\
+            "def a(): return b() + p()\n\
+             def b(): return c() + q()\n\
+             def c(): return d() + r()\n\
              def d(): return e()\n\
              def e(): return f()\n\
-             def f(): return a()\n",
+             def f(): return a()\n\
+             def p(): return 1\n\
+             def q(): return 2\n\
+             def r(): return 3\n",
         ).unwrap();
 
         // First run: full pipeline (writes graph.json + scc.json on the
@@ -190,12 +193,15 @@ fn scc_widening_does_not_hurt_modularity() {
         // Touch the file to force an incremental delta-Louvain run.
         fs::write(
             &rec_py,
-            "def a(): return b()\n\
-             def b(): return c()\n\
-             def c(): return d()\n\
+            "def a(): return b() + p()\n\
+             def b(): return c() + q()\n\
+             def c(): return d() + r()\n\
              def d(): return e()\n\
              def e(): return f()\n\
-             def f(): return a()  # noop\n",
+             def f(): return a()  # noop\n\
+             def p(): return 1\n\
+             def q(): return 2\n\
+             def r(): return 3\n",
         ).unwrap();
 
         cfg.incremental = true;
@@ -235,14 +241,12 @@ fn scc_widening_does_not_hurt_modularity() {
         }
     };
 
-    // SCC-on may legitimately be lower than SCC-off on this small
-    // ring graph because Louvain has multiple local optima and the
-    // 6-node seeded prior happens to lock SCC-on into a 3-community
-    // labelling (q=0.333) while SCC-off finds a 2-community one
-    // (q=0.444). Observed worst-case absolute gap in CI: ~0.111, so
-    // we tolerate up to 0.15 here. Tighten the bound if real
-    // regressions emerge on larger fixtures.
-    let epsilon = 0.15;
+    // 9-fn fixture: 6-fn ring SCC (a..f) + 3 peripheral nodes (p,q,r)
+    // called from ring members. SCC widening prevents community labels
+    // from getting trapped inside the ring; with the peripheral nodes
+    // providing non-SCC context, q_on should hold within a tight
+    // heuristic-noise budget.
+    let epsilon = 0.05;
     assert!(
         q_on >= q_off - epsilon,
         "SCC widening should not hurt modularity (within {epsilon:.2}): q_on={q_on:.4}, q_off={q_off:.4}, diff={:.4}",
