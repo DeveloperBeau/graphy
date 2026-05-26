@@ -57,18 +57,17 @@ fn walk_defs(
                 }
             }
             "class_declaration"
+            | "abstract_class_declaration"
             | "interface_declaration"
             | "type_alias_declaration"
             | "enum_declaration" => {
                 if let Some(n) = name_of(child, src) {
-                    emit_def(
-                        out,
-                        symbols,
-                        file,
-                        child.kind().trim_end_matches("_declaration"),
-                        n,
-                        child,
-                    );
+                    // abstract_class_declaration -> kind="class" (same as class_declaration)
+                    let kind = match child.kind() {
+                        "abstract_class_declaration" => "class",
+                        other => other.trim_end_matches("_declaration"),
+                    };
+                    emit_def(out, symbols, file, kind, n, child);
                 }
             }
             "method_definition" => {

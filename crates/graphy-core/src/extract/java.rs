@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
 use super::common::{emit_call, emit_def, emit_import, name_of};
-use crate::schema::ExtractionOutput;
+use crate::schema::{Confidence, Edge, ExtractionOutput};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
@@ -48,14 +48,11 @@ fn walk(
             | "enum_declaration"
             | "record_declaration" => {
                 if let Some(n) = name_of(child, src) {
-                    emit_def(
-                        out,
-                        symbols,
-                        file,
-                        child.kind().trim_end_matches("_declaration"),
-                        n,
-                        child,
-                    );
+                    let node_kind = child.kind().trim_end_matches("_declaration");
+                    let class_id = format!("{file}::{n}");
+                    emit_def(out, symbols, file, node_kind, n, child);
+                    // Emit inherits/implements edges.
+                    emit_java_hierarchy(child, src, &class_id, out);
                 }
             }
             "import_declaration" => {
@@ -92,6 +89,49 @@ fn walk_calls(
             collect_calls(child, src, &caller_id, out, symbols);
         }
         walk_calls(child, src, file, out, symbols);
+    }
+}
+
+/// Walk the direct type-reference children of superclass / interfaces clauses
+/// and emit `inherits` (extends) and `implements` edges.
+fn emit_java_hierarchy(node: TsNode, src: &str, class_id: &str, out: &mut ExtractionOutput) {
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        let relation = match child.kind() {
+            "superclass" => "inherits",
+            "super_interfaces" | "interfaces" => "implements",
+            _ => continue,
+        };
+        // The direct children of superclass/super_interfaces include a
+        // type_list or a single type node. Walk their named children to
+        // find `type_identifier` leaves.
+        collect_type_identifiers(child, src, class_id, relation, out);
+    }
+}
+
+fn collect_type_identifiers(
+    node: TsNode,
+    src: &str,
+    class_id: &str,
+    relation: &str,
+    out: &mut ExtractionOutput,
+) {
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        if child.kind() == "type_identifier" {
+            if let Ok(name) = child.utf8_text(src.as_bytes()) {
+                let name = name.trim();
+                if !name.is_empty() {
+                    out.edges.push(Edge {
+                        source: class_id.to_string(),
+                        target: format!("extern::{name}"),
+                        relation: relation.to_string(),
+                        confidence: Confidence::Extracted,
+                    });
+                }
+            }
+        }
+        collect_type_identifiers(child, src, class_id, relation, out);
     }
 }
 
