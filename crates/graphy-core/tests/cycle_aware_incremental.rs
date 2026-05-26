@@ -55,7 +55,11 @@ fn delta_louvain_with_scc_produces_reasonable_modularity() {
     let delta_q = graphy_core::cluster::modularity(&delta.graph);
 
     // The incremental graph should also have 6 nodes.
-    assert_eq!(delta.graph.node_count(), 6, "expected 6 nodes after incremental run");
+    assert_eq!(
+        delta.graph.node_count(),
+        6,
+        "expected 6 nodes after incremental run"
+    );
 
     // Both runs should find non-negative modularity (they found some structure).
     // We do not assert a tight numerical match because Louvain is a heuristic
@@ -120,7 +124,10 @@ fn full_rebuild_clears_stale_scc_cache() {
         .join("graphy-out")
         .join(".cache")
         .join("scc.json");
-    assert!(scc_path.exists(), "scc.json must exist after incremental run");
+    assert!(
+        scc_path.exists(),
+        "scc.json must exist after incremental run"
+    );
 
     // Now stamp the file with garbage so we can detect a "reset" vs a "rewrite".
     fs::write(&scc_path, b"STALE_MARKER").unwrap();
@@ -140,7 +147,9 @@ fn full_rebuild_clears_stale_scc_cache() {
     if scc_path.exists() {
         let contents = fs::read(&scc_path).unwrap();
         assert!(
-            !contents.windows(b"STALE_MARKER".len()).any(|w| w == b"STALE_MARKER"),
+            !contents
+                .windows(b"STALE_MARKER".len())
+                .any(|w| w == b"STALE_MARKER"),
             "scc.json must be reset on full rebuild; still contains stale marker"
         );
     }
@@ -175,7 +184,8 @@ fn scc_widening_does_not_hurt_modularity() {
              def p(): return 1\n\
              def q(): return 2\n\
              def r(): return 3\n",
-        ).unwrap();
+        )
+        .unwrap();
 
         // First run: full pipeline (writes graph.json + scc.json on the
         // incremental path's first opportunity).
@@ -196,7 +206,8 @@ fn scc_widening_does_not_hurt_modularity() {
              def p(): return 1\n\
              def q(): return 2\n\
              def r(): return 3\n",
-        ).unwrap();
+        )
+        .unwrap();
 
         cfg.incremental = true;
         let r = Pipeline::new(cfg).run().unwrap();

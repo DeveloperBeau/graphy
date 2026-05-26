@@ -35,7 +35,11 @@ fn extracts_functions_and_structs() {
 #[test]
 fn extracts_use_statements_as_imports() {
     let dir = tempdir().unwrap();
-    let p = write(dir.path(), "x.rs", "use std::collections::HashMap;\nfn f(){}\n");
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "use std::collections::HashMap;\nfn f(){}\n",
+    );
     let out = extract(&p).unwrap();
     let has_import = out.edges.iter().any(|e| e.relation == "imports");
     assert!(has_import);
@@ -71,7 +75,10 @@ fn call_to_external_symbol_yields_no_call_edge() {
     let out = extract(&p).unwrap();
     // No local symbol matches `external_thing`, so no call edge is emitted.
     let calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    assert!(calls.is_empty(), "external call must not produce a local edge");
+    assert!(
+        calls.is_empty(),
+        "external call must not produce a local edge"
+    );
 }
 
 #[test]
@@ -80,7 +87,11 @@ fn each_node_has_source_file_and_location() {
     let p = write(dir.path(), "x.rs", "fn f(){}\n");
     let out = extract(&p).unwrap();
     for n in &out.nodes {
-        assert!(n.source_file.is_some(), "missing source_file on {}", n.label);
+        assert!(
+            n.source_file.is_some(),
+            "missing source_file on {}",
+            n.label
+        );
         if n.kind.as_deref() != Some("import") {
             assert!(n.source_location.is_some());
         }
@@ -142,8 +153,12 @@ fn non_utf8_bytes_with_rs_suffix_do_not_crash() {
 fn very_deep_nesting_does_not_blow_stack() {
     let dir = tempdir().unwrap();
     let mut body = String::new();
-    for _ in 0..400 { body.push_str("fn outer(){ "); }
-    for _ in 0..400 { body.push_str("} "); }
+    for _ in 0..400 {
+        body.push_str("fn outer(){ ");
+    }
+    for _ in 0..400 {
+        body.push_str("} ");
+    }
     let p = write(dir.path(), "deep.rs", &body);
     let _ = extract(&p).unwrap();
 }
@@ -152,7 +167,9 @@ fn very_deep_nesting_does_not_blow_stack() {
 fn huge_file_completes_in_reasonable_time() {
     let dir = tempdir().unwrap();
     let mut body = String::new();
-    for i in 0..5_000 { body.push_str(&format!("pub fn f{i}() {{ }}\n")); }
+    for i in 0..5_000 {
+        body.push_str(&format!("pub fn f{i}() {{ }}\n"));
+    }
     let p = write(dir.path(), "big.rs", &body);
     let out = extract(&p).unwrap();
     assert!(out.nodes.len() >= 5_000);

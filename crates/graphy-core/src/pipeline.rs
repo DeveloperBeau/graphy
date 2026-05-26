@@ -189,10 +189,8 @@ impl Pipeline {
                 for file in &files {
                     let key = file.to_string_lossy().into_owned();
                     if !augmented.contains_key(&key) {
-                        let _ = cache.save_dedup_map(
-                            file,
-                            &crate::dedup::map::DedupMap::empty_for(""),
-                        );
+                        let _ =
+                            cache.save_dedup_map(file, &crate::dedup::map::DedupMap::empty_for(""));
                     }
                 }
                 cache.flush().ok();

@@ -48,7 +48,10 @@ fn include_docs_pulls_in_md_yml_rst() {
     fs::write(dir.path().join("c.rst"), ".. x").unwrap();
     let files = collect_files(
         dir.path(),
-        DetectOptions { include_docs: true, ..Default::default() },
+        DetectOptions {
+            include_docs: true,
+            ..Default::default()
+        },
     );
     let n = names(&files);
     assert!(n.contains(&"a.md".into()));
@@ -146,7 +149,10 @@ fn follow_symlinks_opt_in_is_honored() {
         std::os::unix::fs::symlink(outside.path(), dir.path().join("linked")).unwrap();
         let files = collect_files(
             dir.path(),
-            DetectOptions { follow_symlinks: true, ..Default::default() },
+            DetectOptions {
+                follow_symlinks: true,
+                ..Default::default()
+            },
         );
         assert!(files.iter().any(|p| p.ends_with("real.rs")));
     }
@@ -156,7 +162,9 @@ fn follow_symlinks_opt_in_is_honored() {
 fn massive_tree_completes_in_reasonable_time() {
     let dir = tempdir().unwrap();
     for i in 0..500 {
-        let sub = dir.path().join(format!("d{}/d{}/d{}", i % 7, i % 11, i % 13));
+        let sub = dir
+            .path()
+            .join(format!("d{}/d{}/d{}", i % 7, i % 11, i % 13));
         fs::create_dir_all(&sub).unwrap();
         fs::write(sub.join(format!("f{i}.rs")), "").unwrap();
     }

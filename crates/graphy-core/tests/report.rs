@@ -6,7 +6,13 @@ use graphy_core::report::render;
 use graphy_core::schema::{Confidence, Edge, ExtractionOutput, Node};
 
 fn n(id: &str) -> Node {
-    Node { id: id.into(), label: id.into(), source_file: None, source_location: None, kind: None }
+    Node {
+        id: id.into(),
+        label: id.into(),
+        source_file: None,
+        source_location: None,
+        kind: None,
+    }
 }
 
 fn e(s: &str, t: &str) -> Edge {

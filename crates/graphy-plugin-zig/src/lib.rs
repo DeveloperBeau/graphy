@@ -75,10 +75,11 @@ fn walk(
                 let mut acur = child.walk();
                 for c in child.children(&mut acur) {
                     if c.kind() == "builtin_function"
-                        && let Some(target) = builtin_import_arg(c, src) {
-                            emit_import(out, file, target, child.start_position().row);
-                            found_import = true;
-                        }
+                        && let Some(target) = builtin_import_arg(c, src)
+                    {
+                        emit_import(out, file, target, child.start_position().row);
+                        found_import = true;
+                    }
                 }
                 if let (Some(n), true) = (name, found_import) {
                     emit_def(out, symbols, file, "import", n, child.start_position().row);
@@ -86,7 +87,14 @@ fn walk(
             }
             "function_declaration" => {
                 if let Some(n) = first_identifier(child, src) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             _ => {}
@@ -124,9 +132,10 @@ fn collect_calls(
     for child in node.children(&mut cursor) {
         if child.kind() == "call_expression"
             && let Some(first) = child.named_child(0)
-                && let Ok(text) = first.utf8_text(src.as_bytes()) {
-                    emit_call(out, symbols, caller_id, text);
-                }
+            && let Ok(text) = first.utf8_text(src.as_bytes())
+        {
+            emit_call(out, symbols, caller_id, text);
+        }
         collect_calls(child, src, caller_id, out, symbols);
     }
 }

@@ -38,7 +38,11 @@ fn ensure_plugin(plugin: &str) -> PathBuf {
             .expect("invoke cargo");
         assert!(status.success(), "cargo build {plugin} failed");
     }
-    assert!(dylib.exists(), "expected built dylib at {}", dylib.display());
+    assert!(
+        dylib.exists(),
+        "expected built dylib at {}",
+        dylib.display()
+    );
     dylib
 }
 
@@ -153,9 +157,9 @@ fn manifest_can_be_written_and_read_back() {
     stage(dir.path(), &["graphy-plugin-rust"]);
     let m = Manifest::load(dir.path()).expect("manifest exists");
     assert_eq!(m.abi_version, graphy_plugin_api::ABI_VERSION);
-    assert!(m
-        .plugins
-        .iter()
-        .any(|p| p.name == "graphy-plugin-rust"
-            && p.extensions.contains(&"rs".to_string())));
+    assert!(
+        m.plugins
+            .iter()
+            .any(|p| p.name == "graphy-plugin-rust" && p.extensions.contains(&"rs".to_string()))
+    );
 }

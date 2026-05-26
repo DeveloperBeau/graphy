@@ -21,18 +21,14 @@ pub struct ExportPaths {
 
 pub fn export(out_root: &Path, g: &KnowledgeGraph, a: &Analysis) -> Result<ExportPaths> {
     let out = out_root.join(OUT_DIR_NAME);
-    fs::create_dir_all(&out)
-        .with_context(|| format!("mkdir {}", out.display()))?;
+    fs::create_dir_all(&out).with_context(|| format!("mkdir {}", out.display()))?;
 
     let graph_json = out.join("graph.json");
     let report_md = out.join("GRAPH_REPORT.md");
     let graph_html = out.join("graph.html");
     let stats_json = out.join("stats.json");
 
-    fs::write(
-        &graph_json,
-        serde_json::to_vec_pretty(&g.to_json_value())?,
-    )?;
+    fs::write(&graph_json, serde_json::to_vec_pretty(&g.to_json_value())?)?;
     fs::write(&report_md, report::render(g, a))?;
     fs::write(&graph_html, render_html(g, a))?;
     fs::write(

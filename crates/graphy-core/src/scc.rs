@@ -97,9 +97,9 @@ impl SccIndex {
     ///    with the freshly-computed ones (size ≥ 2 only).
     /// 5. Rebuild `by_id`.
     pub fn patch(&mut self, g: &KnowledgeGraph, dirty_ids: &[String]) {
-        use std::collections::HashSet;
         use petgraph::Direction;
         use petgraph::visit::{EdgeRef, NodeFiltered};
+        use std::collections::HashSet;
 
         if dirty_ids.is_empty() {
             return;
@@ -169,9 +169,10 @@ impl SccIndex {
         'outer: for comp in self.components.drain(..) {
             for member in &comp {
                 if let Some(&i) = g.by_id.get(member)
-                    && frontier.contains(&i) {
-                        continue 'outer;
-                    }
+                    && frontier.contains(&i)
+                {
+                    continue 'outer;
+                }
             }
             keep.push(comp);
         }

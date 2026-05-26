@@ -10,8 +10,7 @@ use super::common::{emit_call, emit_def, emit_import, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_php::LANGUAGE_PHP.into())
@@ -42,10 +41,19 @@ fn walk(
                     emit_def(out, symbols, file, "function", n, child);
                 }
             }
-            "class_declaration" | "interface_declaration" | "trait_declaration"
+            "class_declaration"
+            | "interface_declaration"
+            | "trait_declaration"
             | "enum_declaration" => {
                 if let Some(n) = name_of(child, src) {
-                    emit_def(out, symbols, file, child.kind().trim_end_matches("_declaration"), n, child);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        child.kind().trim_end_matches("_declaration"),
+                        n,
+                        child,
+                    );
                 }
             }
             "namespace_use_declaration" => {
@@ -69,10 +77,11 @@ fn walk_calls(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if matches!(child.kind(), "function_definition" | "method_declaration")
-            && let Some(name) = name_of(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+            && let Some(name) = name_of(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
+        }
         walk_calls(child, src, file, out, symbols);
     }
 }
@@ -89,14 +98,13 @@ fn collect_calls(
         if matches!(
             child.kind(),
             "function_call_expression" | "member_call_expression" | "scoped_call_expression"
-        )
-            && let Some(fn_node) = child
-                .child_by_field_name("function")
-                .or_else(|| child.child_by_field_name("name"))
-            {
-                let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+        ) && let Some(fn_node) = child
+            .child_by_field_name("function")
+            .or_else(|| child.child_by_field_name("name"))
+        {
+            let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
+        }
         collect_calls(child, src, caller_id, out, symbols);
     }
 }

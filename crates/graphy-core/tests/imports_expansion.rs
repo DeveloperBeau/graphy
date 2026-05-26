@@ -19,8 +19,14 @@ fn expand_braced() {
 fn expand_braced_nested() {
     let mut got = expand_import_paths("a::{b::{c, d}, e}");
     got.sort();
-    assert_eq!(got,
-        vec!["a::b::c".to_string(), "a::b::d".to_string(), "a::e".to_string()]);
+    assert_eq!(
+        got,
+        vec![
+            "a::b::c".to_string(),
+            "a::b::d".to_string(),
+            "a::e".to_string()
+        ]
+    );
 }
 
 #[test]
@@ -63,9 +69,9 @@ fn rust_brace_import_expands_to_multiple_externs() {
         .map(|n| n.label.clone())
         .collect();
     assert!(
-        externs.iter().any(|l| l.contains("helper")) &&
-        externs.iter().any(|l| l.contains("other")),
-        "expected both helper and other extern nodes, got {:?}", externs
+        externs.iter().any(|l| l.contains("helper")) && externs.iter().any(|l| l.contains("other")),
+        "expected both helper and other extern nodes, got {:?}",
+        externs
     );
     assert!(externs.len() >= 2);
 }
@@ -76,7 +82,9 @@ fn python_from_import_expands_per_name() {
     let p = dir.path().join("x.py");
     fs::write(&p, "from a import helper, other\n").unwrap();
     let out = extract(&p).unwrap();
-    let externs: Vec<_> = out.nodes.iter()
+    let externs: Vec<_> = out
+        .nodes
+        .iter()
         .filter(|n| n.id.starts_with("extern::"))
         .map(|n| n.label.clone())
         .collect();
@@ -89,12 +97,18 @@ fn python_from_import_expands_per_name() {
 fn js_named_import_expands_per_specifier() {
     let dir = tempdir().unwrap();
     let p = dir.path().join("x.ts");
-    fs::write(&p,
-        "import { Helper, Other } from './a';\nfunction main(){}\n").unwrap();
+    fs::write(
+        &p,
+        "import { Helper, Other } from './a';\nfunction main(){}\n",
+    )
+    .unwrap();
     let out = extract(&p).unwrap();
-    let externs: Vec<_> = out.nodes.iter()
+    let externs: Vec<_> = out
+        .nodes
+        .iter()
         .filter(|n| n.id.starts_with("extern::"))
-        .map(|n| n.label.clone()).collect();
+        .map(|n| n.label.clone())
+        .collect();
     assert!(externs.iter().any(|l| l.contains("Helper")));
     assert!(externs.iter().any(|l| l.contains("Other")));
     assert!(externs.len() >= 2);
@@ -106,12 +120,16 @@ fn python_relative_import_does_not_double_dot() {
     let p = dir.path().join("x.py");
     fs::write(&p, "from . import helper\nfrom ..pkg import x\n").unwrap();
     let out = extract(&p).unwrap();
-    let labels: Vec<String> = out.nodes.iter()
+    let labels: Vec<String> = out
+        .nodes
+        .iter()
         .filter(|n| n.id.starts_with("extern::"))
         .map(|n| n.label.clone())
         .collect();
     assert!(
-        labels.iter().all(|l| !l.starts_with("..h") && !l.contains("...")),
+        labels
+            .iter()
+            .all(|l| !l.starts_with("..h") && !l.contains("...")),
         "relative imports produced consecutive dots: {labels:?}"
     );
     assert!(
@@ -130,12 +148,17 @@ fn java_wildcard_import_marked_as_glob() {
     let p = dir.path().join("X.java");
     fs::write(&p, "import java.util.*;\nclass X {}\n").unwrap();
     let out = extract(&p).unwrap();
-    let externs: Vec<_> = out.nodes.iter()
+    let externs: Vec<_> = out
+        .nodes
+        .iter()
         .filter(|n| n.id.starts_with("extern::"))
         .map(|n| n.label.clone())
         .collect();
-    assert!(externs.iter().any(|l| l == "java.util.*"),
-        "expected java.util.* extern, got {:?}", externs);
+    assert!(
+        externs.iter().any(|l| l == "java.util.*"),
+        "expected java.util.* extern, got {:?}",
+        externs
+    );
 }
 
 #[test]

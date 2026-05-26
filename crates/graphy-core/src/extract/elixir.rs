@@ -14,8 +14,7 @@ use super::common::{emit_call, emit_import};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_elixir::LANGUAGE.into())
@@ -57,42 +56,48 @@ fn walk(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "call"
-            && let Some(tgt) = target_of(child, src) {
-                match tgt {
-                    "defmodule" | "def" | "defp" | "defmacro" | "defmacrop" => {
-                        if let Some(arg) = argument_text(child, src) {
-                            let name = arg.split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.'))
-                                .next()
-                                .unwrap_or(arg);
-                            if !name.is_empty() {
-                                let kind = if tgt == "defmodule" { "module" } else { "function" };
-                                let id = format!("{file}::{name}");
-                                symbols.insert(name.to_string(), id.clone());
-                                out.nodes.push(crate::schema::Node {
-                                    id,
-                                    label: name.to_string(),
-                                    source_file: Some(file.to_string()),
-                                    source_location: Some(format!(
-                                        "L{}",
-                                        child.start_position().row + 1
-                                    )),
-                                    kind: Some(kind.into()),
-                                });
-                            }
+            && let Some(tgt) = target_of(child, src)
+        {
+            match tgt {
+                "defmodule" | "def" | "defp" | "defmacro" | "defmacrop" => {
+                    if let Some(arg) = argument_text(child, src) {
+                        let name = arg
+                            .split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.'))
+                            .next()
+                            .unwrap_or(arg);
+                        if !name.is_empty() {
+                            let kind = if tgt == "defmodule" {
+                                "module"
+                            } else {
+                                "function"
+                            };
+                            let id = format!("{file}::{name}");
+                            symbols.insert(name.to_string(), id.clone());
+                            out.nodes.push(crate::schema::Node {
+                                id,
+                                label: name.to_string(),
+                                source_file: Some(file.to_string()),
+                                source_location: Some(format!(
+                                    "L{}",
+                                    child.start_position().row + 1
+                                )),
+                                kind: Some(kind.into()),
+                            });
                         }
-                    }
-                    "alias" | "import" | "require" | "use" => {
-                        if let Some(arg) = argument_text(child, src) {
-                            emit_import(out, file, arg, child);
-                        }
-                    }
-                    _ => {
-                        // ordinary call — emit as call edge with file as caller
-                        let caller_id = file.to_string();
-                        emit_call(out, symbols, &caller_id, tgt);
                     }
                 }
+                "alias" | "import" | "require" | "use" => {
+                    if let Some(arg) = argument_text(child, src) {
+                        emit_import(out, file, arg, child);
+                    }
+                }
+                _ => {
+                    // ordinary call — emit as call edge with file as caller
+                    let caller_id = file.to_string();
+                    emit_call(out, symbols, &caller_id, tgt);
+                }
             }
+        }
         walk(child, src, file, out, symbols);
     }
 }

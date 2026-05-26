@@ -41,20 +41,14 @@ pub fn analyze(g: &KnowledgeGraph) -> Analysis {
         .map(|(id, &idx)| GodNode {
             id: id.clone(),
             label: g.graph[idx].label.clone(),
-            degree: g
-                .graph
-                .neighbors_undirected(idx)
-                .count(),
+            degree: g.graph.neighbors_undirected(idx).count(),
         })
         .collect();
     god_nodes.sort_by_key(|n| std::cmp::Reverse(n.degree));
     god_nodes.truncate(20);
 
-    let communities: std::collections::HashSet<_> = g
-        .graph
-        .node_weights()
-        .filter_map(|n| n.community)
-        .collect();
+    let communities: std::collections::HashSet<_> =
+        g.graph.node_weights().filter_map(|n| n.community).collect();
 
     let ambiguous = g
         .graph

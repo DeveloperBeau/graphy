@@ -47,8 +47,7 @@ pub struct PluginEntry {
 impl Manifest {
     pub fn load(dir: &Path) -> Result<Self> {
         let path = dir.join(MANIFEST_FILENAME);
-        let text = fs::read_to_string(&path)
-            .with_context(|| format!("read {}", path.display()))?;
+        let text = fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
         let m: Manifest =
             toml::from_str(&text).with_context(|| format!("parse {}", path.display()))?;
         Ok(m)
@@ -59,12 +58,10 @@ impl Manifest {
     }
 
     pub fn write(&self, dir: &Path) -> Result<PathBuf> {
-        fs::create_dir_all(dir)
-            .with_context(|| format!("mkdir {}", dir.display()))?;
+        fs::create_dir_all(dir).with_context(|| format!("mkdir {}", dir.display()))?;
         let path = dir.join(MANIFEST_FILENAME);
         let text = toml::to_string_pretty(self).context("serialize manifest")?;
-        fs::write(&path, text)
-            .with_context(|| format!("write {}", path.display()))?;
+        fs::write(&path, text).with_context(|| format!("write {}", path.display()))?;
         Ok(path)
     }
 }
@@ -72,8 +69,7 @@ impl Manifest {
 /// SHA-256 of the given file's bytes, hex-encoded lowercase.
 pub fn sha256_of(path: &Path) -> Result<String> {
     use sha2::{Digest, Sha256};
-    let bytes = fs::read(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let bytes = fs::read(path).with_context(|| format!("read {}", path.display()))?;
     let mut h = Sha256::new();
     h.update(&bytes);
     Ok(hex::encode(h.finalize()))
@@ -90,11 +86,12 @@ pub fn build_from_directory(dir: &Path) -> Result<Manifest> {
     type MetaFn = unsafe extern "C" fn() -> *const GraphyPluginMetadata;
 
     let mut plugins: Vec<PluginEntry> = Vec::new();
-    let entries = fs::read_dir(dir)
-        .with_context(|| format!("read_dir {}", dir.display()))?;
+    let entries = fs::read_dir(dir).with_context(|| format!("read_dir {}", dir.display()))?;
     for ent in entries.flatten() {
         let path = ent.path();
-        let Some(name) = path.file_name().and_then(|s| s.to_str()) else { continue };
+        let Some(name) = path.file_name().and_then(|s| s.to_str()) else {
+            continue;
+        };
         if !is_dylib(&path) || name == MANIFEST_FILENAME {
             continue;
         }
@@ -131,13 +128,19 @@ pub fn build_from_directory(dir: &Path) -> Result<Manifest> {
             continue;
         }
         let m = unsafe { &*meta_ptr };
-        let name_str = unsafe { CStr::from_ptr(m.name) }.to_string_lossy().into_owned();
-        let version_str = unsafe { CStr::from_ptr(m.version) }.to_string_lossy().into_owned();
+        let name_str = unsafe { CStr::from_ptr(m.name) }
+            .to_string_lossy()
+            .into_owned();
+        let version_str = unsafe { CStr::from_ptr(m.version) }
+            .to_string_lossy()
+            .into_owned();
         let mut extensions = Vec::new();
         if !m.extensions.is_null() && m.extension_count > 0 {
             let slice = unsafe { std::slice::from_raw_parts(m.extensions, m.extension_count) };
             for &p in slice {
-                if p.is_null() { continue; }
+                if p.is_null() {
+                    continue;
+                }
                 let s = unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned();
                 if !s.is_empty() {
                     extensions.push(s.to_ascii_lowercase());

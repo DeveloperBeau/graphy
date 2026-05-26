@@ -8,16 +8,8 @@ use tempfile::tempdir;
 #[test]
 fn pipeline_run_writes_three_outputs() {
     let dir = tempdir().unwrap();
-    fs::write(
-        dir.path().join("a.rs"),
-        "pub fn f(){} pub fn g(){ f(); }\n",
-    )
-    .unwrap();
-    fs::write(
-        dir.path().join("b.py"),
-        "def f(): pass\ndef g(): f()\n",
-    )
-    .unwrap();
+    fs::write(dir.path().join("a.rs"), "pub fn f(){} pub fn g(){ f(); }\n").unwrap();
+    fs::write(dir.path().join("b.py"), "def f(): pass\ndef g(): f()\n").unwrap();
 
     let mut cfg = PipelineConfig::new(dir.path());
     cfg.out_root = dir.path().into();
@@ -97,7 +89,10 @@ fn pipeline_cache_invalidated_when_file_changes() {
     let _ = Pipeline::new(cfg.clone()).run().unwrap();
     fs::write(&p, "pub fn f(){}\npub fn g(){}\n").unwrap();
     let r = Pipeline::new(cfg).run().unwrap();
-    assert_eq!(r.files_cached, 0, "modified file must not be served from cache");
+    assert_eq!(
+        r.files_cached, 0,
+        "modified file must not be served from cache"
+    );
     assert!(r.analysis.node_count > 1);
 }
 

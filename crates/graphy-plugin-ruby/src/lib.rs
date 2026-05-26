@@ -53,7 +53,14 @@ fn walk(
             }
             "class" | "module" => {
                 if let Some(n) = ruby_name(child, src) {
-                    emit_def(out, symbols, file, child.kind(), n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        child.kind(),
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "call" => {
@@ -88,10 +95,11 @@ fn walk_calls(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if matches!(child.kind(), "method" | "singleton_method")
-            && let Some(name) = ruby_name(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+            && let Some(name) = ruby_name(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
+        }
         walk_calls(child, src, file, out, symbols);
     }
 }

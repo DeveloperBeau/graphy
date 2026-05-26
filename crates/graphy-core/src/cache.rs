@@ -59,8 +59,7 @@ impl Cache {
     /// Open (or create) the cache rooted at `<out_root>/graphy-out/.cache/`.
     pub fn open(out_root: &Path) -> Result<Self> {
         let root = out_root.join("graphy-out").join(CACHE_DIR);
-        fs::create_dir_all(&root)
-            .with_context(|| format!("mkdir {}", root.display()))?;
+        fs::create_dir_all(&root).with_context(|| format!("mkdir {}", root.display()))?;
         let manifest_path = root.join(MANIFEST_FILE);
         let manifest = if manifest_path.exists() {
             let text = fs::read_to_string(&manifest_path)?;
@@ -68,7 +67,11 @@ impl Cache {
         } else {
             Manifest::default()
         };
-        Ok(Self { root, manifest, pending: HashMap::new() })
+        Ok(Self {
+            root,
+            manifest,
+            pending: HashMap::new(),
+        })
     }
 
     /// Split a candidate file list into cache hits (with their stored
@@ -85,10 +88,11 @@ impl Cache {
             self.pending.insert(file.clone(), hash.clone());
             if let Some(prev) = self.manifest.entries.get(&key)
                 && prev == &hash
-                    && let Some(stored) = self.load_output(&hash) {
-                        out.cached.push((file.clone(), stored));
-                        continue;
-                    }
+                && let Some(stored) = self.load_output(&hash)
+            {
+                out.cached.push((file.clone(), stored));
+                continue;
+            }
             out.uncached.push(file.clone());
         }
         out
@@ -104,8 +108,7 @@ impl Cache {
         let target = self.root.join(format!("{hash}.json"));
         if !target.exists() {
             let body = serde_json::to_vec(output)?;
-            fs::write(&target, body)
-                .with_context(|| format!("write {}", target.display()))?;
+            fs::write(&target, body).with_context(|| format!("write {}", target.display()))?;
         }
         self.manifest.entries.insert(key, hash);
         Ok(())
@@ -116,15 +119,16 @@ impl Cache {
         self.manifest.abi_version = CACHE_ABI;
         let path = self.root.join(MANIFEST_FILE);
         let body = serde_json::to_vec_pretty(&self.manifest)?;
-        fs::write(&path, body)
-            .with_context(|| format!("write {}", path.display()))?;
+        fs::write(&path, body).with_context(|| format!("write {}", path.display()))?;
         Ok(())
     }
 
     /// Load the `DedupMap` associated with `file`, if one was previously saved.
     /// Returns `None` for v1 manifests (which predate dedup map storage).
     pub fn load_dedup_map(&self, file: &Path) -> Option<DedupMap> {
-        if self.manifest.abi_version < 2 { return None; }
+        if self.manifest.abi_version < 2 {
+            return None;
+        }
         let key = file.to_string_lossy().into_owned();
         let hash = self.manifest.entries.get(&key)?;
         let path = self.root.join(format!("{hash}.dedup.json"));
@@ -136,12 +140,12 @@ impl Cache {
     /// yet recorded in the manifest (i.e. `save` has not been called for it).
     pub fn save_dedup_map(&self, file: &Path, map: &DedupMap) -> Result<()> {
         let key = file.to_string_lossy().into_owned();
-        let Some(hash) = self.manifest.entries.get(&key) else { return Ok(()) };
+        let Some(hash) = self.manifest.entries.get(&key) else {
+            return Ok(());
+        };
         let path = self.root.join(format!("{hash}.dedup.json"));
-        let body = serde_json::to_vec_pretty(map)
-            .context("serialize dedup map")?;
-        std::fs::write(&path, body)
-            .with_context(|| format!("write {}", path.display()))?;
+        let body = serde_json::to_vec_pretty(map).context("serialize dedup map")?;
+        std::fs::write(&path, body).with_context(|| format!("write {}", path.display()))?;
         Ok(())
     }
 

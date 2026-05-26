@@ -26,22 +26,23 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if matches!(child.kind(), "block_mapping_pair" | "flow_pair")
-            && let Some(key) = child.child_by_field_name("key") {
-                let label = key
-                    .utf8_text(src.as_bytes())
-                    .unwrap_or("")
-                    .trim()
-                    .to_string();
-                if !label.is_empty() {
-                    out.nodes.push(Node {
-                        id: format!("{file}::{label}"),
-                        label,
-                        source_file: Some(file.to_string()),
-                        source_location: Some(line_loc(key.start_position().row)),
-                        kind: Some("yaml_key".into()),
-                    });
-                }
+            && let Some(key) = child.child_by_field_name("key")
+        {
+            let label = key
+                .utf8_text(src.as_bytes())
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            if !label.is_empty() {
+                out.nodes.push(Node {
+                    id: format!("{file}::{label}"),
+                    label,
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(key.start_position().row)),
+                    kind: Some("yaml_key".into()),
+                });
             }
+        }
         walk(child, src, file, out);
     }
 }

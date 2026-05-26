@@ -159,10 +159,7 @@ fn yaml_top_level_keys_become_nodes() {
 
 #[test]
 fn pascal_extracts_program() {
-    let out = run(
-        ".pas",
-        "program Hello;\nbegin\n  WriteLn('hi');\nend.\n",
-    );
+    let out = run(".pas", "program Hello;\nbegin\n  WriteLn('hi');\nend.\n");
     let _ = out.nodes.len();
 }
 
@@ -181,10 +178,7 @@ fn perl_extracts_subroutine_and_use() {
 
 #[test]
 fn haskell_extracts_import() {
-    let out = run(
-        ".hs",
-        "import Data.List\nmain :: IO ()\nmain = print 1\n",
-    );
+    let out = run(".hs", "import Data.List\nmain :: IO ()\nmain = print 1\n");
     let _ = out.nodes.len();
 }
 

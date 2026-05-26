@@ -30,21 +30,19 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
         match child.kind() {
             "rule_set" => {
                 if let Some(selectors) = child.named_child(0)
-                    && let Ok(text) = selectors.utf8_text(src.as_bytes()) {
-                        let label = text.trim().to_string();
-                        if !label.is_empty() {
-                            out.nodes.push(Node {
-                                id: format!("{file}::{label}"),
-                                label,
-                                source_file: Some(file.to_string()),
-                                source_location: Some(format!(
-                                    "L{}",
-                                    child.start_position().row + 1
-                                )),
-                                kind: Some("selector".into()),
-                            });
-                        }
+                    && let Ok(text) = selectors.utf8_text(src.as_bytes())
+                {
+                    let label = text.trim().to_string();
+                    if !label.is_empty() {
+                        out.nodes.push(Node {
+                            id: format!("{file}::{label}"),
+                            label,
+                            source_file: Some(file.to_string()),
+                            source_location: Some(format!("L{}", child.start_position().row + 1)),
+                            kind: Some("selector".into()),
+                        });
                     }
+                }
             }
             "import_statement" => {
                 if let Ok(text) = child.utf8_text(src.as_bytes()) {

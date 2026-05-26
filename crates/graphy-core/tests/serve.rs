@@ -27,8 +27,7 @@ fn sample_graph() -> Value {
 }
 
 fn make_index() -> Index {
-    let g: graphy_core::serve::StoredGraph =
-        serde_json::from_value(sample_graph()).unwrap();
+    let g: graphy_core::serve::StoredGraph = serde_json::from_value(sample_graph()).unwrap();
     Index::from_graph(g)
 }
 
@@ -43,7 +42,10 @@ fn call(idx: &Index, req: Value) -> Value {
 #[test]
 fn initialize_returns_server_descriptor() {
     let idx = make_index();
-    let v = call(&idx, json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize" }));
+    let v = call(
+        &idx,
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize" }),
+    );
     let result = &v["result"];
     assert_eq!(result["name"], "graphy");
     assert!(result["version"].is_string());
@@ -52,11 +54,23 @@ fn initialize_returns_server_descriptor() {
 #[test]
 fn tools_list_includes_expected_tools() {
     let idx = make_index();
-    let v = call(&idx, json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }));
+    let v = call(
+        &idx,
+        json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }),
+    );
     let names: Vec<_> = v["result"]["tools"]
-        .as_array().unwrap().iter()
-        .filter_map(|t| t["name"].as_str()).collect();
-    for expected in ["stats", "search_label", "neighbors", "query_node", "shortest_path"] {
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|t| t["name"].as_str())
+        .collect();
+    for expected in [
+        "stats",
+        "search_label",
+        "neighbors",
+        "query_node",
+        "shortest_path",
+    ] {
         assert!(names.contains(&expected), "missing tool: {expected}");
     }
 }
@@ -64,10 +78,13 @@ fn tools_list_includes_expected_tools() {
 #[test]
 fn stats_tool_returns_counts() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 3, "method": "tools/call",
-        "params": { "name": "stats", "arguments": {} }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 3, "method": "tools/call",
+            "params": { "name": "stats", "arguments": {} }
+        }),
+    );
     assert_eq!(v["result"]["nodes"], 4);
     assert_eq!(v["result"]["edges"], 3);
     assert_eq!(v["result"]["communities"], 2);
@@ -76,10 +93,13 @@ fn stats_tool_returns_counts() {
 #[test]
 fn search_label_finds_substring_match() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 4, "method": "tools/call",
-        "params": { "name": "search_label", "arguments": { "q": "alp" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 4, "method": "tools/call",
+            "params": { "name": "search_label", "arguments": { "q": "alp" } }
+        }),
+    );
     let matches = v["result"]["matches"].as_array().unwrap();
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0]["label"], "Alpha");
@@ -88,20 +108,26 @@ fn search_label_finds_substring_match() {
 #[test]
 fn search_label_respects_limit() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 5, "method": "tools/call",
-        "params": { "name": "search_label", "arguments": { "q": "", "limit": 2 } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 5, "method": "tools/call",
+            "params": { "name": "search_label", "arguments": { "q": "", "limit": 2 } }
+        }),
+    );
     assert_eq!(v["result"]["matches"].as_array().unwrap().len(), 2);
 }
 
 #[test]
 fn neighbors_returns_both_directions() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 6, "method": "tools/call",
-        "params": { "name": "neighbors", "arguments": { "id": "b" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 6, "method": "tools/call",
+            "params": { "name": "neighbors", "arguments": { "id": "b" } }
+        }),
+    );
     let out = v["result"]["outgoing"].as_array().unwrap();
     let inc = v["result"]["incoming"].as_array().unwrap();
     assert!(out.iter().any(|e| e["target"] == "c"));
@@ -111,10 +137,13 @@ fn neighbors_returns_both_directions() {
 #[test]
 fn query_node_returns_full_metadata() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 7, "method": "tools/call",
-        "params": { "name": "query_node", "arguments": { "id": "a" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 7, "method": "tools/call",
+            "params": { "name": "query_node", "arguments": { "id": "a" } }
+        }),
+    );
     assert_eq!(v["result"]["label"], "Alpha");
     assert_eq!(v["result"]["source_file"], "a.rs");
     assert_eq!(v["result"]["kind"], "function");
@@ -123,23 +152,32 @@ fn query_node_returns_full_metadata() {
 #[test]
 fn shortest_path_walks_through_intermediate_nodes() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 8, "method": "tools/call",
-        "params": { "name": "shortest_path", "arguments": { "from": "a", "to": "d" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 8, "method": "tools/call",
+            "params": { "name": "shortest_path", "arguments": { "from": "a", "to": "d" } }
+        }),
+    );
     let path: Vec<String> = v["result"]["path"]
-        .as_array().unwrap().iter()
-        .filter_map(|p| p.as_str().map(String::from)).collect();
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|p| p.as_str().map(String::from))
+        .collect();
     assert_eq!(path, vec!["a", "b", "c", "d"]);
 }
 
 #[test]
 fn shortest_path_returns_singleton_for_identical_endpoints() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 9, "method": "tools/call",
-        "params": { "name": "shortest_path", "arguments": { "from": "a", "to": "a" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 9, "method": "tools/call",
+            "params": { "name": "shortest_path", "arguments": { "from": "a", "to": "a" } }
+        }),
+    );
     let path = v["result"]["path"].as_array().unwrap();
     assert_eq!(path.len(), 1);
 }
@@ -157,47 +195,82 @@ fn parse_error_reports_minus_32700() {
 #[test]
 fn unknown_method_returns_error() {
     let idx = make_index();
-    let v = call(&idx, json!({ "jsonrpc": "2.0", "id": 10, "method": "frobnicate" }));
-    assert!(v["error"]["message"].as_str().unwrap().contains("frobnicate"));
+    let v = call(
+        &idx,
+        json!({ "jsonrpc": "2.0", "id": 10, "method": "frobnicate" }),
+    );
+    assert!(
+        v["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("frobnicate")
+    );
 }
 
 #[test]
 fn tools_call_missing_name_errors() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 11, "method": "tools/call", "params": { "arguments": {} }
-    }));
-    assert!(v["error"]["message"].as_str().unwrap().contains("tool name"));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 11, "method": "tools/call", "params": { "arguments": {} }
+        }),
+    );
+    assert!(
+        v["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("tool name")
+    );
 }
 
 #[test]
 fn tools_call_unknown_tool_errors() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 12, "method": "tools/call",
-        "params": { "name": "nonexistent", "arguments": {} }
-    }));
-    assert!(v["error"]["message"].as_str().unwrap().contains("nonexistent"));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 12, "method": "tools/call",
+            "params": { "name": "nonexistent", "arguments": {} }
+        }),
+    );
+    assert!(
+        v["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("nonexistent")
+    );
 }
 
 #[test]
 fn neighbors_unknown_node_errors() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 13, "method": "tools/call",
-        "params": { "name": "neighbors", "arguments": { "id": "ghost" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 13, "method": "tools/call",
+            "params": { "name": "neighbors", "arguments": { "id": "ghost" } }
+        }),
+    );
     assert!(v["error"]["message"].as_str().unwrap().contains("ghost"));
 }
 
 #[test]
 fn query_node_missing_id_errors() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 14, "method": "tools/call",
-        "params": { "name": "query_node", "arguments": {} }
-    }));
-    assert!(v["error"]["message"].as_str().unwrap().contains("missing id"));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 14, "method": "tools/call",
+            "params": { "name": "query_node", "arguments": {} }
+        }),
+    );
+    assert!(
+        v["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("missing id")
+    );
 }
 
 #[test]
@@ -214,10 +287,13 @@ fn shortest_path_between_disconnected_nodes_returns_empty() {
     });
     let stored: graphy_core::serve::StoredGraph = serde_json::from_value(g).unwrap();
     let idx = Index::from_graph(stored);
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 15, "method": "tools/call",
-        "params": { "name": "shortest_path", "arguments": { "from": "x", "to": "y" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 15, "method": "tools/call",
+            "params": { "name": "shortest_path", "arguments": { "from": "x", "to": "y" } }
+        }),
+    );
     assert!(v["result"]["path"].as_array().unwrap().is_empty());
 }
 
@@ -236,13 +312,19 @@ fn shortest_path_walks_via_incoming_edges_when_needed() {
     });
     let stored: graphy_core::serve::StoredGraph = serde_json::from_value(g).unwrap();
     let idx = Index::from_graph(stored);
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 17, "method": "tools/call",
-        "params": { "name": "shortest_path", "arguments": { "from": "a", "to": "c" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 17, "method": "tools/call",
+            "params": { "name": "shortest_path", "arguments": { "from": "a", "to": "c" } }
+        }),
+    );
     let path: Vec<String> = v["result"]["path"]
-        .as_array().unwrap().iter()
-        .filter_map(|p| p.as_str().map(String::from)).collect();
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|p| p.as_str().map(String::from))
+        .collect();
     assert_eq!(path, vec!["a", "b", "c"]);
 }
 
@@ -258,23 +340,32 @@ fn shortest_path_via_incoming_finds_direct_predecessor() {
     });
     let stored: graphy_core::serve::StoredGraph = serde_json::from_value(g).unwrap();
     let idx = Index::from_graph(stored);
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 18, "method": "tools/call",
-        "params": { "name": "shortest_path", "arguments": { "from": "b", "to": "a" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 18, "method": "tools/call",
+            "params": { "name": "shortest_path", "arguments": { "from": "b", "to": "a" } }
+        }),
+    );
     let path: Vec<String> = v["result"]["path"]
-        .as_array().unwrap().iter()
-        .filter_map(|p| p.as_str().map(String::from)).collect();
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|p| p.as_str().map(String::from))
+        .collect();
     assert_eq!(path, vec!["b", "a"]);
 }
 
 #[test]
 fn shortest_path_unknown_endpoint_returns_empty() {
     let idx = make_index();
-    let v = call(&idx, json!({
-        "jsonrpc": "2.0", "id": 16, "method": "tools/call",
-        "params": { "name": "shortest_path", "arguments": { "from": "ghost", "to": "a" } }
-    }));
+    let v = call(
+        &idx,
+        json!({
+            "jsonrpc": "2.0", "id": 16, "method": "tools/call",
+            "params": { "name": "shortest_path", "arguments": { "from": "ghost", "to": "a" } }
+        }),
+    );
     assert!(v["result"]["path"].as_array().unwrap().is_empty());
 }
 

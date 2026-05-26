@@ -67,7 +67,10 @@ fn js_extracts_arrow_function_calls() {
 
 #[test]
 fn ts_extracts_enum_and_type_alias() {
-    let out = ext(".ts", "export enum Color { Red, Blue }\nexport type Id = number;\n");
+    let out = ext(
+        ".ts",
+        "export enum Color { Red, Blue }\nexport type Id = number;\n",
+    );
     assert!(out.nodes.iter().any(|n| n.label == "Color"));
     assert!(out.nodes.iter().any(|n| n.label == "Id"));
 }
@@ -75,7 +78,9 @@ fn ts_extracts_enum_and_type_alias() {
 #[test]
 fn huge_ts_file_handled() {
     let mut body = String::new();
-    for i in 0..2000 { body.push_str(&format!("export function f{i}(): void {{ }}\n")); }
+    for i in 0..2000 {
+        body.push_str(&format!("export function f{i}(): void {{ }}\n"));
+    }
     let out = ext(".ts", &body);
     assert!(out.nodes.len() >= 2000);
 }

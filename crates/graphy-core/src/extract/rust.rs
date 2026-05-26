@@ -13,8 +13,7 @@ use tree_sitter::{Node as TsNode, Parser};
 use crate::schema::{Confidence, Edge, ExtractionOutput, Node};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_rust::LANGUAGE.into())
@@ -52,8 +51,8 @@ fn walk_items(
     for child in node.children(&mut cursor) {
         let kind = child.kind();
         match kind {
-            "function_item" | "struct_item" | "enum_item" | "trait_item"
-            | "mod_item" | "impl_item" => {
+            "function_item" | "struct_item" | "enum_item" | "trait_item" | "mod_item"
+            | "impl_item" => {
                 if let Some(name) = name_of(child, src) {
                     let id = make_id(file, &name);
                     symbols.insert(name.clone(), id.clone());
@@ -67,13 +66,8 @@ fn walk_items(
                 }
             }
             "use_declaration" => {
-                let text = child
-                    .utf8_text(src.as_bytes())
-                    .expect("utf8 source");
-                let cleaned = text
-                    .trim_start_matches("use ")
-                    .trim_end_matches(';')
-                    .trim();
+                let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
+                let cleaned = text.trim_start_matches("use ").trim_end_matches(';').trim();
                 for path in crate::extract::common::expand_import_paths(cleaned) {
                     let target = path.trim().to_string();
                     if !target.is_empty() {
@@ -116,10 +110,11 @@ fn add_call_edges(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "function_item"
-            && let Some(name) = name_of(child, src) {
-                let caller_id = make_id(file, &name);
-                collect_calls_in(child, src, &caller_id, out, symbols);
-            }
+            && let Some(name) = name_of(child, src)
+        {
+            let caller_id = make_id(file, &name);
+            collect_calls_in(child, src, &caller_id, out, symbols);
+        }
         add_call_edges(child, src, file, out, symbols);
     }
 }

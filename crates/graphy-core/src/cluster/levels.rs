@@ -110,9 +110,10 @@ impl LevelRecorder {
             community: community.to_vec(),
         };
         if self.records.is_empty()
-            && let Some(map) = self.base_map.take() {
-                state.node_to_super = map;
-            }
+            && let Some(map) = self.base_map.take()
+        {
+            state.node_to_super = map;
+        }
         self.records.push(state);
     }
 

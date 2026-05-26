@@ -222,8 +222,6 @@ pub unsafe fn release_result(result: GraphyPluginExtractResult) {
     }
     if !result.error_message.is_null() {
         // CString recovered via raw pointer; length is the NUL-terminated form.
-        let _ = unsafe {
-            std::ffi::CString::from_raw(result.error_message)
-        };
+        let _ = unsafe { std::ffi::CString::from_raw(result.error_message) };
     }
 }

@@ -49,7 +49,14 @@ fn walk(
         match child.kind() {
             "fun_decl" | "function_clause" | "function" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "module_attribute" => {

@@ -29,7 +29,11 @@ fn explicit_run_subcommand_writes_outputs() {
         .arg(dir.path())
         .output()
         .unwrap();
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     assert!(dir.path().join("graphy-out").join("graph.json").exists());
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(stdout.contains("scanned"));
@@ -48,7 +52,11 @@ fn default_path_arg_runs_pipeline() {
         .arg(dir.path())
         .output()
         .unwrap();
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     assert!(dir.path().join("graphy-out").join("graph.json").exists());
 }
 
@@ -64,7 +72,11 @@ fn docs_flag_picks_up_markdown() {
         .arg(dir.path())
         .output()
         .unwrap();
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let stdout = String::from_utf8_lossy(&out.stdout);
     // Should report at least one file scanned even though no extractor handles markdown yet.
     assert!(stdout.contains("scanned 1 files"));
@@ -91,7 +103,10 @@ fn help_runs_and_lists_subcommands() {
 
 #[test]
 fn version_flag_prints_semver() {
-    let out = Command::new(graphy_bin()).arg("--version").output().unwrap();
+    let out = Command::new(graphy_bin())
+        .arg("--version")
+        .output()
+        .unwrap();
     assert!(out.status.success());
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(stdout.contains(env!("CARGO_PKG_VERSION")));
@@ -130,7 +145,10 @@ fn watch_subcommand_runs_initial_build_then_blocks() {
         .status();
     let mut child = child;
     let _ = child.wait();
-    assert!(graph_json.exists(), "initial build did not produce graph.json");
+    assert!(
+        graph_json.exists(),
+        "initial build did not produce graph.json"
+    );
 }
 
 #[test]

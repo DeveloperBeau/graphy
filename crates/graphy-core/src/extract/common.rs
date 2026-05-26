@@ -38,12 +38,7 @@ pub fn emit_def(
     });
 }
 
-pub fn emit_import(
-    out: &mut ExtractionOutput,
-    file: &str,
-    target: &str,
-    node: TsNode,
-) {
+pub fn emit_import(out: &mut ExtractionOutput, file: &str, target: &str, node: TsNode) {
     let target = target.trim();
     if target.is_empty() {
         return;
@@ -95,7 +90,11 @@ pub fn expand_import_paths(raw: &str) -> Vec<String> {
         return vec![raw.to_string()];
     };
     let prefix = raw[..open].trim_end_matches(':').to_string();
-    let prefix_with_sep = if prefix.is_empty() { String::new() } else { format!("{prefix}::") };
+    let prefix_with_sep = if prefix.is_empty() {
+        String::new()
+    } else {
+        format!("{prefix}::")
+    };
     // Walk the brace content respecting nested braces.
     let body_start = open + 1;
     let mut depth = 1usize;
@@ -123,8 +122,14 @@ pub fn expand_import_paths(raw: &str) -> Vec<String> {
     let mut local_depth = 0usize;
     for c in body.chars() {
         match c {
-            '{' => { local_depth += 1; buf.push(c); }
-            '}' => { local_depth -= 1; buf.push(c); }
+            '{' => {
+                local_depth += 1;
+                buf.push(c);
+            }
+            '}' => {
+                local_depth -= 1;
+                buf.push(c);
+            }
             ',' if local_depth == 0 => {
                 let piece = buf.trim();
                 if !piece.is_empty() {

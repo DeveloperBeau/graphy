@@ -10,8 +10,7 @@ use super::common::{emit_call, emit_def, emit_import, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_bash::LANGUAGE.into())
@@ -39,9 +38,10 @@ fn walk(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "function_definition"
-            && let Some(n) = name_of(child, src) {
-                emit_def(out, symbols, file, "function", n, child);
-            }
+            && let Some(n) = name_of(child, src)
+        {
+            emit_def(out, symbols, file, "function", n, child);
+        }
         if child.kind() == "command" {
             // `source path/to/x.sh` or `. path/to/x.sh`
             let name = child
@@ -70,10 +70,11 @@ fn walk_calls(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "function_definition"
-            && let Some(name) = name_of(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+            && let Some(name) = name_of(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
+        }
         walk_calls(child, src, file, out, symbols);
     }
 }

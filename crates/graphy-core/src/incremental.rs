@@ -285,10 +285,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         for file in &part.uncached {
             let key = file.to_string_lossy().into_owned();
             if !written.contains(&key) && !dr.per_file_maps.contains_key(&key) {
-                let _ = cache.save_dedup_map(
-                    file,
-                    &crate::dedup::map::DedupMap::empty_for(""),
-                );
+                let _ = cache.save_dedup_map(file, &crate::dedup::map::DedupMap::empty_for(""));
             }
         }
         cache.flush().ok();
@@ -366,13 +363,19 @@ fn load_prior_graph(out_root: &Path) -> Option<KnowledgeGraph> {
             .and_then(|v| v.as_str())
             .unwrap_or(&id)
             .to_string();
-        let source_file = n.get("source_file").and_then(|v| v.as_str()).map(String::from);
+        let source_file = n
+            .get("source_file")
+            .and_then(|v| v.as_str())
+            .map(String::from);
         let source_location = n
             .get("source_location")
             .and_then(|v| v.as_str())
             .map(String::from);
         let kind = n.get("kind").and_then(|v| v.as_str()).map(String::from);
-        let community = n.get("community").and_then(|v| v.as_u64()).map(|v| v as u32);
+        let community = n
+            .get("community")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as u32);
         let aliases: Vec<String> = n
             .get("aliases")
             .and_then(|v| v.as_array())
@@ -402,7 +405,10 @@ fn load_prior_graph(out_root: &Path) -> Option<KnowledgeGraph> {
             .and_then(|v| v.as_str())
             .unwrap_or("uses")
             .to_string();
-        let conf_str = e.get("confidence").and_then(|v| v.as_str()).unwrap_or("EXTRACTED");
+        let conf_str = e
+            .get("confidence")
+            .and_then(|v| v.as_str())
+            .unwrap_or("EXTRACTED");
         let confidence = match conf_str {
             "EXTRACTED" => crate::schema::Confidence::Extracted,
             "INFERRED" => crate::schema::Confidence::Inferred,
@@ -435,9 +441,10 @@ fn removed_files(prior: &Option<KnowledgeGraph>, files: &[PathBuf]) -> Vec<PathB
     let mut removed = HashSet::new();
     for n in g.graph.node_weights() {
         if let Some(sf) = &n.source_file
-            && !current.contains(sf.as_str()) {
-                removed.insert(sf.clone());
-            }
+            && !current.contains(sf.as_str())
+        {
+            removed.insert(sf.clone());
+        }
     }
     removed.into_iter().map(PathBuf::from).collect()
 }
@@ -447,9 +454,10 @@ fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (Vec<
     let mut victims: HashSet<petgraph::graph::NodeIndex> = HashSet::new();
     for ni in g.graph.node_indices() {
         if let Some(sf) = &g.graph[ni].source_file
-            && files.contains(sf.as_str()) {
-                victims.insert(ni);
-            }
+            && files.contains(sf.as_str())
+        {
+            victims.insert(ni);
+        }
     }
     // Plus any node whose id starts with the removed file (covers the
     // `<file>::<sym>` id convention), or matches the file path verbatim
@@ -461,9 +469,10 @@ fn strip_contributions(g: &mut KnowledgeGraph, files: &HashSet<String>) -> (Vec<
             continue;
         }
         if let Some((file, _)) = id.split_once("::")
-            && files.contains(file) {
-                victims.insert(ni);
-            }
+            && files.contains(file)
+        {
+            victims.insert(ni);
+        }
     }
 
     // Collect the string ids of victim nodes BEFORE removal so callers can
@@ -595,10 +604,7 @@ fn run_full(
         for file in &all_paths {
             let key = file.to_string_lossy().into_owned();
             if !augmented.contains_key(&key) {
-                let _ = cache.save_dedup_map(
-                    file,
-                    &crate::dedup::map::DedupMap::empty_for(""),
-                );
+                let _ = cache.save_dedup_map(file, &crate::dedup::map::DedupMap::empty_for(""));
             }
         }
         cache.flush().ok();
@@ -701,10 +707,7 @@ fn cluster_incrementally(
     const QUALITY_GATE_ABS: f64 = 0.02;
     let new_q = crate::cluster::levels::compute_modularity(g);
     let drop = prior_modularity.map(|prev| prev - new_q).unwrap_or(0.0);
-    let prev_abs = prior_modularity
-        .map(|p| p.abs())
-        .unwrap_or(1.0)
-        .max(1e-9);
+    let prev_abs = prior_modularity.map(|p| p.abs()).unwrap_or(1.0).max(1e-9);
     let ratio_drop = drop / prev_abs;
 
     if drop > QUALITY_GATE_ABS && ratio_drop > QUALITY_GATE_RATIO {

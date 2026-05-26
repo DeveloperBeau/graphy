@@ -49,7 +49,14 @@ fn walk(
         match child.kind() {
             "declProc" | "procedure" | "function" | "declFunc" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "declType" | "type_declaration" | "declClass" => {

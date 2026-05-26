@@ -10,8 +10,7 @@ use super::common::{emit_call, emit_def, emit_import, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_c_sharp::LANGUAGE.into())
@@ -44,8 +43,11 @@ fn walk(
                     emit_def(out, symbols, file, "method", n, child);
                 }
             }
-            "class_declaration" | "interface_declaration" | "struct_declaration"
-            | "record_declaration" | "enum_declaration" => {
+            "class_declaration"
+            | "interface_declaration"
+            | "struct_declaration"
+            | "record_declaration"
+            | "enum_declaration" => {
                 if let Some(n) = name_of(child, src) {
                     emit_def(
                         out,
@@ -83,11 +85,11 @@ fn walk_calls(
         if matches!(
             child.kind(),
             "method_declaration" | "constructor_declaration" | "local_function_statement"
-        )
-            && let Some(name) = name_of(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+        ) && let Some(name) = name_of(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
+        }
         walk_calls(child, src, file, out, symbols);
     }
 }
@@ -102,10 +104,11 @@ fn collect_calls(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "invocation_expression"
-            && let Some(fn_node) = child.child_by_field_name("function") {
-                let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+            && let Some(fn_node) = child.child_by_field_name("function")
+        {
+            let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
+        }
         collect_calls(child, src, caller_id, out, symbols);
     }
 }

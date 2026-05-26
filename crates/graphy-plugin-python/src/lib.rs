@@ -222,10 +222,11 @@ fn walk_calls(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "function_definition"
-            && let Some(name) = name_of(child, src) {
-                let caller_id = format!("{file}::{name}");
-                collect_calls(child, src, &caller_id, out, symbols);
-            }
+            && let Some(name) = name_of(child, src)
+        {
+            let caller_id = format!("{file}::{name}");
+            collect_calls(child, src, &caller_id, out, symbols);
+        }
         walk_calls(child, src, file, out, symbols);
     }
 }
@@ -244,10 +245,7 @@ fn collect_calls(
                 .child_by_field_name("function")
                 .expect("call has function field");
             let text = fn_node.utf8_text(src.as_bytes()).expect("utf8 source");
-            let leaf = text
-                .rsplit(['.', ':', ' '])
-                .next()
-                .unwrap_or(text);
+            let leaf = text.rsplit(['.', ':', ' ']).next().unwrap_or(text);
             if let Some(target_id) = symbols.get(leaf) {
                 out.edges.push(Edge {
                     source: caller_id.to_string(),
@@ -272,7 +270,11 @@ fn expand_import_paths(raw: &str) -> Vec<String> {
         return vec![raw.to_string()];
     };
     let prefix = raw[..open].trim_end_matches(':').to_string();
-    let prefix_with_sep = if prefix.is_empty() { String::new() } else { format!("{prefix}::") };
+    let prefix_with_sep = if prefix.is_empty() {
+        String::new()
+    } else {
+        format!("{prefix}::")
+    };
     let body_start = open + 1;
     let mut depth = 1usize;
     let mut end = body_start;
@@ -298,8 +300,14 @@ fn expand_import_paths(raw: &str) -> Vec<String> {
     let mut local_depth = 0usize;
     for c in body.chars() {
         match c {
-            '{' => { local_depth += 1; buf.push(c); }
-            '}' => { local_depth -= 1; buf.push(c); }
+            '{' => {
+                local_depth += 1;
+                buf.push(c);
+            }
+            '}' => {
+                local_depth -= 1;
+                buf.push(c);
+            }
             ',' if local_depth == 0 => {
                 let piece = buf.trim();
                 if !piece.is_empty() {

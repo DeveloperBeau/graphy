@@ -10,8 +10,7 @@ use super::common::{emit_def, emit_import};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_r::LANGUAGE.into())
@@ -47,24 +46,26 @@ fn walk(
                 let lhs = parts[0];
                 let rhs = parts[parts.len() - 1];
                 if (rhs.kind() == "function_definition" || rhs.kind() == "function")
-                    && let Ok(name) = lhs.utf8_text(src.as_bytes()) {
-                        emit_def(out, symbols, file, "function", name, child);
-                    }
+                    && let Ok(name) = lhs.utf8_text(src.as_bytes())
+                {
+                    emit_def(out, symbols, file, "function", name, child);
+                }
             }
         }
         // library(foo) / require(foo) calls
         if matches!(child.kind(), "call")
             && let Some(name_node) = child.child_by_field_name("function")
-                && let Ok(text) = name_node.utf8_text(src.as_bytes())
-                    && matches!(text, "library" | "require" | "source")
-                        && let Some(args) = child.child_by_field_name("arguments") {
-                            let raw = args
-                                .utf8_text(src.as_bytes())
-                                .unwrap_or("")
-                                .trim_matches(|c: char| matches!(c, '(' | ')' | ' '))
-                                .trim_matches(|c| matches!(c, '"' | '\''));
-                            emit_import(out, file, raw, child);
-                        }
+            && let Ok(text) = name_node.utf8_text(src.as_bytes())
+            && matches!(text, "library" | "require" | "source")
+            && let Some(args) = child.child_by_field_name("arguments")
+        {
+            let raw = args
+                .utf8_text(src.as_bytes())
+                .unwrap_or("")
+                .trim_matches(|c: char| matches!(c, '(' | ')' | ' '))
+                .trim_matches(|c| matches!(c, '"' | '\''));
+            emit_import(out, file, raw, child);
+        }
         walk(child, src, file, out, symbols);
     }
 }

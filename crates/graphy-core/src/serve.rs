@@ -32,10 +32,14 @@ pub struct StoredGraph {
 pub struct StoredNode {
     pub id: String,
     pub label: String,
-    #[serde(default)] pub source_file: Option<String>,
-    #[serde(default)] pub source_location: Option<String>,
-    #[serde(default)] pub kind: Option<String>,
-    #[serde(default)] pub community: Option<u32>,
+    #[serde(default)]
+    pub source_file: Option<String>,
+    #[serde(default)]
+    pub source_location: Option<String>,
+    #[serde(default)]
+    pub kind: Option<String>,
+    #[serde(default)]
+    pub community: Option<u32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -66,15 +70,23 @@ impl Index {
         let mut out_edges: HashMap<String, Vec<StoredEdge>> = HashMap::new();
         let mut in_edges: HashMap<String, Vec<StoredEdge>> = HashMap::new();
         for e in g.edges {
-            out_edges.entry(e.source.clone()).or_default().push(e.clone());
+            out_edges
+                .entry(e.source.clone())
+                .or_default()
+                .push(e.clone());
             in_edges.entry(e.target.clone()).or_default().push(e);
         }
-        Self { nodes, label_lookup, out_edges, in_edges }
+        Self {
+            nodes,
+            label_lookup,
+            out_edges,
+            in_edges,
+        }
     }
 
     pub fn load(path: &Path) -> Result<Self> {
-        let text = std::fs::read_to_string(path)
-            .with_context(|| format!("read {}", path.display()))?;
+        let text =
+            std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
         let g: StoredGraph = serde_json::from_str(&text).context("parse graph.json")?;
         Ok(Self::from_graph(g))
     }
@@ -219,7 +231,11 @@ fn run_tool(idx: &Index, name: &str, args: &Value) -> Result<Value> {
                 .len(),
         })),
         "search_label" => {
-            let q = args.get("q").and_then(|v| v.as_str()).unwrap_or("").to_lowercase();
+            let q = args
+                .get("q")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_lowercase();
             let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
             let mut out = Vec::with_capacity(limit);
             for (lbl, id) in &idx.label_lookup {
@@ -231,13 +247,17 @@ fn run_tool(idx: &Index, name: &str, args: &Value) -> Result<Value> {
                             "source_location": n.source_location,
                         }));
                     }
-                    if out.len() >= limit { break; }
+                    if out.len() >= limit {
+                        break;
+                    }
                 }
             }
             Ok(json!({ "matches": out }))
         }
         "neighbors" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| anyhow::anyhow!("missing id"))?;
             if !idx.nodes.contains_key(id) {
                 return Err(anyhow::anyhow!("unknown node: {id}"));
@@ -256,16 +276,24 @@ fn run_tool(idx: &Index, name: &str, args: &Value) -> Result<Value> {
             }))
         }
         "query_node" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| anyhow::anyhow!("missing id"))?;
-            let n = idx.nodes.get(id)
+            let n = idx
+                .nodes
+                .get(id)
                 .ok_or_else(|| anyhow::anyhow!("unknown node: {id}"))?;
             Ok(serde_json::to_value(n)?)
         }
         "shortest_path" => {
-            let from = args.get("from").and_then(|v| v.as_str())
+            let from = args
+                .get("from")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| anyhow::anyhow!("missing from"))?;
-            let to = args.get("to").and_then(|v| v.as_str())
+            let to = args
+                .get("to")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| anyhow::anyhow!("missing to"))?;
             let path = bfs_path(idx, from, to);
             Ok(json!({ "path": path }))

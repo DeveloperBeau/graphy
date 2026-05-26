@@ -13,8 +13,7 @@ use super::common::emit_def;
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_sequel::LANGUAGE.into())
@@ -32,7 +31,10 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 fn find_identifier(node: TsNode, src: &str) -> Option<String> {
     let mut cursor = node.walk();
     for c in node.children(&mut cursor) {
-        if matches!(c.kind(), "identifier" | "object_reference" | "table_reference") {
+        if matches!(
+            c.kind(),
+            "identifier" | "object_reference" | "table_reference"
+        ) {
             return c.utf8_text(src.as_bytes()).ok().map(|s| s.to_string());
         }
         if let Some(found) = find_identifier(c, src) {
@@ -62,11 +64,11 @@ fn walk(
                 | "create_schema"
                 | "create_type"
                 | "create_materialized_view"
-        )
-            && let Some(name) = find_identifier(child, src) {
-                let label_kind = kind.trim_start_matches("create_");
-                emit_def(out, symbols, file, label_kind, &name, child);
-            }
+        ) && let Some(name) = find_identifier(child, src)
+        {
+            let label_kind = kind.trim_start_matches("create_");
+            emit_def(out, symbols, file, label_kind, &name, child);
+        }
         walk(child, src, file, out, symbols);
     }
 }

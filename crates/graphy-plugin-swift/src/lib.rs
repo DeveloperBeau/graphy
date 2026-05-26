@@ -38,7 +38,9 @@ fn swift_name<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
 
 fn classify(kind: &str) -> Option<&'static str> {
     match kind {
-        "function_declaration" | "init_declaration" | "deinit_declaration"
+        "function_declaration"
+        | "init_declaration"
+        | "deinit_declaration"
         | "protocol_function_declaration" => Some("function"),
         "class_declaration" => Some("class"),
         "protocol_declaration" => Some("protocol"),
@@ -56,14 +58,16 @@ fn walk(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if let Some(kind) = classify(child.kind())
-            && let Some(n) = swift_name(child, src) {
-                emit_def(out, symbols, file, kind, n, child.start_position().row);
-            }
+            && let Some(n) = swift_name(child, src)
+        {
+            emit_def(out, symbols, file, kind, n, child.start_position().row);
+        }
         if child.kind() == "import_declaration"
-            && let Some(first) = child.named_child(0) {
-                let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_import(out, file, text, child.start_position().row);
-            }
+            && let Some(first) = child.named_child(0)
+        {
+            let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_import(out, file, text, child.start_position().row);
+        }
         walk(child, src, file, out, symbols);
     }
 }
@@ -99,10 +103,11 @@ fn collect_calls(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "call_expression"
-            && let Some(first) = child.named_child(0) {
-                let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
-            }
+            && let Some(first) = child.named_child(0)
+        {
+            let text = first.utf8_text(src.as_bytes()).expect("utf8 source");
+            emit_call(out, symbols, caller_id, text);
+        }
         collect_calls(child, src, caller_id, out, symbols);
     }
 }

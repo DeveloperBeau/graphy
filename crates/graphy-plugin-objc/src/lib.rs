@@ -57,8 +57,11 @@ fn walk(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         match child.kind() {
-            "class_interface" | "class_implementation" | "protocol_declaration"
-            | "category_interface" | "category_implementation" => {
+            "class_interface"
+            | "class_implementation"
+            | "protocol_declaration"
+            | "category_interface"
+            | "category_implementation" => {
                 if let Some(n) = name_of(child, src).or_else(|| declarator_name(child, src)) {
                     emit_def(out, symbols, file, "class", n, child.start_position().row);
                 }
@@ -70,15 +73,23 @@ fn walk(
             }
             "function_definition" => {
                 if let Some(n) = declarator_name(child, src) {
-                    emit_def(out, symbols, file, "function", n, child.start_position().row);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        "function",
+                        n,
+                        child.start_position().row,
+                    );
                 }
             }
             "preproc_include" | "preproc_import" => {
                 if let Some(path_node) = child.child_by_field_name("path")
-                    && let Ok(text) = path_node.utf8_text(src.as_bytes()) {
-                        let trimmed = text.trim_matches(|c| matches!(c, '"' | '<' | '>'));
-                        emit_import(out, file, trimmed, child.start_position().row);
-                    }
+                    && let Ok(text) = path_node.utf8_text(src.as_bytes())
+                {
+                    let trimmed = text.trim_matches(|c| matches!(c, '"' | '<' | '>'));
+                    emit_import(out, file, trimmed, child.start_position().row);
+                }
             }
             _ => {}
         }

@@ -9,8 +9,7 @@ use tree_sitter::{Node as TsNode, Parser};
 use crate::schema::{Confidence, Edge, ExtractionOutput, Node};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_html::LANGUAGE.into())
@@ -26,14 +25,15 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 
 fn attribute_value<'src>(attr: TsNode, src: &'src str) -> Option<&'src str> {
     let mut cursor = attr.walk();
-    attr.named_children(&mut cursor).find_map(|c| match c.kind() {
-        "quoted_attribute_value" => c
-            .named_child(0)
-            .and_then(|inner| inner.utf8_text(src.as_bytes()).ok())
-            .or(Some("")),
-        "attribute_value" => c.utf8_text(src.as_bytes()).ok(),
-        _ => None,
-    })
+    attr.named_children(&mut cursor)
+        .find_map(|c| match c.kind() {
+            "quoted_attribute_value" => c
+                .named_child(0)
+                .and_then(|inner| inner.utf8_text(src.as_bytes()).ok())
+                .or(Some("")),
+            "attribute_value" => c.utf8_text(src.as_bytes()).ok(),
+            _ => None,
+        })
 }
 
 fn attribute_name<'src>(attr: TsNode, src: &'src str) -> Option<&'src str> {
@@ -46,10 +46,7 @@ fn attribute_name<'src>(attr: TsNode, src: &'src str) -> Option<&'src str> {
 fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if matches!(
-            child.kind(),
-            "element" | "script_element" | "style_element"
-        ) {
+        if matches!(child.kind(), "element" | "script_element" | "style_element") {
             let mut sub = child.walk();
             for c in child.children(&mut sub) {
                 if matches!(c.kind(), "start_tag" | "self_closing_tag") {

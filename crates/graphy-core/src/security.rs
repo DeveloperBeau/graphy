@@ -23,10 +23,7 @@ pub fn validate_graph_path(root: &Path, graph_path: &Path) -> Result<PathBuf> {
     let abs_root = canonicalize_partial(root)?;
     let abs_target = canonicalize_partial(&join_abs(graph_path)?)?;
     if !abs_target.starts_with(&abs_root) {
-        return Err(anyhow!(
-            "graph path escapes root: {}",
-            abs_target.display()
-        ));
+        return Err(anyhow!("graph path escapes root: {}", abs_target.display()));
     }
     Ok(abs_target)
 }
@@ -103,9 +100,10 @@ fn canonicalize_partial(p: &Path) -> Result<PathBuf> {
         .ancestors()
         .inspect(|a| {
             if !a.exists()
-                && let Some(name) = a.file_name() {
-                    suffix = Path::new(name).join(&suffix);
-                }
+                && let Some(name) = a.file_name()
+            {
+                suffix = Path::new(name).join(&suffix);
+            }
         })
         .find(|a| a.exists())
         .unwrap_or(&abs);

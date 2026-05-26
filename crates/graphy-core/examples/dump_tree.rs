@@ -6,9 +6,10 @@ use tree_sitter::{Node, Parser};
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let lang = args.get(1).map(|s| s.as_str()).unwrap_or("kotlin");
-    let src = args.get(2).cloned().unwrap_or_else(|| {
-        "import java.util.List\nclass Svc { fun run() {} }".into()
-    });
+    let src = args
+        .get(2)
+        .cloned()
+        .unwrap_or_else(|| "import java.util.List\nclass Svc { fun run() {} }".into());
 
     let lf: tree_sitter::Language = match lang {
         "kotlin" => tree_sitter_kotlin_ng::LANGUAGE.into(),
@@ -32,12 +33,15 @@ fn main() {
 
 fn walk(n: Node, src: &str, depth: usize) {
     let kind = n.kind();
-    let text = n
-        .utf8_text(src.as_bytes())
-        .unwrap_or("")
-        .replace('\n', " ");
+    let text = n.utf8_text(src.as_bytes()).unwrap_or("").replace('\n', " ");
     let snippet = if text.len() > 60 { &text[..60] } else { &text };
-    println!("{:>3}: {}{} -- {}", n.start_position().row, "  ".repeat(depth), kind, snippet);
+    println!(
+        "{:>3}: {}{} -- {}",
+        n.start_position().row,
+        "  ".repeat(depth),
+        kind,
+        snippet
+    );
     let mut cursor = n.walk();
     for c in n.children(&mut cursor) {
         walk(c, src, depth + 1);

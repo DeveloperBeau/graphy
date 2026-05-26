@@ -10,8 +10,7 @@ use super::common::{emit_def, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
-    let src = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_verilog::LANGUAGE.into())
@@ -29,7 +28,12 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
 fn first_id<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
     let mut cursor = node.walk();
     node.children(&mut cursor)
-        .find(|c| matches!(c.kind(), "simple_identifier" | "module_identifier" | "identifier"))
+        .find(|c| {
+            matches!(
+                c.kind(),
+                "simple_identifier" | "module_identifier" | "identifier"
+            )
+        })
         .and_then(|c| c.utf8_text(src.as_bytes()).ok())
 }
 

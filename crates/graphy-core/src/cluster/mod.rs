@@ -187,8 +187,7 @@ pub fn cluster_seeded(
     if let Some(scc) = scc {
         // Widen the hot frontier to include every member of the same SCC
         // as any dirty node, so cycle participants are re-evaluated together.
-        let mut idx_to_id: HashMap<NodeIndex, String> =
-            HashMap::with_capacity(g.by_id.len());
+        let mut idx_to_id: HashMap<NodeIndex, String> = HashMap::with_capacity(g.by_id.len());
         for (id, &idx) in &g.by_id {
             idx_to_id.insert(idx, id.clone());
         }
@@ -197,9 +196,10 @@ pub fn cluster_seeded(
             if let Some(id) = idx_to_id.get(ni) {
                 for member_id in scc.component_of(id) {
                     if let Some(&i) = g.by_id.get(member_id)
-                        && let Some(&local_idx) = idx_of.get(&i) {
-                            additions.push(local_idx);
-                        }
+                        && let Some(&local_idx) = idx_of.get(&i)
+                    {
+                        additions.push(local_idx);
+                    }
                 }
             }
         }
@@ -268,11 +268,12 @@ pub fn cluster_hierarchical_seeded(
     let mut community: Vec<usize> = (0..adj.len()).collect(); // fresh identity labels
     for (idx, ni) in g.graph.node_indices().enumerate() {
         if let Some(id) = idx_to_id.get(&ni)
-            && let Some(&c) = prior.levels[0].node_to_super.get(id) {
-                // Offset by adj.len() so prior labels (0..k_prior) never
-                // collide with fresh identity labels (0..adj.len()).
-                community[idx] = adj.len() + c;
-            }
+            && let Some(&c) = prior.levels[0].node_to_super.get(id)
+        {
+            // Offset by adj.len() so prior labels (0..k_prior) never
+            // collide with fresh identity labels (0..adj.len()).
+            community[idx] = adj.len() + c;
+        }
     }
     densify(&mut community); // remap to dense 0..k
 

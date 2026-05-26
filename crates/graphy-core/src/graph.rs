@@ -72,18 +72,28 @@ impl KnowledgeGraph {
     }
 
     pub fn add_edge_record(&mut self, e: Edge) {
-        let s = self.ensure_node(&e.source, NodeData {
-            label: e.source.clone(),
-            ..Default::default()
-        });
-        let t = self.ensure_node(&e.target, NodeData {
-            label: e.target.clone(),
-            ..Default::default()
-        });
-        self.graph.add_edge(s, t, EdgeData {
-            relation: e.relation,
-            confidence: e.confidence,
-        });
+        let s = self.ensure_node(
+            &e.source,
+            NodeData {
+                label: e.source.clone(),
+                ..Default::default()
+            },
+        );
+        let t = self.ensure_node(
+            &e.target,
+            NodeData {
+                label: e.target.clone(),
+                ..Default::default()
+            },
+        );
+        self.graph.add_edge(
+            s,
+            t,
+            EdgeData {
+                relation: e.relation,
+                confidence: e.confidence,
+            },
+        );
     }
 
     pub fn node_count(&self) -> usize {
@@ -105,7 +115,10 @@ impl KnowledgeGraph {
             .node_indices()
             .map(|i| {
                 let d = &self.graph[i];
-                let id = by_idx.get(&i).cloned().unwrap_or_else(|| i.index().to_string());
+                let id = by_idx
+                    .get(&i)
+                    .cloned()
+                    .unwrap_or_else(|| i.index().to_string());
                 serde_json::json!({
                     "id": id,
                     "label": d.label,
