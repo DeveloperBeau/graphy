@@ -46,6 +46,11 @@ pub struct DedupReport {
     /// graph versions. Tracked separately from `imports_resolved` because
     /// splits are node creations, not import-to-definition redirects.
     pub compound_externs_split: usize,
+    /// Number of `extern::*` glob nodes (e.g. `use a::*`, `from a import *`)
+    /// that resolution skipped because they are unresolvable without scope
+    /// analysis. Glob nodes remain on the graph.
+    #[serde(default)]
+    pub glob_imports_skipped: usize,
     pub per_file_maps: HashMap<String, DedupMap>,
 }
 
@@ -55,7 +60,9 @@ pub fn dedup(g: &mut KnowledgeGraph) -> DedupReport {
     let split = pre_split_compound_externs(g);
     let mut per_file_maps: HashMap<String, DedupMap> = HashMap::new();
     let mut report = DedupReport::default();
-    report.imports_resolved = resolve_imports(g, &mut per_file_maps);
+    let (resolved, glob_skipped) = resolve_imports(g, &mut per_file_maps);
+    report.imports_resolved = resolved;
+    report.glob_imports_skipped = glob_skipped;
     let (merged, ambiguous) = collapse_aliases(g, &mut per_file_maps);
     // `split` counts new node creations, not import-to-definition redirects.
     // Store it in its own field so callers can distinguish the two.
@@ -73,7 +80,7 @@ fn ensure_map<'a>(maps: &'a mut HashMap<String, DedupMap>, file: &str) -> &'a mu
 
 // ---------- pass 1: extern imports -> local defs ----------
 
-fn resolve_imports(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, DedupMap>) -> usize {
+fn resolve_imports(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, DedupMap>) -> (usize, usize) {
     // Build a multi-key index: every non-extern node is registered under
     // each progressive suffix of its qualified path. For a node `helper`
     // in `src/foo/bar.rs` the keys are: `helper`, `bar::helper`,
@@ -97,9 +104,14 @@ fn resolve_imports(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, D
     }
 
     let mut redirects: Vec<(NodeIndex, NodeIndex, String, Option<String>)> = Vec::new();
+    let mut glob_skipped = 0usize;
     for extern_id in &extern_ids {
         let Some(&extern_idx) = g.by_id.get(extern_id) else { continue };
         let label = g.graph[extern_idx].label.clone();
+        if crate::extract::common::is_glob(&label) {
+            glob_skipped += 1;
+            continue;
+        }
         let source_file = g.graph[extern_idx].source_file.clone();
         let Some(target) = best_match(&suffix_index, &label) else { continue };
         if target == extern_idx {
@@ -124,7 +136,7 @@ fn resolve_imports(g: &mut KnowledgeGraph, per_file_maps: &mut HashMap<String, D
             });
         }
     }
-    count
+    (count, glob_skipped)
 }
 
 /// Every progressive suffix of a node's qualified path. Path components

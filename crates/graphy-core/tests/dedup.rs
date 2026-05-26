@@ -310,6 +310,54 @@ fn split_legacy_compound_preserves_alias_on_existing_node() {
 }
 
 #[test]
+fn glob_extern_is_skipped_and_counted() {
+    let ex = ExtractionOutput {
+        nodes: vec![
+            n("a.rs::helper", "function", "a.rs"),
+            ext("extern::a::*", "b.rs"),
+        ],
+        edges: vec![e(
+            "b.rs",
+            "extern::a::*",
+            "imports",
+            Confidence::Extracted,
+        )],
+    };
+    let mut g = build_graph(vec![ex]);
+    let report = dedup(&mut g);
+    assert_eq!(report.imports_resolved, 0, "glob must not resolve");
+    assert_eq!(report.glob_imports_skipped, 1, "glob must be counted");
+}
+
+#[test]
+fn glob_extern_remains_on_graph() {
+    let ex = ExtractionOutput {
+        nodes: vec![
+            n("a.rs::helper", "function", "a.rs"),
+            ext("extern::a::*", "b.rs"),
+        ],
+        edges: vec![],
+    };
+    let mut g = build_graph(vec![ex]);
+    let _report = dedup(&mut g);
+    assert!(
+        g.by_id.contains_key("extern::a::*"),
+        "glob extern node should survive dedup"
+    );
+}
+
+#[test]
+fn dot_glob_python_extern_counted() {
+    let ex = ExtractionOutput {
+        nodes: vec![ext("extern::a.*", "b.py")],
+        edges: vec![],
+    };
+    let mut g = build_graph(vec![ex]);
+    let report = dedup(&mut g);
+    assert_eq!(report.glob_imports_skipped, 1, "Python `from a import *` form must count");
+}
+
+#[test]
 fn dedup_resolves_each_expanded_member_independently() {
     use graphy_core::pipeline::{Pipeline, PipelineConfig};
     use tempfile::tempdir;
