@@ -26,6 +26,23 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     Ok(out)
 }
 
+/// The tree-sitter-kotlin-ng grammar uses `class_declaration` for class,
+/// interface, enum class, sealed class, data class, etc. Distinguish by
+/// looking for the first unnamed keyword child.
+fn kotlin_class_kind(node: tree_sitter::Node, src: &str) -> &'static str {
+    let mut cursor = node.walk();
+    for c in node.children(&mut cursor) {
+        if !c.is_named() {
+            match c.utf8_text(src.as_bytes()).unwrap_or("") {
+                "interface" => return "interface",
+                "enum" => return "class", // enum class -> kind=class (enum body is separate)
+                _ => return "class",
+            }
+        }
+    }
+    "class"
+}
+
 fn walk(
     node: TsNode,
     src: &str,
@@ -41,16 +58,18 @@ fn walk(
                     emit_def(out, symbols, file, "function", n, child);
                 }
             }
-            "class_declaration" | "object_declaration" => {
+            "class_declaration" => {
                 if let Some(n) = name_of(child, src) {
-                    emit_def(
-                        out,
-                        symbols,
-                        file,
-                        child.kind().trim_end_matches("_declaration"),
-                        n,
-                        child,
-                    );
+                    // The tree-sitter-kotlin-ng grammar uses class_declaration
+                    // for class, interface, object, enum class, data class, etc.
+                    // Distinguish by first unnamed keyword child.
+                    let kind = kotlin_class_kind(child, src);
+                    emit_def(out, symbols, file, kind, n, child);
+                }
+            }
+            "object_declaration" => {
+                if let Some(n) = name_of(child, src) {
+                    emit_def(out, symbols, file, "object", n, child);
                 }
             }
             "import_header" | "import_directive" | "import" => {

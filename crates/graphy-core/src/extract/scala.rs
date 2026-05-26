@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use super::common::{emit_call, emit_def, emit_import, name_of};
+use super::common::{emit_call, emit_def, emit_import, emit_inherits, name_of};
 use crate::schema::ExtractionOutput;
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
@@ -51,6 +51,21 @@ fn walk(
                         n,
                         child,
                     );
+                    // Emit inherits edges for extends/with clause.
+                    let child_id = format!("{file}::{n}");
+                    let mut ec = child.walk();
+                    for grandchild in child.children(&mut ec) {
+                        if grandchild.kind() == "extends_clause" {
+                            let mut gc = grandchild.walk();
+                            for item in grandchild.children(&mut gc) {
+                                if item.kind() == "type_identifier" {
+                                    if let Ok(parent) = item.utf8_text(src.as_bytes()) {
+                                        emit_inherits(out, &child_id, parent, "inherits", item);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             "import_declaration" => {

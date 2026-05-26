@@ -23,8 +23,8 @@ pub static CODE_EXTENSIONS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
         "gradle", "cpp", "cc", "cxx", "c", "h", "hpp", "rb", "swift", "kt", "kts", "cs", "scala",
         "php", "lua", "luau", "toc", "zig", "ps1", "ex", "exs", "m", "mm", "jl", "vue", "svelte",
         "astro", "dart", "v", "sv", "sql", "r", "f", "f90", "f95", "f03", "f08", "pas", "pp",
-        "dpr", "dpk", "lpr", "inc", "dfm", "lfm", "lpk", "sh", "bash", "json",
-        "hs", "lhs", "erl", "hrl", "ml", "mli",
+        "dpr", "dpk", "lpr", "inc", "dfm", "lfm", "lpk", "sh", "bash", "json", "pl", "pm",
+        "html", "htm", "css", "toml", "yaml", "yml", "hs", "lhs", "erl", "hrl", "ml", "mli",
     )
 });
 

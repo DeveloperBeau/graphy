@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
 use super::common::{emit_call, emit_def, emit_import, name_of};
-use crate::schema::ExtractionOutput;
+use crate::schema::{Confidence, Edge, ExtractionOutput};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
@@ -45,7 +45,31 @@ fn walk_defs(
             }
             "class_definition" => {
                 if let Some(n) = name_of(child, src) {
+                    let class_id = format!("{file}::{n}");
                     emit_def(out, symbols, file, "class", n, child);
+                    // Emit `inherits` edge for each base class in the argument_list.
+                    let mut cc = child.walk();
+                    for gc in child.children(&mut cc) {
+                        if gc.kind() == "argument_list" {
+                            let mut bc = gc.walk();
+                            for base in gc.children(&mut bc) {
+                                if base.kind() == "identifier" {
+                                    if let Ok(base_name) = base.utf8_text(src.as_bytes()) {
+                                        let base_name = base_name.trim();
+                                        if !base_name.is_empty() {
+                                            let target_id = format!("extern::{base_name}");
+                                            out.edges.push(Edge {
+                                                source: class_id.clone(),
+                                                target: target_id,
+                                                relation: "inherits".into(),
+                                                confidence: Confidence::Extracted,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             "import_statement" | "import_from_statement" => {
