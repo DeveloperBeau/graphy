@@ -1,7 +1,8 @@
 //! Rust source extractor (tree-sitter).
 //!
-//! Emits nodes for `fn`, `struct`, `enum`, `trait`, `impl`, `mod` items and
-//! edges for `use` (imports) and direct call expressions inside fn bodies.
+//! Emits nodes for `fn`, `struct`, `enum`, `trait`, `impl`, `mod`, `const`,
+//! `static`, and `type` items, plus edges for `use` (imports), direct call
+//! expressions inside fn bodies, and `impl Trait for Type` (`implements`).
 
 use std::collections::HashMap;
 use std::fs;
