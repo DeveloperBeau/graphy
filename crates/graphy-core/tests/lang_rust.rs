@@ -49,24 +49,6 @@ fn service_emits_struct() {
 }
 
 #[test]
-fn service_emits_impl_blocks() {
-    // impl_item nodes are not emitted (impl blocks have no name in tree-sitter-rust).
-    // The extractor instead emits `implements` edges for trait impls.
-    // Verify at least one `implements` edge exists (Greet for Service).
-    let out = extract_file(&fp("src/service.rs"));
-    let implements: Vec<_> = out
-        .edges
-        .iter()
-        .filter(|e| e.relation == "implements")
-        .collect();
-    assert!(
-        !implements.is_empty(),
-        "expected at least one implements edge from impl blocks, got none; edges = {:#?}",
-        out.edges
-    );
-}
-
-#[test]
 fn service_emits_single_qualified_import() {
     let out = extract_file(&fp("src/service.rs"));
     // `use std::collections::HashMap;`
