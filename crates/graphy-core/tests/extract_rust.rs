@@ -143,6 +143,14 @@ fn extracts_const_and_static_items() {
     assert!(labels.contains(&"NAME"));
 }
 
+#[test]
+fn extracts_type_alias_items() {
+    let dir = tempdir().unwrap();
+    let p = write(dir.path(), "x.rs", "pub type Id = u64;\n");
+    let out = extract(&p).unwrap();
+    assert!(out.nodes.iter().any(|n| n.label == "Id" && n.kind.as_deref() == Some("type")));
+}
+
 // ---------- hostile ----------
 
 #[test]
