@@ -408,4 +408,19 @@ fn analysis_surfaces_glob_imports_skipped_and_modularity() {
         "modularity must be finite, got {}",
         r.analysis.modularity
     );
+
+    // Verify the fields also appear in stats.json on disk (not just in
+    // the in-memory Analysis struct).
+    let stats_text = fs::read_to_string(&r.paths.stats_json)
+        .expect("read stats.json");
+    let stats: serde_json::Value = serde_json::from_str(&stats_text)
+        .expect("stats.json parses as JSON");
+    assert!(
+        stats.get("glob_imports_skipped").is_some(),
+        "stats.json should contain glob_imports_skipped: {stats}"
+    );
+    assert!(
+        stats.get("modularity").is_some(),
+        "stats.json should contain modularity: {stats}"
+    );
 }
