@@ -6,9 +6,13 @@
 # Usage: bench/compare.sh [fixtures-dir] [report-out] [trials]
 #
 # Environment:
-#   BENCH_ASSERT=1   Fail with exit code 1 if any fixture's warm
-#                    dedup_imports_resolved exceeds 20% of its cold count
-#                    (and cold count > 0).
+#   BENCH_ASSERT=1       Fail with exit code 1 if any fixture's warm
+#                        dedup_imports_resolved exceeds 20% of its cold count
+#                        (and cold count > 0).
+#   BENCH_ASSERT_SCC=1   Fail with exit code 1 if any fixture's SCC-on warm
+#                        wall time is more than 1.10x the SCC-off warm wall
+#                        time. Manual / opt-in (timing-sensitive on busy
+#                        machines).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -16,6 +20,7 @@ FIXTURES="${1:-$REPO_ROOT/fixtures}"
 REPORT="${2:-$REPO_ROOT/bench/comparison.md}"
 TRIALS="${3:-3}"
 BENCH_ASSERT="${BENCH_ASSERT:-0}"
+BENCH_ASSERT_SCC="${BENCH_ASSERT_SCC:-0}"
 
 GRAPHY_BIN="$REPO_ROOT/target/release/graphy"
 
@@ -135,6 +140,30 @@ bench_dedup_cache() {
   echo "${cold_imports}|${warm_imports}"
 }
 
+# Measure SCC widening overhead on the warm path: warm run with vs without
+# --no-scc-expansion. Outputs "wall_on_ms|wall_off_ms".
+bench_scc_overhead() {
+  local fixture_dir="$1"; local out="$2"
+  local tmp_time
+  tmp_time="$(mktemp)"
+
+  # Warm both passes (cache must exist already, from bench_dedup_cache).
+  local s e on_ms off_ms
+
+  s=$(now_ns)
+  "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" >/dev/null 2>/dev/null
+  e=$(now_ns)
+  on_ms=$(( (e - s) / 1000000 ))
+
+  s=$(now_ns)
+  "$GRAPHY_BIN" "$fixture_dir" --out "$fixture_dir" --no-scc-expansion >/dev/null 2>/dev/null
+  e=$(now_ns)
+  off_ms=$(( (e - s) / 1000000 ))
+
+  rm -f "$tmp_time"
+  echo "${on_ms}|${off_ms}"
+}
+
 count_json() {
   local f="$1" expr="$2"
   if [[ -f "$f" ]]; then jq "$expr" "$f" 2>/dev/null || echo "-"
@@ -158,6 +187,7 @@ format_kb() {
 declare -a rows=()
 declare -a rel_rows=()
 declare -a dedup_rows=()
+declare -a scc_rows=()
 assert_failures=()
 
 for fx in "$FIXTURES"/*/; do
@@ -190,9 +220,27 @@ for fx in "$FIXTURES"/*/; do
     reduction_pct="n/a"
   fi
 
+  # Measure SCC widening overhead (warm path: scc-on vs scc-off).
+  scc_res="$(bench_scc_overhead "$fx" "$out")"
+  IFS='|' read -r scc_on_ms scc_off_ms <<< "$scc_res"
+
+  # Compute ratio (scc_on / scc_off) as a percentage; skip if scc_off is 0.
+  if (( scc_off_ms > 0 )); then
+    scc_ratio_pct=$(python3 -c "print(f'{($scc_on_ms / $scc_off_ms) * 100:.1f}')")
+    if [[ "$BENCH_ASSERT_SCC" == "1" ]]; then
+      passes=$(python3 -c "print('yes' if $scc_on_ms <= 1.10 * $scc_off_ms else 'no')")
+      if [[ "$passes" == "no" ]]; then
+        assert_failures+=("$label: scc_on=${scc_on_ms}ms scc_off=${scc_off_ms}ms ratio=${scc_ratio_pct}% (need <=110%)")
+      fi
+    fi
+  else
+    scc_ratio_pct="n/a"
+  fi
+
   rows+=("$label|$ms|$rss|$nodes|$edges")
   rel_rows+=("$label|$rels")
   dedup_rows+=("$label|$cold_imports|$warm_imports|$reduction_pct")
+  scc_rows+=("$label|$scc_on_ms|$scc_off_ms|$scc_ratio_pct")
 done
 
 {
@@ -238,6 +286,15 @@ done
   for r in "${dedup_rows[@]}"; do
     IFS='|' read -r label cold warm reduction <<< "$r"
     echo "| $label | $cold | $warm | ${reduction}% |"
+  done
+  echo ""
+  echo "## SCC widening overhead (warm path)"
+  echo ""
+  echo "| Fixture | SCC on (ms) | SCC off (ms) | on/off |"
+  echo "| --- | ---: | ---: | ---: |"
+  for row in "${scc_rows[@]}"; do
+    IFS='|' read -r label son soff ratio <<< "$row"
+    echo "| $label | $son | $soff | ${ratio}% |"
   done
   echo
   echo "## Relation distribution"
