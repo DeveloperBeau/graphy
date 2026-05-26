@@ -214,7 +214,7 @@ pub fn err_result(status: c_uint, msg: impl Into<String>) -> GraphyPluginExtract
 pub unsafe fn release_result(result: GraphyPluginExtractResult) {
     if !result.json_data.is_null() {
         let _ = unsafe {
-            Box::from_raw(core::slice::from_raw_parts_mut(
+            Box::from_raw(core::ptr::slice_from_raw_parts_mut(
                 result.json_data,
                 result.json_len,
             ))
