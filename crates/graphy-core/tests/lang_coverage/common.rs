@@ -6,6 +6,8 @@
 
 use std::path::{Path, PathBuf};
 
+use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+
 use graphy_core::extract::extract;
 use graphy_core::graph::{KnowledgeGraph, NodeData};
 use graphy_core::pipeline::{Pipeline, PipelineConfig};
@@ -99,5 +101,81 @@ pub fn assert_extract_edge(out: &ExtractionOutput, relation: &str, src_label: &s
              dst_label={dst_label:?} (src_id={src_id:?}, dst_id={dst_id:?}); \
              extracted edges = {edge_dump:#?}"
         );
+    }
+}
+
+// ----- graph-level assertion helpers -----
+
+pub fn find_node<'a>(g: &'a KnowledgeGraph, label: &str) -> Option<&'a NodeData> {
+    g.graph.node_weights().find(|n| n.label == label)
+}
+
+pub fn assert_node(g: &KnowledgeGraph, label: &str, kind: &str) {
+    let hit = g
+        .graph
+        .node_weights()
+        .any(|n| n.label == label && n.kind.as_deref() == Some(kind));
+    if !hit {
+        let dump: Vec<(String, Option<String>)> = g
+            .graph
+            .node_weights()
+            .map(|n| (n.label.clone(), n.kind.clone()))
+            .collect();
+        panic!(
+            "assert_node failed: expected label={label:?} kind={kind:?}, \
+             graph nodes = {dump:#?}"
+        );
+    }
+}
+
+fn node_id_for_label(g: &KnowledgeGraph, label: &str) -> Option<petgraph::graph::NodeIndex> {
+    g.graph
+        .node_indices()
+        .find(|i| g.graph[*i].label == label)
+}
+
+pub fn assert_edge(g: &KnowledgeGraph, src_label: &str, dst_label: &str, relation: &str) {
+    let src = node_id_for_label(g, src_label);
+    let dst = node_id_for_label(g, dst_label);
+    let hit = if let (Some(s), Some(d)) = (src, dst) {
+        g.graph
+            .edges_connecting(s, d)
+            .any(|e| e.weight().relation == relation)
+    } else {
+        false
+    };
+    if !hit {
+        let edges: Vec<(String, String, String)> = g
+            .graph
+            .edge_references()
+            .map(|e| (
+                g.graph[e.source()].label.clone(),
+                g.graph[e.target()].label.clone(),
+                e.weight().relation.clone(),
+            ))
+            .collect();
+        panic!(
+            "assert_edge failed: src={src_label:?} dst={dst_label:?} relation={relation:?}; \
+             graph edges = {edges:#?}"
+        );
+    }
+}
+
+pub fn assert_no_edge(g: &KnowledgeGraph, src_label: &str, dst_label: &str) {
+    let src = node_id_for_label(g, src_label);
+    let dst = node_id_for_label(g, dst_label);
+    if let (Some(s), Some(d)) = (src, dst) {
+        let any = g.graph.edges_connecting(s, d).next().is_some();
+        if any {
+            let edges: Vec<String> = g
+                .graph
+                .edges_connecting(s, d)
+                .map(|e| e.weight().relation.clone())
+                .collect();
+            panic!(
+                "assert_no_edge failed: src={src_label:?} dst={dst_label:?}; \
+                 unexpected edges present with relations {edges:?}"
+            );
+        }
     }
 }
