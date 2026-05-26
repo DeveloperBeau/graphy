@@ -213,8 +213,9 @@ fn scc_widening_does_not_hurt_modularity() {
 
         // Drop-guard restores the panic hook even if we panic past
         // catch_unwind (e.g. an alloc failure inside the closure).
+        type PanicHook = Box<dyn Fn(&panic::PanicHookInfo<'_>) + Sync + Send>;
         struct HookGuard {
-            prev: Option<Box<dyn Fn(&panic::PanicHookInfo<'_>) + Sync + Send>>,
+            prev: Option<PanicHook>,
         }
         impl Drop for HookGuard {
             fn drop(&mut self) {
