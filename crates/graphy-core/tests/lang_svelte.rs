@@ -85,6 +85,53 @@ fn non_utf8_bytes_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Deferred closure: script-block decomposition ----------
+
+#[test]
+fn service_emits_function_node_from_script() {
+    let out = extract_file(&fp("src/Service.svelte"));
+    let fn_labels: Vec<_> = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("function"))
+        .map(|n| n.label.as_str())
+        .collect();
+    assert!(
+        fn_labels.iter().any(|l| *l == "handleClick"),
+        "function 'handleClick' not found in Service.svelte; got {fn_labels:?}"
+    );
+}
+
+#[test]
+fn service_emits_import_node_from_script() {
+    let out = extract_file(&fp("src/Service.svelte"));
+    let import_labels: Vec<_> = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("import"))
+        .map(|n| n.label.as_str())
+        .collect();
+    assert!(
+        import_labels.iter().any(|l| l.contains("Helpers")),
+        "Helpers import not found in Service.svelte; got {import_labels:?}"
+    );
+}
+
+#[test]
+fn helpers_svelte_emits_function_node_from_script() {
+    let out = extract_file(&fp("src/Helpers.svelte"));
+    let fn_labels: Vec<_> = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("function"))
+        .map(|n| n.label.as_str())
+        .collect();
+    assert!(
+        fn_labels.iter().any(|l| *l == "formatLabel"),
+        "function 'formatLabel' not found in Helpers.svelte; got {fn_labels:?}"
+    );
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
