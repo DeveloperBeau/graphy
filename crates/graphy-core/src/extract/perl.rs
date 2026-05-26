@@ -42,7 +42,9 @@ fn walk(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         match child.kind() {
-            "subroutine_declaration_statement" | "func_declaration_statement" => {
+            "subroutine_declaration_statement"
+            | "func_declaration_statement"
+            | "function_definition" => {
                 if let Some(n) = name_of(child, src).or_else(|| first_id(child, src)) {
                     emit_def(out, symbols, file, "sub", n, child);
                 }
