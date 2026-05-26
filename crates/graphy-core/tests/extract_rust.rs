@@ -270,3 +270,26 @@ fn huge_file_completes_in_reasonable_time() {
     let out = extract(&p).unwrap();
     assert!(out.nodes.len() >= 5_000);
 }
+
+// ---------- deferred follow-ups (Tier 0) ----------
+
+#[test]
+fn impl_method_emitted_as_function_node() {
+    let dir = tempdir().unwrap();
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "pub struct Foo;\nimpl Foo { pub fn bar() {} }\n",
+    );
+    let out = extract(&p).unwrap();
+    let labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
+    assert!(
+        labels.contains(&"bar"),
+        "expected method 'bar' as function node; got {labels:?}"
+    );
+    assert!(
+        out.nodes.iter().any(|n| n.label == "bar" && n.kind.as_deref() == Some("function")),
+        "method node must have kind 'function'; nodes = {:#?}",
+        out.nodes,
+    );
+}
