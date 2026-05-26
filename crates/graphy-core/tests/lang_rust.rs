@@ -279,21 +279,10 @@ fn pipeline_does_not_emit_local_call_to_println() {
 }
 
 #[test]
-#[ignore = "plumbing gap: implements-edge target is emitted as a file-qualified \
-            stub (e.g. `<file>::Greet`) rather than `extern::Greet`, so the \
-            dedup resolve_imports pass (which only redirects `extern::*` ids) \
-            never canonicalises the target onto the trait `Greet` node defined \
-            in types.rs. The implements edge itself survives dedup — only its \
-            target resolution is missing. Fix: emit implements-target ids as \
-            `extern::<trait_leaf>` in extract::rust so dedup picks them up, \
-            OR teach dedup to handle implements-target stubs. Tracked as a \
-            follow-up to the lang-coverage harness."]
 fn pipeline_preserves_implements_edge_through_dedup() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     // `impl Greet for Service` -> implements edge from Service -> Greet must
-    // survive deduplication and resolution. The edge currently survives, but
-    // its target is the unresolved stub `<file>::Greet` rather than the
-    // canonical `Greet` trait node from types.rs. See #[ignore] note above.
+    // survive deduplication and resolution.
     assert_edge(&g, "Service", "Greet", "implements");
 }
 
