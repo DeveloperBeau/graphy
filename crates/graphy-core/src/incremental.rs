@@ -206,13 +206,16 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
     // otherwise the delta-Louvain seed sees them as fresh dirty nodes
     // and assigns them their own communities — inflating the count.
     let mut dedup_imports_resolved = 0usize;
+    let mut dedup_glob_imports_skipped = 0usize;
     if cfg.dedup {
         let dr = crate::dedup::dedup(&mut graph);
         dedup_imports_resolved = dr.imports_resolved;
+        dedup_glob_imports_skipped = dr.glob_imports_skipped;
         info!(
             imports = dr.imports_resolved,
             merged = dr.reexports_merged,
             ambiguous = dr.ambiguous_groups,
+            globs = dr.glob_imports_skipped,
             "dedup pass (incremental)"
         );
         // Build the write-back maps: start from the existing (prior) per-file
@@ -335,6 +338,8 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
 
     let mut analysis = analyze(&graph);
     analysis.dedup_imports_resolved = dedup_imports_resolved;
+    analysis.glob_imports_skipped = dedup_glob_imports_skipped;
+    analysis.modularity = crate::cluster::modularity(&graph);
     let paths = export(&cfg.out_root, &graph, &analysis)?;
     let elapsed_ms = start.elapsed().as_millis();
 
@@ -559,13 +564,16 @@ fn run_full(
     let mut graph = build_graph(extractions);
 
     let mut dedup_imports_resolved = 0usize;
+    let mut dedup_glob_imports_skipped = 0usize;
     if cfg.dedup {
         let report = crate::dedup::dedup(&mut graph);
         dedup_imports_resolved = report.imports_resolved;
+        dedup_glob_imports_skipped = report.glob_imports_skipped;
         info!(
             imports = report.imports_resolved,
             merged = report.reexports_merged,
             ambiguous = report.ambiguous_groups,
+            globs = report.glob_imports_skipped,
             "dedup pass (run_full fallback)"
         );
         // Fan out each redirect to every file that contributed the same
@@ -615,6 +623,8 @@ fn run_full(
     }
     let mut analysis = analyze(&graph);
     analysis.dedup_imports_resolved = dedup_imports_resolved;
+    analysis.glob_imports_skipped = dedup_glob_imports_skipped;
+    analysis.modularity = crate::cluster::modularity(&graph);
     let paths = export(&cfg.out_root, &graph, &analysis)?;
 
     Ok(PipelineOutputs {

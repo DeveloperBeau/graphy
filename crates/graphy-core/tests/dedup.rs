@@ -382,3 +382,30 @@ fn dedup_resolves_each_expanded_member_independently() {
         "compound extern survived dedup: {:?}",
         labels.iter().filter(|l| l.contains("{")).collect::<Vec<_>>());
 }
+
+#[test]
+fn analysis_surfaces_glob_imports_skipped_and_modularity() {
+    use graphy_core::pipeline::{Pipeline, PipelineConfig};
+    use tempfile::tempdir;
+    use std::fs;
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("a.rs"), "pub fn helper() {}\n").unwrap();
+    fs::write(
+        dir.path().join("b.rs"),
+        "use a::*;\nfn main() { helper(); }\n",
+    ).unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+    let r = Pipeline::new(cfg).run().unwrap();
+    assert!(
+        r.analysis.glob_imports_skipped >= 1,
+        "expected >=1 glob skipped, got {}",
+        r.analysis.glob_imports_skipped
+    );
+    // modularity is a heuristic; a 2-node graph commonly produces 0.0, so
+    // we only check the field exists and is finite.
+    assert!(
+        r.analysis.modularity.is_finite(),
+        "modularity must be finite, got {}",
+        r.analysis.modularity
+    );
+}

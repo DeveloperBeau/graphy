@@ -148,13 +148,16 @@ impl Pipeline {
         let extractions: Vec<_> = extractions.into_iter().map(|(_, o)| o).collect();
         let mut graph = build_graph(extractions);
         let mut dedup_imports_resolved = 0usize;
+        let mut dedup_glob_imports_skipped = 0usize;
         if self.cfg.dedup {
             let report = crate::dedup::dedup(&mut graph);
             dedup_imports_resolved = report.imports_resolved;
+            dedup_glob_imports_skipped = report.glob_imports_skipped;
             info!(
                 imports = report.imports_resolved,
                 merged = report.reexports_merged,
                 ambiguous = report.ambiguous_groups,
+                globs = report.glob_imports_skipped,
                 "dedup pass"
             );
             if let Some(ref mut cache) = cache {
@@ -220,6 +223,8 @@ impl Pipeline {
         }
         let mut analysis = analyze(&graph);
         analysis.dedup_imports_resolved = dedup_imports_resolved;
+        analysis.glob_imports_skipped = dedup_glob_imports_skipped;
+        analysis.modularity = crate::cluster::modularity(&graph);
         let paths = export(&self.cfg.out_root, &graph, &analysis)?;
 
         Ok(PipelineOutputs {

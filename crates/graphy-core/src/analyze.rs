@@ -15,6 +15,16 @@ pub struct Analysis {
     /// during the dedup pass. Zero when dedup is disabled or no externs
     /// were resolved. Set by the pipeline after calling `dedup::dedup`.
     pub dedup_imports_resolved: usize,
+    /// Number of glob extern nodes (`use a::*` and `from a import *`) that
+    /// dedup skipped because they are unresolvable without scope analysis.
+    /// Zero when dedup is disabled. Set by the pipeline.
+    #[serde(default)]
+    pub glob_imports_skipped: usize,
+    /// Newman-modularity of the final clustered graph. Range [-1, 1].
+    /// Zero when clustering is disabled or graph is empty. Set by the
+    /// pipeline after `cluster::cluster`.
+    #[serde(default)]
+    pub modularity: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,5 +69,7 @@ pub fn analyze(g: &KnowledgeGraph) -> Analysis {
         god_nodes,
         ambiguous_edge_count: ambiguous,
         dedup_imports_resolved: 0,
+        glob_imports_skipped: 0,
+        modularity: 0.0,
     }
 }
