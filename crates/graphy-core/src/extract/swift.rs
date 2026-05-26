@@ -70,6 +70,17 @@ fn classify_swift<'src>(node: tree_sitter::Node, src: &'src str) -> Option<&'sta
     None
 }
 
+/// Synthetic name for declaration kinds whose name is a fixed keyword rather
+/// than an identifier node. Returns Some("init") / Some("deinit") for the
+/// corresponding declaration nodes; None for all others.
+fn synthetic_name(node: TsNode) -> Option<&'static str> {
+    match node.kind() {
+        "init_declaration" => Some("init"),
+        "deinit_declaration" => Some("deinit"),
+        _ => None,
+    }
+}
+
 fn walk(
     node: TsNode,
     src: &str,
@@ -79,10 +90,13 @@ fn walk(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if let Some(kind) = classify_swift(child, src)
-            && let Some(n) = swift_name(child, src)
-        {
-            emit_def(out, symbols, file, kind, n, child);
+        if let Some(kind) = classify_swift(child, src) {
+            // init/deinit have no identifier child; use the fixed keyword label.
+            let name = swift_name(child, src)
+                .or_else(|| synthetic_name(child));
+            if let Some(n) = name {
+                emit_def(out, symbols, file, kind, n, child);
+            }
         }
         if child.kind() == "import_declaration"
             && let Some(first) = child.named_child(0)
@@ -107,7 +121,9 @@ fn walk_calls(
             child.kind(),
             "function_declaration" | "init_declaration" | "deinit_declaration"
         ) {
-            let name = swift_name(child, src).unwrap_or("<anon>");
+            let name = swift_name(child, src)
+                .or_else(|| synthetic_name(child))
+                .unwrap_or("<anon>");
             let caller_id = format!("{file}::{name}");
             collect_calls(child, src, &caller_id, out, symbols);
         }

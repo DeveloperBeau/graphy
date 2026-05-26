@@ -51,6 +51,13 @@ fn service_emits_class_and_functions() {
 }
 
 #[test]
+fn service_emits_init_and_deinit_as_functions() {
+    let out = extract_file(&fp("Sources/Service.swift"));
+    assert_extract_has(&out, "init", "function");
+    assert_extract_has(&out, "deinit", "function");
+}
+
+#[test]
 fn service_does_not_emit_call_to_external_print() {
     let out = extract_file(&fp("Sources/Service.swift"));
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
