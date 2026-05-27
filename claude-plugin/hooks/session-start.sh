@@ -7,10 +7,22 @@ set -euo pipefail
 WORKSPACE="${CLAUDE_PROJECT_DIR:-$PWD}"
 GRAPH="$WORKSPACE/graphy-out/graph.json"
 
+emit() {
+  # Single-line JSON envelope so we can build it without jq.
+  local msg="$1"
+  # Escape backslashes and double-quotes for embedding in a JSON string.
+  msg="${msg//\\/\\\\}"
+  msg="${msg//\"/\\\"}"
+  printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\n' "$msg"
+}
+
 if [[ ! -f "$GRAPH" ]]; then
-  cat <<EOF
-{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"graphy: no graph yet for this workspace. Claude can build one with \`/graphy build\` or by issuing a Read; the PreToolUse hook will auto-build on the next file access."}}
-EOF
+  emit "graphy: no graph yet for this workspace. Claude can build one with \`/graphy build\` or by issuing a Read; the PreToolUse hook will auto-build on the next file access."
+  exit 0
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  emit "graphy: graph present at graphy-out/graph.json but jq is not installed; install jq for graph-summary context."
   exit 0
 fi
 

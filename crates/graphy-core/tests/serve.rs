@@ -1,8 +1,10 @@
 //! `serve` module: JSON-RPC over stdio for graph queries.
 
 use std::fs;
+use std::thread;
+use std::time::{Duration, SystemTime};
 
-use graphy_core::serve::{Index, handle_line};
+use graphy_core::serve::{Index, IndexCache, handle_line};
 use serde_json::{Value, json};
 use tempfile::tempdir;
 
@@ -31,9 +33,11 @@ fn make_index() -> Index {
     Index::from_graph(g)
 }
 
+/// Calls handle_line with a request that has an id; panics if the server
+/// suppresses the response (which would only happen for notifications).
 fn call(idx: &Index, req: Value) -> Value {
     let line = serde_json::to_string(&req).unwrap();
-    let resp = handle_line(idx, &line);
+    let resp = handle_line(idx, &line).expect("request had id; server must respond");
     serde_json::to_value(&resp).unwrap()
 }
 
@@ -49,6 +53,18 @@ fn initialize_returns_server_descriptor() {
     let result = &v["result"];
     assert_eq!(result["name"], "graphy");
     assert!(result["version"].is_string());
+}
+
+#[test]
+fn initialize_advertises_modern_mcp_protocol_version() {
+    let idx = make_index();
+    let v = call(
+        &idx,
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize" }),
+    );
+    // MCP spec versions are date-stamped, not semver. Anything older confuses
+    // strict clients (Inspector, Continue, etc.).
+    assert_eq!(v["result"]["protocolVersion"], "2024-11-05");
 }
 
 #[test]
@@ -187,7 +203,7 @@ fn shortest_path_returns_singleton_for_identical_endpoints() {
 #[test]
 fn parse_error_reports_minus_32700() {
     let idx = make_index();
-    let resp = handle_line(&idx, "{not valid json");
+    let resp = handle_line(&idx, "{not valid json").expect("parse errors emit a response");
     let v = serde_json::to_value(&resp).unwrap();
     assert_eq!(v["error"]["code"], -32700);
 }
@@ -369,6 +385,51 @@ fn shortest_path_unknown_endpoint_returns_empty() {
     assert!(v["result"]["path"].as_array().unwrap().is_empty());
 }
 
+// ---------- notifications (JSON-RPC §4.1) ----------
+
+#[test]
+fn notification_with_known_method_produces_no_response() {
+    let idx = make_index();
+    let resp = handle_line(
+        &idx,
+        r#"{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}"#,
+    );
+    assert!(resp.is_none(), "notifications must not receive a response");
+}
+
+#[test]
+fn notification_with_unknown_method_produces_no_response() {
+    // Per spec, a notification (no id) gets no response *even* on errors.
+    let idx = make_index();
+    let resp = handle_line(&idx, r#"{"jsonrpc":"2.0","method":"frobnicate"}"#);
+    assert!(resp.is_none());
+}
+
+#[test]
+fn notification_with_missing_tool_name_produces_no_response() {
+    let idx = make_index();
+    let resp = handle_line(
+        &idx,
+        r#"{"jsonrpc":"2.0","method":"tools/call","params":{"arguments":{}}}"#,
+    );
+    assert!(resp.is_none());
+}
+
+#[test]
+fn explicit_null_id_is_treated_as_a_request_not_a_notification() {
+    // `id: null` is a real request id per JSON-RPC; clients should not use it,
+    // but if they do, we respond (with id=null). Distinct from a missing id.
+    let idx = make_index();
+    let resp = handle_line(
+        &idx,
+        r#"{"jsonrpc":"2.0","id":null,"method":"initialize"}"#,
+    )
+    .expect("explicit null id is still a request");
+    let v = serde_json::to_value(&resp).unwrap();
+    assert_eq!(v["id"], Value::Null);
+    assert_eq!(v["result"]["name"], "graphy");
+}
+
 // ---------- loader ----------
 
 #[test]
@@ -393,4 +454,114 @@ fn index_load_surfaces_parse_error_for_malformed_json() {
     fs::write(&p, "{ not valid").unwrap();
     let err = Index::load(&p).unwrap_err();
     assert!(err.to_string().contains("parse"));
+}
+
+// ---------- IndexCache: hot-reload + tolerate-missing ----------
+
+#[test]
+fn index_cache_serves_empty_when_file_absent_at_startup() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("graph.json");
+    let mut cache = IndexCache::new(p);
+    let idx = cache.get();
+    assert_eq!(idx.nodes.len(), 0);
+    assert_eq!(idx.out_edges.len(), 0);
+}
+
+#[test]
+fn index_cache_picks_up_graph_appearing_on_disk() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("graph.json");
+    let mut cache = IndexCache::new(p.clone());
+    assert_eq!(cache.get().nodes.len(), 0);
+    fs::write(&p, serde_json::to_string(&sample_graph()).unwrap()).unwrap();
+    assert_eq!(cache.get().nodes.len(), 4);
+}
+
+#[test]
+fn index_cache_reloads_when_file_mtime_advances() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("graph.json");
+    fs::write(&p, serde_json::to_string(&sample_graph()).unwrap()).unwrap();
+    let mut cache = IndexCache::new(p.clone());
+    assert_eq!(cache.get().nodes.len(), 4);
+
+    // Rewrite with a single extra node. On 1s-granularity filesystems we
+    // force an mtime advance so the cache definitely notices.
+    let mut g = sample_graph();
+    g["nodes"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({ "id": "e", "label": "Echo" }));
+    fs::write(&p, serde_json::to_string(&g).unwrap()).unwrap();
+    let future = SystemTime::now() + Duration::from_secs(2);
+    let f = fs::OpenOptions::new().write(true).open(&p).unwrap();
+    f.set_modified(future).unwrap();
+    drop(f);
+
+    assert_eq!(cache.get().nodes.len(), 5);
+}
+
+#[test]
+fn index_cache_reloads_when_size_changes_within_one_mtime_tick() {
+    // Simulates a coarse-mtime FS: same mtime, different size. The cache
+    // must reload because (mtime, size) differs.
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("graph.json");
+    fs::write(&p, serde_json::to_string(&sample_graph()).unwrap()).unwrap();
+    let mut cache = IndexCache::new(p.clone());
+    let original_mtime = fs::metadata(&p).unwrap().modified().unwrap();
+    assert_eq!(cache.get().nodes.len(), 4);
+
+    // Truncate to a single-node graph but pin the mtime back to the original.
+    let smaller = json!({
+        "nodes": [{ "id": "only", "label": "Only" }],
+        "edges": []
+    });
+    fs::write(&p, serde_json::to_string(&smaller).unwrap()).unwrap();
+    let f = fs::OpenOptions::new().write(true).open(&p).unwrap();
+    f.set_modified(original_mtime).unwrap();
+    drop(f);
+
+    assert_eq!(cache.get().nodes.len(), 1);
+}
+
+#[test]
+fn index_cache_drops_state_when_file_deleted_mid_session() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("graph.json");
+    fs::write(&p, serde_json::to_string(&sample_graph()).unwrap()).unwrap();
+    let mut cache = IndexCache::new(p.clone());
+    assert_eq!(cache.get().nodes.len(), 4);
+
+    fs::remove_file(&p).unwrap();
+    let idx = cache.get();
+    assert_eq!(idx.nodes.len(), 0, "missing file must reset to empty");
+    assert_eq!(idx.out_edges.len(), 0);
+}
+
+#[test]
+fn index_cache_retains_last_good_index_across_transient_parse_failure() {
+    // If the build pipeline crashes mid-write leaving an invalid JSON on disk,
+    // the server should not blank itself — keep serving the previously-loaded
+    // graph until the next successful parse.
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("graph.json");
+    fs::write(&p, serde_json::to_string(&sample_graph()).unwrap()).unwrap();
+    let mut cache = IndexCache::new(p.clone());
+    assert_eq!(cache.get().nodes.len(), 4);
+
+    fs::write(&p, "{ not valid json").unwrap();
+    // Force mtime advance so the cache attempts a reload.
+    thread::sleep(Duration::from_millis(10));
+    let f = fs::OpenOptions::new().write(true).open(&p).unwrap();
+    f.set_modified(SystemTime::now() + Duration::from_secs(3))
+        .unwrap();
+    drop(f);
+
+    assert_eq!(
+        cache.get().nodes.len(),
+        4,
+        "transient parse failure should not blank the index"
+    );
 }
