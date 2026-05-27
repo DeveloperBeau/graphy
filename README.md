@@ -270,6 +270,16 @@ Markup and data formats follow an adapted shape:
 | TOML       | sections + per-section `pair` nodes  | -                                            |
 | Markdown   | headings                             | `references` for `[text](other.md)` links    |
 
+## Integrations
+
+Editor- and agent-level wrappers around `graphy` and its MCP server. Each integration has a self-contained guide in [`integrations/`](integrations/):
+
+| Integration | Status | Doc |
+|-------------|--------|-----|
+| Claude Code | v1 (stable) | [integrations/claude-code.md](integrations/claude-code.md) |
+
+See [`integrations/README.md`](integrations/README.md) for the shape of each guide and how to add a new one.
+
 ## Layout
 
 ```
@@ -281,6 +291,8 @@ graphy/
 │   ├── graphy-plugin-api/           # C ABI + define_plugin! macro + helpers
 │   └── plugins/
 │       └── graphy-plugin-*/         # 37 language cdylib crates
+├── claude-plugin/                   # Claude Code integration (see integrations/claude-code.md)
+├── integrations/                    # per-host integration guides
 ├── fixtures/                        # synthesized sample projects + lang-coverage fixtures
 ├── bench/compare.sh                 # release perf harness
 ├── tools/package-release.sh         # build + tarball release
