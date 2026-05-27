@@ -30,7 +30,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/plugins" "$OUT"
 
 echo "[1/4] building graphy + plugins (release)…"
-PLUGIN_CRATES=$(ls -d crates/graphy-plugin-* | grep -v graphy-plugin-api | xargs -n1 basename)
+PLUGIN_CRATES=$(ls -d crates/plugins/graphy-plugin-* 2>/dev/null | xargs -n1 basename)
 PLUGIN_ARGS=()
 for c in $PLUGIN_CRATES; do PLUGIN_ARGS+=(-p "$c"); done
 cargo build --release -p graphy-cli "${PLUGIN_ARGS[@]}" 2>&1 | tail -20
