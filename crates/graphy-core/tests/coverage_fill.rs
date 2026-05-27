@@ -117,7 +117,7 @@ fn serve_bfs_handles_diamond_with_revisited_nodes() {
         "jsonrpc": "2.0", "id": 1, "method": "tools/call",
         "params": { "name": "shortest_path", "arguments": { "from": "a", "to": "d" } }
     });
-    let resp = handle_line(&idx, &serde_json::to_string(&req).unwrap());
+    let resp = handle_line(&idx, &serde_json::to_string(&req).unwrap()).expect("request has id");
     let v = serde_json::to_value(&resp).unwrap();
     let path: Vec<String> = v["result"]["path"]
         .as_array()
@@ -150,7 +150,7 @@ fn serve_bfs_revisits_via_incoming_branch_diamond() {
         "jsonrpc": "2.0", "id": 2, "method": "tools/call",
         "params": { "name": "shortest_path", "arguments": { "from": "a", "to": "b" } }
     });
-    let resp = handle_line(&idx, &serde_json::to_string(&req).unwrap());
+    let resp = handle_line(&idx, &serde_json::to_string(&req).unwrap()).expect("request has id");
     let v = serde_json::to_value(&resp).unwrap();
     let path: Vec<String> = v["result"]["path"]
         .as_array()

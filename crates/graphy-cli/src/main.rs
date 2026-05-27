@@ -146,7 +146,7 @@ fn main() -> Result<()> {
         Some(Command::Watch { path, docs, out }) => watch(path, docs, out),
         Some(Command::Serve { graph }) => {
             let graph = graph.unwrap_or_else(|| PathBuf::from("graphy-out").join("graph.json"));
-            graphy_core::serve::serve(&graph)
+            graphy_core::serve::serve(graph)
         }
         Some(Command::Plugins { action }) => plugins_cmd(action),
         None => {

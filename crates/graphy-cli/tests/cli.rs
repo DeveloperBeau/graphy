@@ -152,20 +152,42 @@ fn watch_subcommand_runs_initial_build_then_blocks() {
 }
 
 #[test]
-fn cache_path_default_serve_errors_when_missing() {
-    // `graphy serve` with no --graph defaults to ./graphy-out/graph.json.
-    // From an empty tempdir as cwd, that file does not exist — the server
-    // should exit non-zero with a read error.
+fn serve_tolerates_missing_graph_and_returns_empty_stats() {
+    // First-session UX: the MCP server is started before any graph has been
+    // built. `graphy serve` must not exit — it should hang on stdin and
+    // return zero-valued stats so the hook-driven build has time to land.
+    use std::io::Write;
+    use std::process::{Command, Stdio};
     let dir = tempdir().unwrap();
-    let out = Command::new(graphy_bin())
+    let mut child = Command::new(graphy_bin())
         .arg("serve")
         .current_dir(dir.path())
-        .output()
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .unwrap();
-    assert!(!out.status.success());
-    let stderr = String::from_utf8_lossy(&out.stderr);
+    {
+        let stdin = child.stdin.as_mut().unwrap();
+        writeln!(
+            stdin,
+            r#"{{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{{"name":"stats","arguments":{{}}}}}}"#
+        )
+        .unwrap();
+    }
+    let out = child.wait_with_output().unwrap();
     assert!(
-        stderr.contains("read") || stderr.to_lowercase().contains("no such"),
-        "stderr: {stderr}"
+        out.status.success(),
+        "serve should exit cleanly on stdin EOF, stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
     );
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let response: serde_json::Value = stdout
+        .lines()
+        .find(|l| !l.is_empty())
+        .and_then(|l| serde_json::from_str(l).ok())
+        .unwrap_or_else(|| panic!("no JSON-RPC response on stdout: {stdout:?}"));
+    assert_eq!(response["result"]["nodes"], 0);
+    assert_eq!(response["result"]["edges"], 0);
+    assert_eq!(response["result"]["communities"], 0);
 }

@@ -13,10 +13,15 @@
 //! | `tools/call`      | `{ name, arguments }`                   | tool-specific result      |
 //!
 //! Tools: `stats`, `search_label`, `neighbors`, `shortest_path`, `query_node`.
+//!
+//! The server tolerates a missing graph file: it serves an empty index and
+//! reloads in-process when the graph appears (or changes) on disk. JSON-RPC
+//! notifications (requests with no `id`) never receive a response.
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -60,6 +65,15 @@ pub struct Index {
 }
 
 impl Index {
+    pub fn empty() -> Self {
+        Self {
+            nodes: HashMap::new(),
+            label_lookup: Vec::new(),
+            out_edges: HashMap::new(),
+            in_edges: HashMap::new(),
+        }
+    }
+
     pub fn from_graph(g: StoredGraph) -> Self {
         let mut nodes: HashMap<String, StoredNode> = HashMap::with_capacity(g.nodes.len());
         let mut label_lookup: Vec<(String, String)> = Vec::with_capacity(g.nodes.len());
@@ -92,13 +106,84 @@ impl Index {
     }
 }
 
-#[derive(Debug, Deserialize)]
+/// Stat-on-request cache backing the live server. Tracks `(mtime, size)` so
+/// rebuilds on filesystems with coarse mtime granularity are still picked up
+/// when the file size changes. A missing file resets the cache to empty.
+pub struct IndexCache {
+    path: PathBuf,
+    cached: Option<(SystemTime, u64, Index)>,
+    empty: Index,
+}
+
+impl IndexCache {
+    pub fn new(path: PathBuf) -> Self {
+        Self {
+            path,
+            cached: None,
+            empty: Index::empty(),
+        }
+    }
+
+    /// Returns the freshest available index. Falls back to an empty index when
+    /// the file is missing or fails to parse; a stale-but-valid cached index
+    /// is retained across transient parse failures so a half-written graph
+    /// doesn't blank out the server mid-edit.
+    pub fn get(&mut self) -> &Index {
+        let meta = std::fs::metadata(&self.path).ok();
+        let Some(meta) = meta else {
+            self.cached = None;
+            return &self.empty;
+        };
+        let mtime = meta.modified().unwrap_or(SystemTime::UNIX_EPOCH);
+        let size = meta.len();
+        let reuse = matches!(&self.cached, Some((m, s, _)) if *m == mtime && *s == size);
+        if !reuse {
+            match Index::load(&self.path) {
+                Ok(idx) => self.cached = Some((mtime, size, idx)),
+                Err(e) => {
+                    eprintln!("graphy serve: reload failed: {e:#}");
+                    if self.cached.is_none() {
+                        return &self.empty;
+                    }
+                }
+            }
+        }
+        match &self.cached {
+            Some((_, _, idx)) => idx,
+            None => &self.empty,
+        }
+    }
+}
+
+/// Parsed JSON-RPC request. We track id presence ourselves (vs. relying on
+/// `Option<Value>`) because serde collapses absent and `null` into the same
+/// `None`. JSON-RPC §4.1 makes the distinction meaningful: an absent id is a
+/// notification (no response, even on error); an explicit `null` id is a real
+/// (if discouraged) request.
+#[derive(Debug)]
 struct Request {
-    #[serde(default)]
-    id: Value,
+    id: Option<Value>,
     method: String,
-    #[serde(default)]
     params: Value,
+}
+
+impl Request {
+    fn from_object(mut obj: serde_json::Map<String, Value>) -> Result<Self> {
+        let id = if obj.contains_key("id") {
+            Some(obj.remove("id").unwrap_or(Value::Null))
+        } else {
+            None
+        };
+        let method = obj
+            .remove("method")
+            .and_then(|v| match v {
+                Value::String(s) => Some(s),
+                _ => None,
+            })
+            .ok_or_else(|| anyhow::anyhow!("request missing `method` string"))?;
+        let params = obj.remove("params").unwrap_or(Value::Null);
+        Ok(Self { id, method, params })
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -118,8 +203,8 @@ pub struct RpcError {
 }
 
 /// Run the server until stdin is closed.
-pub fn serve(graph_path: &Path) -> Result<()> {
-    let index = Index::load(graph_path)?;
+pub fn serve(graph_path: PathBuf) -> Result<()> {
+    let mut cache = IndexCache::new(graph_path);
     let stdin = std::io::stdin();
     let mut stdout = std::io::stdout().lock();
     let mut line = String::new();
@@ -134,18 +219,27 @@ pub fn serve(graph_path: &Path) -> Result<()> {
         if trimmed.is_empty() {
             continue;
         }
-        let response = handle_line(&index, trimmed);
-        serde_json::to_writer(&mut stdout, &response)?;
-        writeln!(&mut stdout)?;
-        stdout.flush()?;
+        let idx = cache.get();
+        if let Some(response) = handle_line(idx, trimmed) {
+            serde_json::to_writer(&mut stdout, &response)?;
+            writeln!(&mut stdout)?;
+            stdout.flush()?;
+        }
     }
 }
 
-pub fn handle_line(index: &Index, line: &str) -> Response {
-    let req: Request = match serde_json::from_str(line) {
-        Ok(r) => r,
+/// Dispatch one JSON-RPC line. Returns `None` when the request is a
+/// notification (no `id`); the server emits nothing in that case, per
+/// JSON-RPC 2.0 §4.1.
+pub fn handle_line(index: &Index, line: &str) -> Option<Response> {
+    // Parse to a raw Value first so we can distinguish absent `id` (notification)
+    // from `"id": null` (a real request whose id happens to be null).
+    let raw: Value = match serde_json::from_str(line) {
+        Ok(v) => v,
         Err(e) => {
-            return Response {
+            // Parse failure: we cannot classify as notification, so the spec
+            // permits a response with id=null.
+            return Some(Response {
                 jsonrpc: "2.0",
                 id: Value::Null,
                 result: None,
@@ -153,26 +247,54 @@ pub fn handle_line(index: &Index, line: &str) -> Response {
                     code: -32700,
                     message: format!("parse error: {e}"),
                 }),
-            };
+            });
         }
     };
-    match dispatch(index, &req) {
+    let Value::Object(obj) = raw else {
+        // Batches and primitives aren't supported; mimic parse-error shape.
+        return Some(Response {
+            jsonrpc: "2.0",
+            id: Value::Null,
+            result: None,
+            error: Some(RpcError {
+                code: -32600,
+                message: "request must be a JSON object".into(),
+            }),
+        });
+    };
+    let req = match Request::from_object(obj) {
+        Ok(r) => r,
+        Err(e) => {
+            return Some(Response {
+                jsonrpc: "2.0",
+                id: Value::Null,
+                result: None,
+                error: Some(RpcError {
+                    code: -32600,
+                    message: e.to_string(),
+                }),
+            });
+        }
+    };
+    // Notifications: no response, regardless of dispatch outcome.
+    let id = req.id.clone()?;
+    Some(match dispatch(index, &req) {
         Ok(value) => Response {
             jsonrpc: "2.0",
-            id: req.id,
+            id,
             result: Some(value),
             error: None,
         },
         Err(e) => Response {
             jsonrpc: "2.0",
-            id: req.id,
+            id,
             result: None,
             error: Some(RpcError {
                 code: -32603,
                 message: e.to_string(),
             }),
         },
-    }
+    })
 }
 
 fn dispatch(idx: &Index, req: &Request) -> Result<Value> {
@@ -180,7 +302,7 @@ fn dispatch(idx: &Index, req: &Request) -> Result<Value> {
         "initialize" => Ok(json!({
             "name": "graphy",
             "version": env!("CARGO_PKG_VERSION"),
-            "protocolVersion": "0.1",
+            "protocolVersion": "2024-11-05",
             "capabilities": { "tools": {} },
         })),
         "tools/list" => Ok(json!({ "tools": tool_descriptors() })),
