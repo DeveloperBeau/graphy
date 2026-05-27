@@ -38,9 +38,13 @@ Then in any Claude Code session run `/plugins` and enable `graphy`, or trust the
 
 ## How it behaves
 
-The very first time Claude touches a file in a workspace it has never seen, the PreToolUse hook quietly kicks off `graphy <workspace>` in the background. The tool call (Read/Glob/Grep) proceeds immediately — Claude is not blocked. Within a couple of seconds the graph lands at `<workspace>/graphy-out/graph.json` and the `graphy` MCP server picks it up. From that point on, every MCP tool call returns fresh data.
+The very first time Claude touches a file in a workspace it has never seen, the PreToolUse hook quietly kicks off `graphy <workspace>` in the background. The tool call (Read/Glob/Grep) proceeds immediately — Claude is not blocked. Within a couple of seconds the graph lands at `<workspace>/graphy-out/graph.json`.
 
-Edits trigger a rebuild via the PostToolUse hook. graphy's content-hash cache means unchanged files are skipped, so the rebuild is almost free.
+The MCP server tolerates a missing graph at startup — it serves an empty index until the file appears, then hot-reloads whenever the file changes on disk. There is no need to restart the Claude session after the first build, and rebuilds triggered by the PostToolUse hook show up on the next MCP tool call.
+
+The PreToolUse hook decides whether to rebuild by checking whether any source file under the workspace is newer than `graph.json`. Heavy directories (`.git`, `target`, `node_modules`, `graphy-out`, `dist`, `build`, `.venv`, `.next`, `__pycache__`, `.gradle`, `.idea`) are pruned so the check is fast on big repos. A 30-second minimum-age floor stops the probe from running on very fresh graphs.
+
+Edits trigger a rebuild via the PostToolUse hook. graphy's content-hash cache means unchanged files are skipped, so the rebuild is almost free. Concurrent hook invocations are serialised by an atomic lock under `graphy-out/.build.lock`; stale locks (dead PIDs or anything older than 30 minutes) are reclaimed automatically.
 
 If you want the graph synchronously up-to-date before a query, run `/graphy` explicitly.
 
@@ -48,12 +52,14 @@ If you want the graph synchronously up-to-date before a query, run `/graphy` exp
 
 Hooks read these environment variables when set:
 
-| Var                  | Purpose                                                 | Default |
-|----------------------|---------------------------------------------------------|---------|
-| `GRAPHY_BIN`         | Path to graphy binary                                   | `graphy` |
-| `GRAPHY_VERBOSE`     | Log hook activity to stderr                             | unset    |
-| `GRAPHY_MAX_AGE`     | Seconds before a graph counts as stale                  | `600`    |
-| `GRAPHY_PLUGIN_PATH` | Override plugin discovery path passed to the MCP server | unset    |
+| Var                          | Purpose                                                            | Default |
+|------------------------------|--------------------------------------------------------------------|---------|
+| `GRAPHY_BIN`                 | Path to graphy binary                                              | `graphy` |
+| `GRAPHY_VERBOSE`             | Log hook activity to stderr                                        | unset    |
+| `GRAPHY_MIN_AGE`             | Seconds a graph must live before staleness is re-checked           | `30`     |
+| `GRAPHY_LOCK_STALE_SECONDS`  | Build-lock age (seconds) after which a stuck lock is reclaimed     | `1800`   |
+| `GRAPHY_PLUGIN_PATH`         | Override plugin discovery path passed to the MCP server            | unset    |
+| `GRAPHY_AUTO_GITIGNORE`      | When `1`, append `graphy-out/` to an existing `.gitignore` post-build. Plugin sets this for you; standalone CLI users opt in explicitly. | `1` (inside plugin) |
 
 ## License
 

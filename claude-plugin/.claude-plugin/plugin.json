@@ -9,7 +9,8 @@
       "command": "graphy",
       "args": ["serve", "--graph", "${CLAUDE_PROJECT_DIR}/graphy-out/graph.json"],
       "env": {
-        "GRAPHY_PLUGIN_PATH": "${HOME}/.graphy/plugins"
+        "GRAPHY_PLUGIN_PATH": "${HOME}/.graphy/plugins",
+        "GRAPHY_AUTO_GITIGNORE": "1"
       }
     }
   },
