@@ -1,5 +1,7 @@
 //! `graphy` CLI: build a knowledge graph from any folder of source.
 
+mod gitignore;
+
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -249,7 +251,11 @@ fn run(
     cfg.incremental = !full;
     cfg.scc_expansion = !no_scc_expansion;
     cfg.hierarchical_clustering = !no_hierarchical;
+    let workspace = cfg.root.clone();
     let result = Pipeline::new(cfg).run()?;
+    if let Err(e) = gitignore::ensure_graphy_out_excluded(&workspace) {
+        eprintln!("graphy: gitignore update skipped: {e:#}");
+    }
     println!(
         "scanned {} files ({} from cache) in {} ms → {} nodes, {} edges, {} communities",
         result.files_scanned,
