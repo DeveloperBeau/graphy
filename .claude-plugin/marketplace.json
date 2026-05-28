@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "graphy",
+  "description": "Knowledge-graph tooling for Claude Code: auto-builds a queryable graph of any workspace and exposes it via MCP tools, slash commands, a skill, and a subagent.",
+  "owner": {
+    "name": "DeveloperBeau",
+    "url": "https://github.com/DeveloperBeau"
+  },
+  "plugins": [
+    {
+      "name": "graphy",
+      "description": "Build and query knowledge graphs of any codebase. Auto-runs when Claude reads source files; exposes MCP tools (search, neighbors, shortest-path) so Claude can query the graph instead of grepping.",
+      "source": "./claude-plugin",
+      "category": "productivity"
+    }
+  ]
+}

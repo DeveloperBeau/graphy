@@ -2,15 +2,17 @@
   "name": "graphy",
   "version": "0.1.0",
   "description": "Build and query knowledge graphs of any codebase. Auto-runs when Claude reads source files; exposes MCP tools (search, neighbors, shortest-path) so Claude can query the graph instead of grepping.",
-  "author": "DeveloperBeau",
+  "author": {
+    "name": "DeveloperBeau",
+    "url": "https://github.com/DeveloperBeau"
+  },
   "homepage": "https://github.com/DeveloperBeau/graphy",
   "mcpServers": {
     "graphy": {
       "command": "graphy",
       "args": ["serve", "--graph", "${CLAUDE_PROJECT_DIR}/graphy-out/graph.json"],
       "env": {
-        "GRAPHY_PLUGIN_PATH": "${HOME}/.graphy/plugins",
-        "GRAPHY_AUTO_GITIGNORE": "1"
+        "GRAPHY_PLUGIN_PATH": "${HOME}/.graphy/plugins"
       }
     }
   },
