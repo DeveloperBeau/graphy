@@ -12,20 +12,12 @@
 #       Background a `graphy <workspace> --out <out_root>` build. The forked
 #       subshell owns the lock and removes it on exit. The caller's PID space
 #       is decoupled from the build via `disown`.
-#
-# These hooks set GRAPHY_AUTO_GITIGNORE=1 so the CLI knows it is running
-# under the claude-plugin and may safely append `graphy-out/` to an existing
-# .gitignore. Standalone CLI users do not get this behavior.
 
 # Idempotent guard so we don't re-source.
 if [[ "${__GRAPHY_COMMON_SH_SOURCED:-}" == "1" ]]; then
   return 0 2>/dev/null || exit 0
 fi
 __GRAPHY_COMMON_SH_SOURCED=1
-
-# Plugin-side opt-in for the CLI gitignore writer. Standalone `graphy` runs
-# (without this env var) leave .gitignore alone.
-export GRAPHY_AUTO_GITIGNORE=1
 
 # Treat a lock as stale after 30 minutes regardless of PID liveness — guards
 # against PID reuse where kill -0 still succeeds against an unrelated process.
