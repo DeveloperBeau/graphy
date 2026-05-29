@@ -300,10 +300,12 @@ pub fn handle_line(index: &Index, line: &str) -> Option<Response> {
 fn dispatch(idx: &Index, req: &Request) -> Result<Value> {
     match req.method.as_str() {
         "initialize" => Ok(json!({
-            "name": "graphy",
-            "version": env!("CARGO_PKG_VERSION"),
             "protocolVersion": "2024-11-05",
             "capabilities": { "tools": {} },
+            "serverInfo": {
+                "name": "graphy",
+                "version": env!("CARGO_PKG_VERSION"),
+            },
         })),
         "tools/list" => Ok(json!({ "tools": tool_descriptors() })),
         "tools/call" => {

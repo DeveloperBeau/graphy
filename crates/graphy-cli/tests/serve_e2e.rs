@@ -99,7 +99,13 @@ fn serve_responds_to_initialize_and_tools_call() {
     reader.read_line(&mut line).unwrap();
     let v1: Value = serde_json::from_str(line.trim()).unwrap();
     assert_eq!(v1["id"], 1);
-    assert_eq!(v1["result"]["name"], "graphy");
+    // MCP requires server name/version nested under `serverInfo`; a flat
+    // `name` here fails the client's initialize validation and the server
+    // never registers its tools.
+    assert_eq!(v1["result"]["serverInfo"]["name"], "graphy");
+    assert!(v1["result"]["serverInfo"]["version"].is_string());
+    assert_eq!(v1["result"]["protocolVersion"], "2024-11-05");
+    assert!(v1["result"]["capabilities"]["tools"].is_object());
 
     line.clear();
     reader.read_line(&mut line).unwrap();
