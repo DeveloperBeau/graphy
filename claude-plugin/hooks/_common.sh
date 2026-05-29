@@ -19,6 +19,13 @@ if [[ "${__GRAPHY_COMMON_SH_SOURCED:-}" == "1" ]]; then
 fi
 __GRAPHY_COMMON_SH_SOURCED=1
 
+# A GUI-launched Claude Code never sources the user's shell profile, so the
+# install locations the binary actually lives in (~/.graphy/bin from the
+# release tarball, ~/.cargo/bin from `cargo install`) may be absent from PATH.
+# Without this the hooks' `command -v graphy` check fails and every build is
+# silently skipped. Prepend the known install dirs so discovery is robust.
+export PATH="$HOME/.graphy/bin:$HOME/.cargo/bin:$PATH"
+
 # Treat a lock as stale after 30 minutes regardless of PID liveness — guards
 # against PID reuse where kill -0 still succeeds against an unrelated process.
 GRAPHY_LOCK_STALE_SECONDS="${GRAPHY_LOCK_STALE_SECONDS:-1800}"
