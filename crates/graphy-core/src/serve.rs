@@ -315,7 +315,12 @@ fn dispatch(idx: &Index, req: &Request) -> Result<Value> {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| anyhow::anyhow!("missing tool name"))?;
             let args = req.params.get("arguments").cloned().unwrap_or(json!({}));
-            run_tool(idx, name, &args)
+            let data = run_tool(idx, name, &args)?;
+            // MCP requires tools/call results to carry a `content` array; the
+            // structured payload rides as JSON text inside a text block.
+            Ok(json!({
+                "content": [{ "type": "text", "text": serde_json::to_string(&data)? }]
+            }))
         }
         other => Err(anyhow::anyhow!("unknown method: {other}")),
     }
