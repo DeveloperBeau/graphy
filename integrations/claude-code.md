@@ -37,16 +37,22 @@ You should see a version line and a table listing 30+ language plugins.
 
 ## Install
 
-```bash
-# Method A — clone + symlink (keeps the plugin in lockstep with your local checkout)
-git clone git@github.com:DeveloperBeau/graphy.git ~/code/graphy
-ln -s ~/code/graphy/claude-plugin ~/.claude/plugins/graphy
+graphy is distributed as a Claude Code plugin through a marketplace manifest (`.claude-plugin/marketplace.json` at the repo root). Add the marketplace, then install the plugin:
 
-# Method B — copy (snapshot install)
-cp -r ~/code/graphy/claude-plugin ~/.claude/plugins/graphy
+```
+# From GitHub (most users)
+/plugin marketplace add DeveloperBeau/graphy
+/plugin install graphy@graphy
+
+# From a local checkout (development — install from your own source)
+git clone git@github.com:DeveloperBeau/graphy.git ~/code/graphy
+/plugin marketplace add ~/code/graphy
+/plugin install graphy@graphy
 ```
 
-Then in any Claude Code session run `/plugins` and enable `graphy`, or trust the manifest when Claude prompts.
+Choose **user** scope when prompted to make graphy available in every project, or **local** to scope it to the current project. Run `/plugins` afterward to confirm it is enabled.
+
+While developing against a local checkout, the marketplace caches a snapshot of your source. After editing the plugin, refresh it with `/plugin marketplace update graphy` and reinstall.
 
 ## Configuration
 
@@ -121,7 +127,7 @@ The skill teaches Claude to mention confidence when relevant, especially `INFERR
 ## Troubleshooting
 
 **`/plugins` does not list `graphy`.**
-Check that `~/.claude/plugins/graphy/.claude-plugin/plugin.json` exists. If you symlinked, confirm the symlink points at the right path.
+Confirm the marketplace was added (`/plugin marketplace list` should show `graphy`) and that the install succeeded (`/plugin install graphy@graphy`). For a local checkout, point `/plugin marketplace add` at the repo root — the directory containing `.claude-plugin/marketplace.json` — not at `claude-plugin/`.
 
 **MCP tools come back empty (`{nodes: 0, edges: 0, communities: 0}`).**
 The background build hasn't landed yet (give it a couple of seconds and retry), or the build failed. Tail `graphy-out/.build.log` for the failure.
@@ -143,9 +149,14 @@ Add `graphy-out/` to your `.gitignore`. graphy never tracks it for you; it is bu
 
 ## Uninstall
 
+```
+/plugin uninstall graphy@graphy
+/plugin marketplace remove graphy
+```
+
+Optionally also remove generated graphs:
+
 ```bash
-rm -rf ~/.claude/plugins/graphy
-# Optionally also remove generated graphs:
 find . -type d -name graphy-out -prune -exec rm -rf {} +
 ```
 

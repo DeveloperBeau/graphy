@@ -25,16 +25,20 @@ Check with `graphy doctor && graphy plugins list`.
 
 ## Install
 
-```bash
-# Method A: clone + symlink
-git clone git@github.com:DeveloperBeau/graphy.git ~/code/graphy
-ln -s ~/code/graphy/claude-plugin ~/.claude/plugins/graphy
+Installed through the marketplace manifest at the repo root (`.claude-plugin/marketplace.json`):
 
-# Method B: copy
-cp -r ~/code/graphy/claude-plugin ~/.claude/plugins/graphy
+```
+# From GitHub
+/plugin marketplace add DeveloperBeau/graphy
+/plugin install graphy@graphy
+
+# From a local checkout
+git clone git@github.com:DeveloperBeau/graphy.git ~/code/graphy
+/plugin marketplace add ~/code/graphy
+/plugin install graphy@graphy
 ```
 
-Then in any Claude Code session run `/plugins` and enable `graphy`, or trust the manifest if Claude asks.
+Choose **user** scope when prompted to enable graphy in every project. Run `/plugins` to confirm. When developing against a local checkout, refresh the cached snapshot after edits with `/plugin marketplace update graphy`.
 
 ## How it behaves
 
@@ -59,7 +63,6 @@ Hooks read these environment variables when set:
 | `GRAPHY_MIN_AGE`             | Seconds a graph must live before staleness is re-checked           | `30`     |
 | `GRAPHY_LOCK_STALE_SECONDS`  | Build-lock age (seconds) after which a stuck lock is reclaimed     | `1800`   |
 | `GRAPHY_PLUGIN_PATH`         | Override plugin discovery path passed to the MCP server            | unset    |
-| `GRAPHY_AUTO_GITIGNORE`      | When `1`, append `graphy-out/` to an existing `.gitignore` post-build. Plugin sets this for you; standalone CLI users opt in explicitly. | `1` (inside plugin) |
 
 ## License
 
