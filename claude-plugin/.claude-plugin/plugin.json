@@ -9,8 +9,8 @@
   "homepage": "https://github.com/DeveloperBeau/graphy",
   "mcpServers": {
     "graphy": {
-      "command": "graphy",
-      "args": ["serve", "--graph", "${CLAUDE_PROJECT_DIR}/graphy-out/graph.json"],
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/graphy-mcp.sh",
+      "args": ["--graph", "${CLAUDE_PROJECT_DIR}/graphy-out/graph.json"],
       "env": {
         "GRAPHY_PLUGIN_PATH": "${HOME}/.graphy/plugins"
       }
