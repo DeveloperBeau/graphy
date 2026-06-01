@@ -19,7 +19,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/julia"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/julia"),
         "unexpected fixture path: {}",
         p.display()
     );
@@ -50,7 +51,7 @@ fn helpers_emits_function_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        fn_labels.iter().any(|l| *l == "format_name"),
+        fn_labels.contains(&"format_name"),
         "format_name not found; got {fn_labels:?}"
     );
 }
@@ -96,7 +97,9 @@ fn service_emits_struct_and_functions() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        fn_labels.iter().any(|l| *l == "make_service" || *l == "run_service"),
+        fn_labels
+            .iter()
+            .any(|l| *l == "make_service" || *l == "run_service"),
         "make_service/run_service not found; got {fn_labels:?}"
     );
 }
@@ -115,8 +118,16 @@ fn service_emits_calls_edges() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/Empty.jl"));
-    assert!(out.nodes.is_empty(), "Empty.jl produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "Empty.jl produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "Empty.jl produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "Empty.jl produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -139,7 +150,7 @@ fn non_utf8_bytes_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_format_name_function() {

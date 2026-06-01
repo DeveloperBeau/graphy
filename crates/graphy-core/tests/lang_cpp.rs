@@ -66,11 +66,11 @@ fn service_cpp_emits_includes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        import_labels.iter().any(|l| *l == "iostream"),
+        import_labels.contains(&"iostream"),
         "iostream not seen; got {import_labels:?}"
     );
     assert!(
-        import_labels.iter().any(|l| *l == "types.hpp"),
+        import_labels.contains(&"types.hpp"),
         "types.hpp not seen; got {import_labels:?}"
     );
 }
@@ -79,14 +79,21 @@ fn service_cpp_emits_includes() {
 fn service_cpp_does_not_emit_call_to_external_cout() {
     let out = extract_file(&fp("src/service.cpp"));
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let bad: Vec<_> = all_calls.iter().filter(|e| e.target.contains("cout")).collect();
+    let bad: Vec<_> = all_calls
+        .iter()
+        .filter(|e| e.target.contains("cout"))
+        .collect();
     assert!(bad.is_empty(), "unexpected call edge to cout: {bad:#?}");
 }
 
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.cpp"));
-    assert!(out.nodes.is_empty(), "empty.cpp produced nodes: {:#?}", out.nodes);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.cpp produced nodes: {:#?}",
+        out.nodes
+    );
 }
 
 // ---------- Edge cases ----------
@@ -138,7 +145,10 @@ fn pipeline_has_service_class() {
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let has_import = g.graph.edge_references().any(|e| e.weight().relation == "imports");
+    let has_import = g
+        .graph
+        .edge_references()
+        .any(|e| e.weight().relation == "imports");
     assert!(has_import, "no imports edges in pipeline output");
 }
 
@@ -161,7 +171,12 @@ fn pipeline_deduplicates_namespace_to_single_node() {
     let namespace_nodes: Vec<_> = g
         .graph
         .node_weights()
-        .filter(|n| n.label == "graphy" && n.kind.as_deref().map_or(false, |k| k.starts_with("namespace")))
+        .filter(|n| {
+            n.label == "graphy"
+                && n.kind
+                    .as_deref()
+                    .is_some_and(|k| k.starts_with("namespace"))
+        })
         .collect();
     assert_eq!(
         namespace_nodes.len(),

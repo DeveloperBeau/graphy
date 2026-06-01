@@ -16,7 +16,10 @@ fn fp(rel: &str) -> std::path::PathBuf {
 #[test]
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
-    assert!(p.to_string_lossy().ends_with("fixtures/lang-coverage/typescript"));
+    assert!(
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/typescript")
+    );
     assert!(p.join("src/service.ts").exists());
 }
 
@@ -82,14 +85,24 @@ fn service_emits_typed_imports() {
 fn service_does_not_emit_call_to_external_console_log() {
     let out = extract_file(&fp("src/service.ts"));
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let bad: Vec<_> = all_calls.iter().filter(|e| e.target.contains("log")).collect();
-    assert!(bad.is_empty(), "unexpected call edge to console.log: {bad:#?}");
+    let bad: Vec<_> = all_calls
+        .iter()
+        .filter(|e| e.target.contains("log"))
+        .collect();
+    assert!(
+        bad.is_empty(),
+        "unexpected call edge to console.log: {bad:#?}"
+    );
 }
 
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.ts"));
-    assert!(out.nodes.is_empty(), "empty.ts produced nodes: {:#?}", out.nodes);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.ts produced nodes: {:#?}",
+        out.nodes
+    );
 }
 
 // ---------- Edge cases ----------
@@ -140,7 +153,10 @@ fn pipeline_emits_interface_node() {
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let has_import = g.graph.edge_references().any(|e| e.weight().relation == "imports");
+    let has_import = g
+        .graph
+        .edge_references()
+        .any(|e| e.weight().relation == "imports");
     assert!(has_import, "no imports edges in pipeline output");
 }
 

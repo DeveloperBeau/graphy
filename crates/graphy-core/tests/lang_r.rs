@@ -88,8 +88,16 @@ fn service_emits_library_require_source_imports() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("empty.R"));
-    assert!(out.nodes.is_empty(), "empty.R produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.R produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.R produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.R produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -112,8 +120,6 @@ fn non_utf8_bytes_with_r_suffix_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_emits_function_nodes() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
@@ -123,7 +129,7 @@ fn pipeline_emits_function_nodes() {
 
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_imports = g
         .graph

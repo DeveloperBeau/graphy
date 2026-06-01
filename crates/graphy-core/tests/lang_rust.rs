@@ -67,8 +67,10 @@ fn service_emits_braced_imports_expanded() {
     let needles = ["Greet", "State", "UserId"];
     for n in needles {
         assert!(
-            out.nodes.iter().any(|node| node.kind.as_deref() == Some("import")
-                && node.label.contains(&format!("types::{n}"))),
+            out.nodes
+                .iter()
+                .any(|node| node.kind.as_deref() == Some("import")
+                    && node.label.contains(&format!("types::{n}"))),
             "missing braced import for {n}; nodes = {:#?}",
             out.nodes
         );
@@ -87,11 +89,11 @@ fn service_emits_aliased_import() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        import_labels.iter().any(|l| *l == "std::io::Result"),
+        import_labels.contains(&"std::io::Result"),
         "canonical aliased import label missing; got {import_labels:?}"
     );
     assert!(
-        import_labels.iter().any(|l| *l == "IoResult"),
+        import_labels.contains(&"IoResult"),
         "alias import label missing; got {import_labels:?}"
     );
 }
@@ -102,7 +104,8 @@ fn service_emits_glob_import_for_types_star() {
     // `use crate::types::*;`
     assert!(
         out.nodes.iter().any(|n| n.kind.as_deref() == Some("import")
-            && n.label.contains("types") && n.label.contains("*")),
+            && n.label.contains("types")
+            && n.label.contains("*")),
         "glob import not preserved; nodes = {:#?}",
         out.nodes
     );
@@ -188,11 +191,15 @@ fn service_emits_contains_edges_from_service_to_methods() {
         .collect();
     // Service contains `new` and `run`.
     assert!(
-        contains.iter().any(|e| e.source.ends_with("::Service") && e.target.ends_with("::new")),
+        contains
+            .iter()
+            .any(|e| e.source.ends_with("::Service") && e.target.ends_with("::new")),
         "missing contains edge Service -> new; contains = {contains:#?}"
     );
     assert!(
-        contains.iter().any(|e| e.source.ends_with("::Service") && e.target.ends_with("::run")),
+        contains
+            .iter()
+            .any(|e| e.source.ends_with("::Service") && e.target.ends_with("::run")),
         "missing contains edge Service -> run; contains = {contains:#?}"
     );
 }
@@ -207,7 +214,8 @@ fn service_emits_references_edge_from_run_to_io_result() {
         .filter(|e| e.relation == "references")
         .collect();
     assert!(
-        refs.iter().any(|e| e.source.ends_with("::run") && e.target.contains("IoResult")),
+        refs.iter()
+            .any(|e| e.source.ends_with("::run") && e.target.contains("IoResult")),
         "missing references edge run -> IoResult; refs = {refs:#?}"
     );
 }
@@ -215,8 +223,16 @@ fn service_emits_references_edge_from_run_to_io_result() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.rs"));
-    assert!(out.nodes.is_empty(), "empty.rs produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.rs produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.rs produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.rs produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases (inline, no fixture file) ----------
@@ -246,7 +262,11 @@ fn fixture_dir_points_at_expected_path() {
         s.ends_with("fixtures/lang-coverage/rust"),
         "fixture_dir(rust) returned unexpected path: {s}"
     );
-    assert!(p.join("src/lib.rs").exists(), "expected fixture file missing: {}", p.display());
+    assert!(
+        p.join("src/lib.rs").exists(),
+        "expected fixture file missing: {}",
+        p.display()
+    );
 }
 
 // ---------- Tier 2: full pipeline ----------
@@ -295,16 +315,20 @@ fn pipeline_resolves_cross_file_call_run_to_format_name() {
         }
     });
     if !has_cross_file_edge {
-        let edges: Vec<(String, String, String, Option<String>, Option<String>)> = g
+        // (relation, source label, target label, source file, target file)
+        type EdgeRow = (String, String, String, Option<String>, Option<String>);
+        let edges: Vec<EdgeRow> = g
             .graph
             .edge_references()
-            .map(|e| (
-                e.weight().relation.clone(),
-                g.graph[e.source()].label.clone(),
-                g.graph[e.target()].label.clone(),
-                g.graph[e.source()].source_file.clone(),
-                g.graph[e.target()].source_file.clone(),
-            ))
+            .map(|e| {
+                (
+                    e.weight().relation.clone(),
+                    g.graph[e.source()].label.clone(),
+                    g.graph[e.target()].label.clone(),
+                    g.graph[e.source()].source_file.clone(),
+                    g.graph[e.target()].source_file.clone(),
+                )
+            })
             .collect();
         panic!(
             "pipeline produced no cross-file imports or calls; \

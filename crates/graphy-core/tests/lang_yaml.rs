@@ -93,8 +93,16 @@ fn anchors_emits_references_edges() {
         !out.edges.is_empty(),
         "expected anchor/alias reference edges from anchors.yaml; none found"
     );
-    let refs: Vec<_> = out.edges.iter().filter(|e| e.relation == "references").collect();
-    assert!(!refs.is_empty(), "expected references edges; got: {:#?}", out.edges);
+    let refs: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "references")
+        .collect();
+    assert!(
+        !refs.is_empty(),
+        "expected references edges; got: {:#?}",
+        out.edges
+    );
 }
 
 #[test]
@@ -111,8 +119,16 @@ fn config_emits_no_edges() {
 #[test]
 fn empty_file_emits_zero_nodes_and_edges() {
     let out = extract_file(&fp("empty.yaml"));
-    assert!(out.nodes.is_empty(), "empty.yaml produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.yaml produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.yaml produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.yaml produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------

@@ -118,17 +118,17 @@ fn collect_type_identifiers(
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "type_identifier" {
-            if let Ok(name) = child.utf8_text(src.as_bytes()) {
-                let name = name.trim();
-                if !name.is_empty() {
-                    out.edges.push(Edge {
-                        source: class_id.to_string(),
-                        target: format!("extern::{name}"),
-                        relation: relation.to_string(),
-                        confidence: Confidence::Extracted,
-                    });
-                }
+        if child.kind() == "type_identifier"
+            && let Ok(name) = child.utf8_text(src.as_bytes())
+        {
+            let name = name.trim();
+            if !name.is_empty() {
+                out.edges.push(Edge {
+                    source: class_id.to_string(),
+                    target: format!("extern::{name}"),
+                    relation: relation.to_string(),
+                    confidence: Confidence::Extracted,
+                });
             }
         }
         collect_type_identifiers(child, src, class_id, relation, out);

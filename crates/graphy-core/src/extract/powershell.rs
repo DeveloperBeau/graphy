@@ -74,7 +74,10 @@ fn walk(
                     for item in child.children(&mut cc) {
                         if matches!(item.kind(), "command_name_expr" | "command_name") {
                             if let Ok(path_text) = item.utf8_text(src.as_bytes()) {
-                                let path_text = path_text.trim().trim_start_matches(".\\").trim_start_matches("./");
+                                let path_text = path_text
+                                    .trim()
+                                    .trim_start_matches(".\\")
+                                    .trim_start_matches("./");
                                 emit_import(out, file, path_text, item);
                             }
                             break;

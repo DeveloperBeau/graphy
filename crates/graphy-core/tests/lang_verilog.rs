@@ -24,7 +24,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/verilog"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/verilog"),
         "unexpected fixture path: {}",
         p.display()
     );
@@ -41,11 +42,11 @@ fn helpers_emits_module_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        module_labels.iter().any(|l| *l == "adder"),
+        module_labels.contains(&"adder"),
         "adder module not found; got {module_labels:?}"
     );
     assert!(
-        module_labels.iter().any(|l| *l == "bit_and"),
+        module_labels.contains(&"bit_and"),
         "bit_and module not found; got {module_labels:?}"
     );
 }
@@ -71,8 +72,16 @@ fn types_emits_constants_module() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.v"));
-    assert!(out.nodes.is_empty(), "empty.v produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.v produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.v produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.v produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -95,7 +104,7 @@ fn non_utf8_bytes_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_adder_module() {
@@ -129,5 +138,8 @@ fn pipeline_emits_no_inherits_or_implements_edges() {
         .edge_references()
         .filter(|e| matches!(e.weight().relation.as_str(), "inherits" | "implements"))
         .collect();
-    assert!(bad.is_empty(), "unexpected inherits/implements edges: {bad:#?}");
+    assert!(
+        bad.is_empty(),
+        "unexpected inherits/implements edges: {bad:#?}"
+    );
 }

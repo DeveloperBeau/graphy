@@ -8,10 +8,10 @@ use std::path::{Path, PathBuf};
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 
+use graphy_core::ExtractionOutput;
 use graphy_core::extract::extract;
 use graphy_core::graph::{KnowledgeGraph, NodeData};
 use graphy_core::pipeline::{Pipeline, PipelineConfig};
-use graphy_core::ExtractionOutput;
 use tempfile::TempDir;
 
 // ----- fixture helpers -----
@@ -81,10 +81,18 @@ pub fn run_pipeline(root: &Path) -> (KnowledgeGraph, TempDir) {
 /// exist, the first encountered wins. Pass through `assert_node` first
 /// if you need to disambiguate.
 fn id_for_label(out: &ExtractionOutput, label: &str) -> Option<String> {
-    out.nodes.iter().find(|n| n.label == label).map(|n| n.id.clone())
+    out.nodes
+        .iter()
+        .find(|n| n.label == label)
+        .map(|n| n.id.clone())
 }
 
-pub fn assert_extract_edge(out: &ExtractionOutput, src_label: &str, dst_label: &str, relation: &str) {
+pub fn assert_extract_edge(
+    out: &ExtractionOutput,
+    src_label: &str,
+    dst_label: &str,
+    relation: &str,
+) {
     let src_id = id_for_label(out, src_label);
     let dst_id = id_for_label(out, dst_label);
     let hit = if let (Some(s), Some(d)) = (src_id.as_ref(), dst_id.as_ref()) {
@@ -139,9 +147,7 @@ pub fn assert_node(g: &KnowledgeGraph, label: &str, kind: &str) {
 /// Assumes labels are unique within the graph; if duplicates exist (e.g.
 /// pre-dedup or across files), the first encountered wins.
 fn node_id_for_label(g: &KnowledgeGraph, label: &str) -> Option<petgraph::graph::NodeIndex> {
-    g.graph
-        .node_indices()
-        .find(|i| g.graph[*i].label == label)
+    g.graph.node_indices().find(|i| g.graph[*i].label == label)
 }
 
 pub fn assert_edge(g: &KnowledgeGraph, src_label: &str, dst_label: &str, relation: &str) {
@@ -158,11 +164,13 @@ pub fn assert_edge(g: &KnowledgeGraph, src_label: &str, dst_label: &str, relatio
         let edges: Vec<(String, String, String)> = g
             .graph
             .edge_references()
-            .map(|e| (
-                g.graph[e.source()].label.clone(),
-                g.graph[e.target()].label.clone(),
-                e.weight().relation.clone(),
-            ))
+            .map(|e| {
+                (
+                    g.graph[e.source()].label.clone(),
+                    g.graph[e.target()].label.clone(),
+                    e.weight().relation.clone(),
+                )
+            })
             .collect();
         panic!(
             "assert_edge failed: src={src_label:?} dst={dst_label:?} relation={relation:?}; \

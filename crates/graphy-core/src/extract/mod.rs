@@ -49,7 +49,24 @@ use crate::schema::ExtractionOutput;
 
 /// Extract a single file. Plugin-registered languages win over the built-in
 /// extractors. Returns empty output for unsupported suffixes.
+///
+/// The tree-sitter walkers (built-in and in language plugins) recurse once per
+/// AST level, so deeply nested source overflows the default 8 MiB main-thread
+/// stack. Run extraction on a dedicated large-stack thread so pathological
+/// nesting can't abort the process.
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
+    const EXTRACT_STACK_SIZE: usize = 64 * 1024 * 1024;
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(EXTRACT_STACK_SIZE)
+            .spawn_scoped(scope, || extract_dispatch(path))
+            .expect("spawn extraction thread")
+            .join()
+            .expect("extraction thread panicked")
+    })
+}
+
+fn extract_dispatch(path: &Path) -> Result<ExtractionOutput> {
     if let Some(result) = PluginRegistry::global().extract(path) {
         return result;
     }
@@ -69,7 +86,10 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
             // Peek at the file contents to distinguish ObjC headers from plain C headers.
             // ObjC headers use `@interface`, `@protocol`, or `@implementation`.
             let peek = std::fs::read_to_string(path).unwrap_or_default();
-            if peek.contains("@interface") || peek.contains("@protocol") || peek.contains("@implementation") {
+            if peek.contains("@interface")
+                || peek.contains("@protocol")
+                || peek.contains("@implementation")
+            {
                 objc::extract(path)
             } else {
                 c_family::extract(path, c_family::Flavor::C)

@@ -19,7 +19,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/groovy"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/groovy"),
         "unexpected path: {}",
         p.display()
     );
@@ -80,8 +81,16 @@ fn service_emits_imports() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/Empty.groovy"));
-    assert!(out.nodes.is_empty(), "empty.groovy produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.groovy produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.groovy produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.groovy produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Deferred follow-up: extends/implements inheritance edges ----------
@@ -135,8 +144,6 @@ fn non_utf8_bytes_with_groovy_suffix_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_emits_class_and_method_nodes() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
@@ -152,7 +159,7 @@ fn pipeline_emits_interface_node() {
 
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_imports = g
         .graph

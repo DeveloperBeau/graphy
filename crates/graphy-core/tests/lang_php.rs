@@ -121,8 +121,6 @@ fn non_utf8_bytes_with_php_suffix_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_emits_class_nodes() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
@@ -139,7 +137,7 @@ fn pipeline_emits_interface_and_trait() {
 
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_imports = g
         .graph
@@ -173,5 +171,9 @@ fn intra_file_call_edge_emitted() {
     .unwrap();
     let out = extract_file(&p);
     let has_calls = out.edges.iter().any(|e| e.relation == "calls");
-    assert!(has_calls, "no calls edge for intra-file call; edges = {:#?}", out.edges);
+    assert!(
+        has_calls,
+        "no calls edge for intra-file call; edges = {:#?}",
+        out.edges
+    );
 }

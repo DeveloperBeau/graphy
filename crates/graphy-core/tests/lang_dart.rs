@@ -73,10 +73,10 @@ fn helpers_emits_class_and_extension() {
 #[test]
 fn helpers_emits_functions() {
     let out = extract_file(&fp("lib/helpers.dart"));
-    let has_fn = out
-        .nodes
-        .iter()
-        .any(|n| n.kind.as_deref() == Some("function") && (n.label == "formatName" || n.label == "unrelatedHelper"));
+    let has_fn = out.nodes.iter().any(|n| {
+        n.kind.as_deref() == Some("function")
+            && (n.label == "formatName" || n.label == "unrelatedHelper")
+    });
     assert!(
         has_fn,
         "expected formatName or unrelatedHelper function; nodes = {:#?}",
@@ -121,8 +121,16 @@ fn service_emits_import_styles() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("lib/empty.dart"));
-    assert!(out.nodes.is_empty(), "empty.dart produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.dart produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.dart produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.dart produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Deferred follow-up: implements inheritance edges ----------
@@ -162,8 +170,6 @@ fn non_utf8_bytes_with_dart_suffix_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_emits_mixin_and_enum() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
@@ -179,7 +185,7 @@ fn pipeline_emits_extension_node() {
 
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_imports = g
         .graph

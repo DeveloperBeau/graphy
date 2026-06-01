@@ -34,7 +34,11 @@ fn types_emits_package_and_use() {
         .nodes
         .iter()
         .any(|n| n.kind.as_deref() == Some("import") && n.label.contains("strict"));
-    assert!(has_strict, "expected use strict import; nodes = {:#?}", out.nodes);
+    assert!(
+        has_strict,
+        "expected use strict import; nodes = {:#?}",
+        out.nodes
+    );
 }
 
 #[test]
@@ -119,8 +123,6 @@ fn non_utf8_bytes_with_pl_suffix_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_emits_package_and_sub_nodes() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
@@ -130,7 +132,7 @@ fn pipeline_emits_package_and_sub_nodes() {
 
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_imports = g
         .graph

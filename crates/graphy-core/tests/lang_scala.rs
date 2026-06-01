@@ -19,7 +19,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/scala"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/scala"),
         "unexpected path: {}",
         p.display()
     );
@@ -113,8 +114,16 @@ fn service_emits_multiple_import_styles() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/Empty.scala"));
-    assert!(out.nodes.is_empty(), "empty.scala produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.scala produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.scala produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.scala produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Deferred follow-up: extends/with inheritance edges ----------
@@ -168,8 +177,6 @@ fn non_utf8_bytes_with_scala_suffix_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_emits_object_and_class_nodes() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
@@ -179,7 +186,7 @@ fn pipeline_emits_object_and_class_nodes() {
 
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_imports = g
         .graph
@@ -206,10 +213,7 @@ fn pipeline_does_not_emit_call_to_extern_println() {
     let bad = g
         .graph
         .edge_references()
-        .filter(|e| {
-            e.weight().relation == "calls"
-                && g.graph[e.target()].label.contains("println")
-        })
+        .filter(|e| e.weight().relation == "calls" && g.graph[e.target()].label.contains("println"))
         .count();
     assert_eq!(bad, 0, "unexpected call edge to println");
 }

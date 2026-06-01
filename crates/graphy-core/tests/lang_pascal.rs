@@ -19,7 +19,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/pascal"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/pascal"),
         "unexpected fixture path: {}",
         p.display()
     );
@@ -36,11 +37,11 @@ fn types_emits_type_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        type_labels.iter().any(|l| *l == "TState"),
+        type_labels.contains(&"TState"),
         "TState type not found; got {type_labels:?}"
     );
     assert!(
-        type_labels.iter().any(|l| *l == "TService"),
+        type_labels.contains(&"TService"),
         "TService type not found; got {type_labels:?}"
     );
 }
@@ -55,11 +56,11 @@ fn helpers_emits_function_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        fn_labels.iter().any(|l| *l == "FormatName"),
+        fn_labels.contains(&"FormatName"),
         "FormatName not found; got {fn_labels:?}"
     );
     assert!(
-        fn_labels.iter().any(|l| *l == "UnrelatedHelper"),
+        fn_labels.contains(&"UnrelatedHelper"),
         "UnrelatedHelper not found; got {fn_labels:?}"
     );
 }
@@ -99,7 +100,9 @@ fn service_emits_uses_import() {
         "no import nodes from service.pas; got {import_labels:?}"
     );
     assert!(
-        import_labels.iter().any(|l| l.contains("Helpers") || l.contains("Types")),
+        import_labels
+            .iter()
+            .any(|l| l.contains("Helpers") || l.contains("Types")),
         "Helpers/Types import not found; got {import_labels:?}"
     );
 }
@@ -107,8 +110,16 @@ fn service_emits_uses_import() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.pas"));
-    assert!(out.nodes.is_empty(), "empty.pas produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.pas produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.pas produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.pas produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -131,7 +142,7 @@ fn non_utf8_bytes_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_format_name_function() {

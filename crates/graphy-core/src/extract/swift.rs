@@ -43,7 +43,7 @@ fn swift_name<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
 
 /// The tree-sitter-swift grammar uses `class_declaration` for struct/enum/class/actor.
 /// The actual keyword child distinguishes them: `struct`, `enum`, `class`, `actor`.
-fn classify_swift<'src>(node: tree_sitter::Node, src: &'src str) -> Option<&'static str> {
+fn classify_swift(node: tree_sitter::Node, src: &str) -> Option<&'static str> {
     match node.kind() {
         "function_declaration"
         | "init_declaration"
@@ -92,8 +92,7 @@ fn walk(
     for child in node.children(&mut cursor) {
         if let Some(kind) = classify_swift(child, src) {
             // init/deinit have no identifier child; use the fixed keyword label.
-            let name = swift_name(child, src)
-                .or_else(|| synthetic_name(child));
+            let name = swift_name(child, src).or_else(|| synthetic_name(child));
             if let Some(n) = name {
                 emit_def(out, symbols, file, kind, n, child);
             }

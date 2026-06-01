@@ -43,11 +43,11 @@ fn service_m_emits_method_nodes() {
         .collect();
     // Should find run, greeting, shared, initWithName
     assert!(
-        method_labels.iter().any(|l| *l == "run"),
+        method_labels.contains(&"run"),
         "method 'run' not found; got {method_labels:?}"
     );
     assert!(
-        method_labels.iter().any(|l| *l == "greeting"),
+        method_labels.contains(&"greeting"),
         "method 'greeting' not found; got {method_labels:?}"
     );
 }
@@ -78,7 +78,7 @@ fn helpers_m_emits_class_and_methods() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        method_labels.iter().any(|l| *l == "formatName"),
+        method_labels.contains(&"formatName"),
         "method 'formatName' not found; got {method_labels:?}"
     );
 }
@@ -101,8 +101,16 @@ fn helpers_m_emits_import_for_helpers_header() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/Empty.m"));
-    assert!(out.nodes.is_empty(), "Empty.m produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "Empty.m produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "Empty.m produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "Empty.m produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -141,7 +149,7 @@ fn service_h_emits_method_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        method_labels.iter().any(|l| *l == "run"),
+        method_labels.contains(&"run"),
         "method 'run' from Service.h not found; got {method_labels:?}"
     );
 }
@@ -162,35 +170,55 @@ fn helpers_h_emits_method_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        method_labels.iter().any(|l| *l == "formatName"),
+        method_labels.contains(&"formatName"),
         "method 'formatName' from Helpers.h not found; got {method_labels:?}"
     );
 }
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_service_class() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     // After dedup a label appearing in both .h and .m gets "class?ambiguous"; match by prefix.
-    let has = g
-        .graph
-        .node_weights()
-        .any(|n| n.label == "Service" && n.kind.as_deref().map(|k| k.starts_with("class")).unwrap_or(false));
-    assert!(has, "Service class node missing from pipeline graph; nodes = {:#?}", g.graph.node_weights().map(|n| (&n.label, &n.kind)).collect::<Vec<_>>());
+    let has = g.graph.node_weights().any(|n| {
+        n.label == "Service"
+            && n.kind
+                .as_deref()
+                .map(|k| k.starts_with("class"))
+                .unwrap_or(false)
+    });
+    assert!(
+        has,
+        "Service class node missing from pipeline graph; nodes = {:#?}",
+        g.graph
+            .node_weights()
+            .map(|n| (&n.label, &n.kind))
+            .collect::<Vec<_>>()
+    );
 }
 
 #[test]
 fn pipeline_resolves_helpers_class() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     // After dedup a label appearing in both .h and .m gets "class?ambiguous"; match by prefix.
-    let has = g
-        .graph
-        .node_weights()
-        .any(|n| n.label == "Helpers" && n.kind.as_deref().map(|k| k.starts_with("class")).unwrap_or(false));
-    assert!(has, "Helpers class node missing from pipeline graph; nodes = {:#?}", g.graph.node_weights().map(|n| (&n.label, &n.kind)).collect::<Vec<_>>());
+    let has = g.graph.node_weights().any(|n| {
+        n.label == "Helpers"
+            && n.kind
+                .as_deref()
+                .map(|k| k.starts_with("class"))
+                .unwrap_or(false)
+    });
+    assert!(
+        has,
+        "Helpers class node missing from pipeline graph; nodes = {:#?}",
+        g.graph
+            .node_weights()
+            .map(|n| (&n.label, &n.kind))
+            .collect::<Vec<_>>()
+    );
 }
 
 #[test]

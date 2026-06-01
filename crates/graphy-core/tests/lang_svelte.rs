@@ -23,7 +23,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/svelte"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/svelte"),
         "unexpected fixture path: {}",
         p.display()
     );
@@ -63,8 +64,16 @@ fn helpers_emits_script_block_node() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.svelte"));
-    assert!(out.nodes.is_empty(), "empty.svelte produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.svelte produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.svelte produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.svelte produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -97,7 +106,7 @@ fn service_emits_function_node_from_script() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        fn_labels.iter().any(|l| *l == "handleClick"),
+        fn_labels.contains(&"handleClick"),
         "function 'handleClick' not found in Service.svelte; got {fn_labels:?}"
     );
 }
@@ -127,25 +136,32 @@ fn helpers_svelte_emits_function_node_from_script() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        fn_labels.iter().any(|l| *l == "formatLabel"),
+        fn_labels.contains(&"formatLabel"),
         "function 'formatLabel' not found in Helpers.svelte; got {fn_labels:?}"
     );
 }
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_resolves_script_block_nodes() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     // The pipeline should contain at least one svelte_block node (from .svelte files).
     // After dedup the kind may have a "?ambiguous" qualifier; match by prefix.
-    let has_script = g
-        .graph
-        .node_weights()
-        .any(|n| n.kind.as_deref().map(|k| k.starts_with("svelte_block")).unwrap_or(false));
-    assert!(has_script, "no svelte_block nodes in pipeline graph; nodes = {:#?}", g.graph.node_weights().map(|n| (&n.label, &n.kind)).collect::<Vec<_>>());
+    let has_script = g.graph.node_weights().any(|n| {
+        n.kind
+            .as_deref()
+            .map(|k| k.starts_with("svelte_block"))
+            .unwrap_or(false)
+    });
+    assert!(
+        has_script,
+        "no svelte_block nodes in pipeline graph; nodes = {:#?}",
+        g.graph
+            .node_weights()
+            .map(|n| (&n.label, &n.kind))
+            .collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -156,7 +172,10 @@ fn pipeline_also_processes_js_file() {
         .graph
         .node_weights()
         .any(|n| n.kind.as_deref() == Some("function") && n.label == "formatName");
-    assert!(has_js, "formatName function node from types.js missing in pipeline graph");
+    assert!(
+        has_js,
+        "formatName function node from types.js missing in pipeline graph"
+    );
 }
 
 #[test]

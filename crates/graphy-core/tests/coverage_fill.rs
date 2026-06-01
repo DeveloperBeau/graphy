@@ -119,7 +119,9 @@ fn serve_bfs_handles_diamond_with_revisited_nodes() {
     });
     let resp = handle_line(&idx, &serde_json::to_string(&req).unwrap()).expect("request has id");
     let v = serde_json::to_value(&resp).unwrap();
-    let path: Vec<String> = v["result"]["path"]
+    let text = v["result"]["content"][0]["text"].as_str().unwrap();
+    let payload: serde_json::Value = serde_json::from_str(text).unwrap();
+    let path: Vec<String> = payload["path"]
         .as_array()
         .unwrap()
         .iter()
@@ -152,7 +154,9 @@ fn serve_bfs_revisits_via_incoming_branch_diamond() {
     });
     let resp = handle_line(&idx, &serde_json::to_string(&req).unwrap()).expect("request has id");
     let v = serde_json::to_value(&resp).unwrap();
-    let path: Vec<String> = v["result"]["path"]
+    let text = v["result"]["content"][0]["text"].as_str().unwrap();
+    let payload: serde_json::Value = serde_json::from_str(text).unwrap();
+    let path: Vec<String> = payload["path"]
         .as_array()
         .unwrap()
         .iter()

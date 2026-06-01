@@ -16,7 +16,10 @@ fn fp(rel: &str) -> std::path::PathBuf {
 #[test]
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
-    assert!(p.to_string_lossy().ends_with("fixtures/lang-coverage/kotlin"));
+    assert!(
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/kotlin")
+    );
     assert!(p.join("src/Service.kt").exists());
 }
 
@@ -83,7 +86,9 @@ fn service_emits_imports_including_alias_and_star() {
         "LinkedHashMap import not seen; got {import_labels:?}"
     );
     assert!(
-        import_labels.iter().any(|l| l.contains("Collections") || l.contains("Col")),
+        import_labels
+            .iter()
+            .any(|l| l.contains("Collections") || l.contains("Col")),
         "aliased import not seen; got {import_labels:?}"
     );
     assert!(
@@ -96,14 +101,21 @@ fn service_emits_imports_including_alias_and_star() {
 fn service_does_not_emit_call_to_external_println() {
     let out = extract_file(&fp("src/Service.kt"));
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let bad: Vec<_> = all_calls.iter().filter(|e| e.target.contains("println")).collect();
+    let bad: Vec<_> = all_calls
+        .iter()
+        .filter(|e| e.target.contains("println"))
+        .collect();
     assert!(bad.is_empty(), "unexpected call edge to println: {bad:#?}");
 }
 
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/Empty.kt"));
-    assert!(out.nodes.is_empty(), "Empty.kt produced nodes: {:#?}", out.nodes);
+    assert!(
+        out.nodes.is_empty(),
+        "Empty.kt produced nodes: {:#?}",
+        out.nodes
+    );
 }
 
 // ---------- Edge cases ----------
@@ -154,7 +166,10 @@ fn pipeline_emits_interface_node() {
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let has_import = g.graph.edge_references().any(|e| e.weight().relation == "imports");
+    let has_import = g
+        .graph
+        .edge_references()
+        .any(|e| e.weight().relation == "imports");
     assert!(has_import, "no imports edges in pipeline output");
 }
 

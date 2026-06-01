@@ -88,7 +88,8 @@ fn walk(
                 // declared across multiple translation units collapses to a
                 // single node during graph construction (ensure_node dedupes
                 // by id) rather than accumulating ambiguous duplicates.
-                if let Some(n) = child.child_by_field_name("name")
+                if let Some(n) = child
+                    .child_by_field_name("name")
                     .and_then(|n| n.utf8_text(src.as_bytes()).ok())
                 {
                     let canonical_id = format!("namespace::{n}");

@@ -44,13 +44,12 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
 
             // For script blocks, re-parse the raw JS content through the JS extractor
             // so that function declarations, imports, etc. are emitted as first-class nodes.
-            if child.kind() == "script_element" {
-                if let Some(js_src) = extract_raw_text(child, src) {
-                    if let Ok(js_out) = js_ts::extract_src(js_src, file, Flavor::Javascript) {
-                        out.nodes.extend(js_out.nodes);
-                        out.edges.extend(js_out.edges);
-                    }
-                }
+            if child.kind() == "script_element"
+                && let Some(js_src) = extract_raw_text(child, src)
+                && let Ok(js_out) = js_ts::extract_src(js_src, file, Flavor::Javascript)
+            {
+                out.nodes.extend(js_out.nodes);
+                out.edges.extend(js_out.edges);
             }
         }
         walk(child, src, file, out);
