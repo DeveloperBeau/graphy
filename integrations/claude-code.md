@@ -57,6 +57,20 @@ Choose **user** scope when prompted to make graphy available in every project, o
 
 While developing against a local checkout, the marketplace caches a snapshot of your source. After editing the plugin, refresh it with `/plugin marketplace update graphy` and reinstall.
 
+## Recommended: tell Claude to prefer graphy
+
+The bundled `graphy` skill already teaches Claude when to query the graph, but a line in your **user-level** `CLAUDE.md` (`~/.claude/CLAUDE.md`) reinforces it across every project — matching the user-scoped plugin install. Add:
+
+```markdown
+## Code navigation
+A graphy knowledge graph of the workspace is available via MCP. Prefer it over grep/file-reading
+to locate symbols, callers, and dependencies: use `search_label` to find a symbol, `neighbors`
+to see callers/callees, `shortest_path` to trace connections, and `stats` for an overview.
+Read files only to confirm details once the graph has pointed you to the right place.
+```
+
+Drop it in a project's `CLAUDE.md` instead if you only want the hint for that repo.
+
 ## Configuration
 
 The hooks and MCP server read these environment variables. All have safe defaults; you only need to set them to deviate.
