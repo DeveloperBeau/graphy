@@ -187,7 +187,11 @@ fn serve_tolerates_missing_graph_and_returns_empty_stats() {
         .find(|l| !l.is_empty())
         .and_then(|l| serde_json::from_str(l).ok())
         .unwrap_or_else(|| panic!("no JSON-RPC response on stdout: {stdout:?}"));
-    assert_eq!(response["result"]["nodes"], 0);
-    assert_eq!(response["result"]["edges"], 0);
-    assert_eq!(response["result"]["communities"], 0);
+    let text = response["result"]["content"][0]["text"]
+        .as_str()
+        .unwrap_or_else(|| panic!("no content text in response: {response}"));
+    let payload: serde_json::Value = serde_json::from_str(text).unwrap();
+    assert_eq!(payload["nodes"], 0);
+    assert_eq!(payload["edges"], 0);
+    assert_eq!(payload["communities"], 0);
 }
