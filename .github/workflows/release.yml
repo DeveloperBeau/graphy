@@ -1,0 +1,62 @@
+name: Release
+
+# Build per-platform artifacts and attach them to the GitHub release when a
+# version tag is pushed. install.sh / install.ps1 download these by name.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  package:
+    name: package (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14       # Apple Silicon
+            target: arm64-macos
+          - os: macos-13       # Intel
+            target: x86_64-macos
+          - os: ubuntu-latest
+            target: x86_64-linux
+          - os: windows-latest
+            target: x86_64-windows
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Package
+        shell: bash
+        run: ./tools/package-release.sh
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphy-${{ matrix.target }}
+          path: |
+            dist/graphy-*.tar.gz
+            dist/graphy-*.tar.gz.sha256
+            dist/graphy-*.zip
+            dist/graphy-*.zip.sha256
+          if-no-files-found: error
+
+  release:
+    name: publish release
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Attach to release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: artifacts/*

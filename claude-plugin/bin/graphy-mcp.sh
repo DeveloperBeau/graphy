@@ -10,16 +10,21 @@
 # and execs the server. All arguments are forwarded to `graphy serve`.
 set -euo pipefail
 
-for candidate in "$HOME/.graphy/bin/graphy" "$HOME/.cargo/bin/graphy"; do
+# `.exe` suffixes cover Windows installs running under Git Bash.
+for candidate in \
+  "$HOME/.graphy/bin/graphy" "$HOME/.cargo/bin/graphy" \
+  "$HOME/.graphy/bin/graphy.exe" "$HOME/.cargo/bin/graphy.exe"; do
   if [[ -x "$candidate" ]]; then
     exec "$candidate" serve "$@"
   fi
 done
 
 # Fall back to PATH for system installs or a dev shell that already has it.
-if command -v graphy >/dev/null 2>&1; then
-  exec graphy serve "$@"
-fi
+for name in graphy graphy.exe; do
+  if command -v "$name" >/dev/null 2>&1; then
+    exec "$name" serve "$@"
+  fi
+done
 
 echo "graphy-mcp: graphy binary not found in ~/.graphy/bin, ~/.cargo/bin, or PATH" >&2
 exit 127
