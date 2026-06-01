@@ -152,12 +152,21 @@ Add `graphy-out/` to your `.gitignore`. graphy never tracks it for you; it is bu
 
 ## Uninstall
 
+Remove the plugin:
+
 ```
 /plugin uninstall graphy@graphy
 /plugin marketplace remove graphy
 ```
 
-Optionally also remove generated graphs:
+Remove the binary and plugins installed under `~/.graphy` (and the PATH line the installer added):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall.sh | sh   # macOS / Linux
+irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall.ps1 | iex         # Windows
+```
+
+`cargo install` users instead run `cargo uninstall graphy-cli`. Optionally also remove generated graphs:
 
 ```bash
 find . -type d -name graphy-out -prune -exec rm -rf {} +

@@ -39,6 +39,13 @@ Verify with `graphy doctor && graphy plugins list` — you should see a version 
 
 Prebuilt releases cover macOS (Apple Silicon + Intel), Linux x86_64, and Windows x86_64. Other targets: build from source.
 
+To remove it (deletes `~/.graphy` and the PATH line the installer added):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall.sh | sh   # macOS / Linux
+irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall.ps1 | iex         # Windows
+```
+
 ## Use with Claude Code
 
 Install the `graphy` binary (above), then add the plugin from Claude Code — two commands:
