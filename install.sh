@@ -20,6 +20,8 @@ case "$(uname -s)" in
   *) echo "unsupported OS: $(uname -s)"; exit 1 ;;
 esac
 ARCH="$(uname -m)"
+# macOS ships a single universal (arm64 + x86_64) binary.
+[[ "$OS" = "macos" ]] && ARCH="universal"
 
 if [[ "$VERSION" = "latest" ]]; then
   echo "graphy install: resolving latest version from $REPO/releases/latest"

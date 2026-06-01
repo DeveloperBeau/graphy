@@ -20,10 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14       # Apple Silicon
-            target: arm64-macos
-          - os: macos-13       # Intel
-            target: x86_64-macos
+          - os: macos-latest   # arm64 runner; package-release.sh lipos a universal binary
+            target: universal-macos
           - os: ubuntu-latest
             target: x86_64-linux
           - os: windows-latest

@@ -39,23 +39,52 @@ echo "[1/4] building graphy + plugins (release)…"
 PLUGIN_CRATES=$(ls -d crates/plugins/graphy-plugin-* 2>/dev/null | xargs -n1 basename)
 PLUGIN_ARGS=()
 for c in $PLUGIN_CRATES; do PLUGIN_ARGS+=(-p "$c"); done
-cargo build --release -p graphy-cli "${PLUGIN_ARGS[@]}" 2>&1 | tail -20
+
+if [[ "$OS" == "macos" ]]; then
+  # Ship one universal artifact: build both arches and lipo them so the binary
+  # and every plugin dylib run on Apple Silicon and Intel. Lets a single
+  # arm64 runner produce the macOS release — no scarce Intel runner needed.
+  ARCH="universal"
+  MAC_TARGETS=(aarch64-apple-darwin x86_64-apple-darwin)
+  rustup target add "${MAC_TARGETS[@]}" >/dev/null 2>&1 || true
+  for t in "${MAC_TARGETS[@]}"; do
+    echo "  building $t"
+    cargo build --release --target "$t" -p graphy-cli "${PLUGIN_ARGS[@]}" 2>&1 | tail -5
+  done
+else
+  cargo build --release -p graphy-cli "${PLUGIN_ARGS[@]}" 2>&1 | tail -20
+fi
 
 echo "[2/4] staging artifacts…"
-cp "$REPO/target/release/$BIN" "$STAGE/$BIN"
-for c in $PLUGIN_CRATES; do
-  stem="$(echo "$c" | tr - _)"
-  case "$OS" in
-    macos) src="$REPO/target/release/lib${stem}.dylib" ;;
-    linux) src="$REPO/target/release/lib${stem}.so" ;;
-    windows) src="$REPO/target/release/${stem}.dll" ;;
-  esac
-  if [[ -f "$src" ]]; then
-    cp "$src" "$STAGE/plugins/"
-  else
-    echo "  warn: missing $src"
-  fi
-done
+if [[ "$OS" == "macos" ]]; then
+  lipo -create -output "$STAGE/$BIN" \
+    "$REPO/target/aarch64-apple-darwin/release/$BIN" \
+    "$REPO/target/x86_64-apple-darwin/release/$BIN"
+  for c in $PLUGIN_CRATES; do
+    stem="$(echo "$c" | tr - _)"
+    a="$REPO/target/aarch64-apple-darwin/release/lib${stem}.dylib"
+    x="$REPO/target/x86_64-apple-darwin/release/lib${stem}.dylib"
+    if [[ -f "$a" && -f "$x" ]]; then
+      lipo -create -output "$STAGE/plugins/lib${stem}.dylib" "$a" "$x"
+    else
+      echo "  warn: missing $a or $x"
+    fi
+  done
+else
+  cp "$REPO/target/release/$BIN" "$STAGE/$BIN"
+  for c in $PLUGIN_CRATES; do
+    stem="$(echo "$c" | tr - _)"
+    case "$OS" in
+      linux) src="$REPO/target/release/lib${stem}.so" ;;
+      windows) src="$REPO/target/release/${stem}.dll" ;;
+    esac
+    if [[ -f "$src" ]]; then
+      cp "$src" "$STAGE/plugins/"
+    else
+      echo "  warn: missing $src"
+    fi
+  done
+fi
 cp "$REPO/README.md" "$STAGE/" 2>/dev/null || true
 
 echo "[3/4] generating manifest.toml…"
