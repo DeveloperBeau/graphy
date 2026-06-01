@@ -17,7 +17,7 @@ graphy-out/
 
 ## Install
 
-**macOS / Linux** — download the latest release and add it to your PATH:
+On **macOS / Linux**, download the latest release and add it to your PATH:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.sh | sh
@@ -35,7 +35,7 @@ irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.ps1 | ie
 cargo install --path crates/graphy-cli
 ```
 
-Verify with `graphy doctor && graphy plugins list` — you should see a version line and 37 language plugins. Full install / packaging notes in [docs/install.md](docs/install.md).
+Verify with `graphy doctor && graphy plugins list`. You should see a version line and 37 language plugins. Full install and packaging notes in [docs/install.md](docs/install.md).
 
 Prebuilt releases cover macOS (Apple Silicon + Intel), Linux x86_64, and Windows x86_64. Other targets: build from source.
 
@@ -48,7 +48,7 @@ irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall.ps1 | 
 
 ## Use with Claude Code
 
-Install the `graphy` binary (above), then add the plugin from Claude Code — two commands:
+Install the `graphy` binary (above), then add the plugin from Claude Code with two commands:
 
 ```
 /plugin marketplace add DeveloperBeau/graphy
@@ -57,9 +57,9 @@ Install the `graphy` binary (above), then add the plugin from Claude Code — tw
 
 Choose **user** scope when prompted to make it available in every project. The plugin auto-builds a graph the first time Claude reads a file, then exposes MCP tools (`search_label`, `neighbors`, `query_node`, `shortest_path`, `stats`) so Claude queries the graph instead of grepping.
 
-> The plugin runs `graphy` on disk — install the binary first. On **Windows** the plugin's hooks/MCP server need a `sh` (install [Git for Windows](https://gitforwindows.org/)) or run Claude Code under WSL; the standalone CLI works natively.
+> The plugin runs the `graphy` binary on disk, so install it first. On **Windows** the plugin's hooks and MCP server run as `sh` scripts: install [Git for Windows](https://gitforwindows.org/) or run Claude Code under WSL. The standalone CLI works natively.
 
-To nudge Claude to actually use it, add this to your project's `CLAUDE.md`:
+To steer Claude toward it, add this to your project's `CLAUDE.md`:
 
 ```markdown
 ## Code navigation
