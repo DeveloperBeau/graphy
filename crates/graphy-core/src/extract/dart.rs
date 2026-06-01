@@ -78,7 +78,9 @@ fn walk(
                                         for ti in item.children(&mut gc3) {
                                             if ti.kind() == "type_identifier" {
                                                 if let Ok(parent) = ti.utf8_text(src.as_bytes()) {
-                                                    emit_inherits(out, &child_id, parent, "inherits", ti);
+                                                    emit_inherits(
+                                                        out, &child_id, parent, "inherits", ti,
+                                                    );
                                                 }
                                                 break;
                                             }
@@ -101,7 +103,9 @@ fn walk(
                                         for ti in item.children(&mut gc3) {
                                             if ti.kind() == "type_identifier" {
                                                 if let Ok(parent) = ti.utf8_text(src.as_bytes()) {
-                                                    emit_inherits(out, &child_id, parent, "inherits", ti);
+                                                    emit_inherits(
+                                                        out, &child_id, parent, "inherits", ti,
+                                                    );
                                                 }
                                                 break;
                                             }
@@ -115,14 +119,26 @@ fn walk(
                                 for item in gc.children(&mut gc2) {
                                     if item.kind() == "type_identifier" {
                                         if let Ok(parent) = item.utf8_text(src.as_bytes()) {
-                                            emit_inherits(out, &child_id, parent, "implements", item);
+                                            emit_inherits(
+                                                out,
+                                                &child_id,
+                                                parent,
+                                                "implements",
+                                                item,
+                                            );
                                         }
                                     } else if item.kind() == "type" {
                                         let mut gc3 = item.walk();
                                         for ti in item.children(&mut gc3) {
                                             if ti.kind() == "type_identifier" {
                                                 if let Ok(parent) = ti.utf8_text(src.as_bytes()) {
-                                                    emit_inherits(out, &child_id, parent, "implements", ti);
+                                                    emit_inherits(
+                                                        out,
+                                                        &child_id,
+                                                        parent,
+                                                        "implements",
+                                                        ti,
+                                                    );
                                                 }
                                                 break;
                                             }

@@ -25,12 +25,18 @@ fn types_h_emits_struct_and_enum() {
     let out = extract_file(&fp("src/types.h"));
     // struct Point, struct Service, enum State
     assert!(
-        out.nodes.iter().any(|n| n.label == "State" && n.kind.as_deref() == Some("enum")),
-        "enum State not found; nodes={:#?}", out.nodes
+        out.nodes
+            .iter()
+            .any(|n| n.label == "State" && n.kind.as_deref() == Some("enum")),
+        "enum State not found; nodes={:#?}",
+        out.nodes
     );
     assert!(
-        out.nodes.iter().any(|n| n.label == "Point" && n.kind.as_deref() == Some("struct")),
-        "struct Point not found; nodes={:#?}", out.nodes
+        out.nodes
+            .iter()
+            .any(|n| n.label == "Point" && n.kind.as_deref() == Some("struct")),
+        "struct Point not found; nodes={:#?}",
+        out.nodes
     );
 }
 
@@ -71,11 +77,11 @@ fn service_c_emits_system_and_local_includes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        import_labels.iter().any(|l| *l == "stdio.h"),
+        import_labels.contains(&"stdio.h"),
         "stdio.h not seen; got {import_labels:?}"
     );
     assert!(
-        import_labels.iter().any(|l| *l == "types.h"),
+        import_labels.contains(&"types.h"),
         "types.h not seen; got {import_labels:?}"
     );
 }
@@ -84,14 +90,21 @@ fn service_c_emits_system_and_local_includes() {
 fn service_c_does_not_emit_call_to_external_printf() {
     let out = extract_file(&fp("src/service.c"));
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let bad: Vec<_> = all_calls.iter().filter(|e| e.target.contains("printf")).collect();
+    let bad: Vec<_> = all_calls
+        .iter()
+        .filter(|e| e.target.contains("printf"))
+        .collect();
     assert!(bad.is_empty(), "unexpected call edge to printf: {bad:#?}");
 }
 
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.c"));
-    assert!(out.nodes.is_empty(), "empty.c produced nodes: {:#?}", out.nodes);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.c produced nodes: {:#?}",
+        out.nodes
+    );
 }
 
 // ---------- Edge cases ----------
@@ -136,7 +149,10 @@ fn pipeline_emits_format_name_function() {
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let has_import = g.graph.edge_references().any(|e| e.weight().relation == "imports");
+    let has_import = g
+        .graph
+        .edge_references()
+        .any(|e| e.weight().relation == "imports");
     assert!(has_import, "no imports edges in pipeline output");
 }
 

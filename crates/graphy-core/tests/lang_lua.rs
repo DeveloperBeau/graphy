@@ -78,8 +78,16 @@ fn service_emits_top_level_function() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.lua"));
-    assert!(out.nodes.is_empty(), "empty.lua produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.lua produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.lua produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.lua produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -102,8 +110,6 @@ fn non_utf8_bytes_with_lua_suffix_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_emits_functions() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
@@ -112,7 +118,7 @@ fn pipeline_emits_functions() {
 
 #[test]
 fn pipeline_emits_require_imports() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_imports = g
         .graph
@@ -134,7 +140,7 @@ fn pipeline_node_count_floor() {
 
 #[test]
 fn pipeline_emits_call_edges() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     // The extractor emits calls edges when a function call target resolves to a known symbol.
     // Verify at least one calls edge exists across the fixture.
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));

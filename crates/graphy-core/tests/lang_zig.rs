@@ -43,7 +43,7 @@ fn service_emits_import_for_std() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        import_labels.iter().any(|l| *l == "std"),
+        import_labels.contains(&"std"),
         "std import not found; got {import_labels:?}"
     );
 }
@@ -104,8 +104,16 @@ fn types_emits_function_from_struct_method() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.zig"));
-    assert!(out.nodes.is_empty(), "empty.zig produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.zig produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.zig produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.zig produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -128,7 +136,7 @@ fn non_utf8_bytes_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_helpers_format_name() {

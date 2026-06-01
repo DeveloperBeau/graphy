@@ -58,10 +58,10 @@ fn walk(
                         if grandchild.kind() == "extends_clause" {
                             let mut gc = grandchild.walk();
                             for item in grandchild.children(&mut gc) {
-                                if item.kind() == "type_identifier" {
-                                    if let Ok(parent) = item.utf8_text(src.as_bytes()) {
-                                        emit_inherits(out, &child_id, parent, "inherits", item);
-                                    }
+                                if item.kind() == "type_identifier"
+                                    && let Ok(parent) = item.utf8_text(src.as_bytes())
+                                {
+                                    emit_inherits(out, &child_id, parent, "inherits", item);
                                 }
                             }
                         }

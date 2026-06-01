@@ -31,7 +31,11 @@ fn first_id<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
     if let Some(c) = node.children(&mut cursor).find(|c| {
         matches!(
             c.kind(),
-            "value_name" | "module_name" | "module_type_name" | "type_constructor" | "constructor_name"
+            "value_name"
+                | "module_name"
+                | "module_type_name"
+                | "type_constructor"
+                | "constructor_name"
         )
     }) {
         return c.utf8_text(src.as_bytes()).ok();
@@ -44,7 +48,11 @@ fn first_id<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
         if let Some(c) = child.children(&mut inner).find(|c| {
             matches!(
                 c.kind(),
-                "value_name" | "module_name" | "module_type_name" | "type_constructor" | "constructor_name"
+                "value_name"
+                    | "module_name"
+                    | "module_type_name"
+                    | "type_constructor"
+                    | "constructor_name"
             )
         }) {
             return c.utf8_text(src.as_bytes()).ok();

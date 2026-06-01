@@ -19,7 +19,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/ocaml"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/ocaml"),
         "unexpected fixture path: {}",
         p.display()
     );
@@ -51,15 +52,15 @@ fn helpers_emits_value_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        value_labels.iter().any(|l| *l == "format_name"),
+        value_labels.contains(&"format_name"),
         "format_name not found; got {value_labels:?}"
     );
     assert!(
-        value_labels.iter().any(|l| *l == "factorial"),
+        value_labels.contains(&"factorial"),
         "factorial not found; got {value_labels:?}"
     );
     assert!(
-        value_labels.iter().any(|l| *l == "unrelated_helper"),
+        value_labels.contains(&"unrelated_helper"),
         "unrelated_helper not found; got {value_labels:?}"
     );
 }
@@ -101,7 +102,9 @@ fn service_emits_value_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        value_labels.iter().any(|l| *l == "max_retries" || *l == "make_service" || *l == "run_service"),
+        value_labels
+            .iter()
+            .any(|l| *l == "max_retries" || *l == "make_service" || *l == "run_service"),
         "expected service values not found; got {value_labels:?}"
     );
 }
@@ -109,8 +112,16 @@ fn service_emits_value_nodes() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.ml"));
-    assert!(out.nodes.is_empty(), "empty.ml produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.ml produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.ml produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.ml produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -133,7 +144,7 @@ fn non_utf8_bytes_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_format_name_value() {

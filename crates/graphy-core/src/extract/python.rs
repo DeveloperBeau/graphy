@@ -53,18 +53,18 @@ fn walk_defs(
                         if gc.kind() == "argument_list" {
                             let mut bc = gc.walk();
                             for base in gc.children(&mut bc) {
-                                if base.kind() == "identifier" {
-                                    if let Ok(base_name) = base.utf8_text(src.as_bytes()) {
-                                        let base_name = base_name.trim();
-                                        if !base_name.is_empty() {
-                                            let target_id = format!("extern::{base_name}");
-                                            out.edges.push(Edge {
-                                                source: class_id.clone(),
-                                                target: target_id,
-                                                relation: "inherits".into(),
-                                                confidence: Confidence::Extracted,
-                                            });
-                                        }
+                                if base.kind() == "identifier"
+                                    && let Ok(base_name) = base.utf8_text(src.as_bytes())
+                                {
+                                    let base_name = base_name.trim();
+                                    if !base_name.is_empty() {
+                                        let target_id = format!("extern::{base_name}");
+                                        out.edges.push(Edge {
+                                            source: class_id.clone(),
+                                            target: target_id,
+                                            relation: "inherits".into(),
+                                            confidence: Confidence::Extracted,
+                                        });
                                     }
                                 }
                             }

@@ -18,7 +18,10 @@ fn fp(rel: &str) -> std::path::PathBuf {
 #[test]
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
-    assert!(p.to_string_lossy().ends_with("fixtures/lang-coverage/python"));
+    assert!(
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/python")
+    );
     assert!(p.join("package/__init__.py").exists());
 }
 
@@ -47,9 +50,15 @@ fn service_emits_class_and_methods() {
 #[test]
 fn service_emits_inherits_edge_to_greet() {
     let out = extract_file(&fp("package/service.py"));
-    let inherits: Vec<_> = out.edges.iter().filter(|e| e.relation == "inherits").collect();
+    let inherits: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "inherits")
+        .collect();
     assert!(
-        inherits.iter().any(|e| e.source.ends_with("::Service") && e.target.ends_with("::Greet")),
+        inherits
+            .iter()
+            .any(|e| e.source.ends_with("::Service") && e.target.ends_with("::Greet")),
         "missing inherits edge Service -> Greet; edges = {inherits:#?}"
     );
 }
@@ -65,22 +74,30 @@ fn service_emits_all_import_styles() {
         .collect();
     // import collections.OrderedDict (single)
     assert!(
-        import_labels.iter().any(|l| l.contains("OrderedDict") || l.contains("collections")),
+        import_labels
+            .iter()
+            .any(|l| l.contains("OrderedDict") || l.contains("collections")),
         "single import not seen; got {import_labels:?}"
     );
     // from os.path import join as path_join (aliased) - emits both canonical and alias
     assert!(
-        import_labels.iter().any(|l| l.contains("path_join") || l.contains("os.path")),
+        import_labels
+            .iter()
+            .any(|l| l.contains("path_join") || l.contains("os.path")),
         "aliased import not seen; got {import_labels:?}"
     );
     // from .helpers import format_name (relative single)
     assert!(
-        import_labels.iter().any(|l| l.contains("format_name") || l.contains("helpers")),
+        import_labels
+            .iter()
+            .any(|l| l.contains("format_name") || l.contains("helpers")),
         "relative single import not seen; got {import_labels:?}"
     );
     // from .types import * (star)
     assert!(
-        import_labels.iter().any(|l| l.contains("types") && l.contains("*")),
+        import_labels
+            .iter()
+            .any(|l| l.contains("types") && l.contains("*")),
         "star import not seen; got {import_labels:?}"
     );
 }
@@ -92,20 +109,41 @@ fn service_does_not_emit_call_to_external_print() {
     let p = dir.path().join("anchor.py");
     std::fs::write(&p, "def t():\n    pass\ndef caller():\n    t()\n").unwrap();
     let anchor = extract_file(&p);
-    let anchor_calls: Vec<_> = anchor.edges.iter().filter(|e| e.relation == "calls").collect();
-    assert!(!anchor_calls.is_empty(), "extractor emits no calls edges at all");
+    let anchor_calls: Vec<_> = anchor
+        .edges
+        .iter()
+        .filter(|e| e.relation == "calls")
+        .collect();
+    assert!(
+        !anchor_calls.is_empty(),
+        "extractor emits no calls edges at all"
+    );
 
     let out = extract_file(&fp("package/service.py"));
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let print_calls: Vec<_> = all_calls.iter().filter(|e| e.target.contains("print")).collect();
-    assert!(print_calls.is_empty(), "unexpected call edge to print: {print_calls:#?}");
+    let print_calls: Vec<_> = all_calls
+        .iter()
+        .filter(|e| e.target.contains("print"))
+        .collect();
+    assert!(
+        print_calls.is_empty(),
+        "unexpected call edge to print: {print_calls:#?}"
+    );
 }
 
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("package/empty.py"));
-    assert!(out.nodes.is_empty(), "empty.py produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.py produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.py produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.py produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -150,7 +188,10 @@ fn pipeline_emits_helpers_format_name_function() {
 #[test]
 fn pipeline_emits_at_least_one_cross_file_imports_edge() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let has_import = g.graph.edge_references().any(|e| e.weight().relation == "imports");
+    let has_import = g
+        .graph
+        .edge_references()
+        .any(|e| e.weight().relation == "imports");
     assert!(has_import, "no imports edges in pipeline output");
 }
 

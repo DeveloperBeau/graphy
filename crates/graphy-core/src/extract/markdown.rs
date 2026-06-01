@@ -21,11 +21,23 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     };
     let file = path.to_string_lossy().into_owned();
     let mut out = ExtractionOutput::default();
-    walk_block(tree.block_tree().root_node(), src.as_bytes(), &file, &tree, &mut out);
+    walk_block(
+        tree.block_tree().root_node(),
+        src.as_bytes(),
+        &file,
+        &tree,
+        &mut out,
+    );
     Ok(out)
 }
 
-fn walk_block(node: TsNode, src: &[u8], file: &str, md_tree: &MarkdownTree, out: &mut ExtractionOutput) {
+fn walk_block(
+    node: TsNode,
+    src: &[u8],
+    file: &str,
+    md_tree: &MarkdownTree,
+    out: &mut ExtractionOutput,
+) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         let kind = child.kind();
@@ -51,12 +63,7 @@ fn walk_block(node: TsNode, src: &[u8], file: &str, md_tree: &MarkdownTree, out:
         if kind == "inline" {
             // Access the inline parse tree for this inline block node.
             if let Some(inline_tree) = md_tree.inline_tree(&child) {
-                collect_link_edges(
-                    inline_tree.root_node(),
-                    src,
-                    file,
-                    &mut out.edges,
-                );
+                collect_link_edges(inline_tree.root_node(), src, file, &mut out.edges);
             }
         }
 
@@ -74,11 +81,10 @@ fn collect_link_edges(node: TsNode, src: &[u8], file: &str, edges: &mut Vec<Edge
             let mut dc = child.walk();
             for dest_child in child.children(&mut dc) {
                 if dest_child.kind() == "link_destination" {
-                    let dest = std::str::from_utf8(
-                        &src[dest_child.start_byte()..dest_child.end_byte()],
-                    )
-                    .unwrap_or("")
-                    .trim();
+                    let dest =
+                        std::str::from_utf8(&src[dest_child.start_byte()..dest_child.end_byte()])
+                            .unwrap_or("")
+                            .trim();
                     // Filter external URLs.
                     if !dest.is_empty()
                         && !dest.starts_with("http://")

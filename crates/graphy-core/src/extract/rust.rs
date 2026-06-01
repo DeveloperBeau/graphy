@@ -80,28 +80,30 @@ fn walk_items(
                 if kind == "impl_item" {
                     let trait_node = child.child_by_field_name("trait");
                     let type_node = child.child_by_field_name("type");
-                    if let Some(ty) = type_node {
-                        if let Ok(type_name) = ty.utf8_text(src.as_bytes()) {
-                            let type_leaf = type_name.rsplit("::").next().unwrap_or(type_name).trim();
-                            let type_leaf = type_leaf.split('<').next().unwrap_or(type_leaf).trim();
-                            let impl_type_id = make_id(file, type_leaf);
-                            // implements edge for trait impl.
-                            if let Some(t) = trait_node {
-                                if let Ok(trait_name) = t.utf8_text(src.as_bytes()) {
-                                    let trait_leaf = trait_name.rsplit("::").next().unwrap_or(trait_name).trim();
-                                    let trait_leaf = trait_leaf.split('<').next().unwrap_or(trait_leaf).trim();
-                                    let target_id = format!("extern::{trait_leaf}");
-                                    out.edges.push(Edge {
-                                        source: impl_type_id.clone(),
-                                        target: target_id,
-                                        relation: "implements".into(),
-                                        confidence: Confidence::Inferred,
-                                    });
-                                }
-                            }
-                            // contains edges from the impl type to each method.
-                            emit_contains_from_body(child, src, file, &impl_type_id, out, symbols);
+                    if let Some(ty) = type_node
+                        && let Ok(type_name) = ty.utf8_text(src.as_bytes())
+                    {
+                        let type_leaf = type_name.rsplit("::").next().unwrap_or(type_name).trim();
+                        let type_leaf = type_leaf.split('<').next().unwrap_or(type_leaf).trim();
+                        let impl_type_id = make_id(file, type_leaf);
+                        // implements edge for trait impl.
+                        if let Some(t) = trait_node
+                            && let Ok(trait_name) = t.utf8_text(src.as_bytes())
+                        {
+                            let trait_leaf =
+                                trait_name.rsplit("::").next().unwrap_or(trait_name).trim();
+                            let trait_leaf =
+                                trait_leaf.split('<').next().unwrap_or(trait_leaf).trim();
+                            let target_id = format!("extern::{trait_leaf}");
+                            out.edges.push(Edge {
+                                source: impl_type_id.clone(),
+                                target: target_id,
+                                relation: "implements".into(),
+                                confidence: Confidence::Inferred,
+                            });
                         }
+                        // contains edges from the impl type to each method.
+                        emit_contains_from_body(child, src, file, &impl_type_id, out, symbols);
                     }
                 }
             }
@@ -109,19 +111,19 @@ fn walk_items(
             // tree-sitter-rust uses kind "macro_definition" with a "name" field
             // holding the identifier after "macro_rules!".
             "macro_definition" => {
-                if let Some(id_node) = child.child_by_field_name("name") {
-                    if let Ok(name) = id_node.utf8_text(src.as_bytes()) {
-                        let name = name.to_string();
-                        let id = make_id(file, &name);
-                        symbols.insert(name.clone(), id.clone());
-                        out.nodes.push(Node {
-                            id,
-                            label: name,
-                            source_file: Some(file.to_string()),
-                            source_location: Some(line_loc(child)),
-                            kind: Some("macro".to_string()),
-                        });
-                    }
+                if let Some(id_node) = child.child_by_field_name("name")
+                    && let Ok(name) = id_node.utf8_text(src.as_bytes())
+                {
+                    let name = name.to_string();
+                    let id = make_id(file, &name);
+                    symbols.insert(name.clone(), id.clone());
+                    out.nodes.push(Node {
+                        id,
+                        label: name,
+                        source_file: Some(file.to_string()),
+                        source_location: Some(line_loc(child)),
+                        kind: Some("macro".to_string()),
+                    });
                 }
             }
             "use_declaration" => {
@@ -171,17 +173,17 @@ fn emit_contains_from_body(
     };
     let mut cursor = body.walk();
     for child in body.children(&mut cursor) {
-        if child.kind() == "function_item" {
-            if let Some(name) = name_of(child, src) {
-                let child_id = make_id(file, &name);
-                symbols.insert(name, child_id.clone());
-                out.edges.push(Edge {
-                    source: parent_id.to_string(),
-                    target: child_id,
-                    relation: "contains".into(),
-                    confidence: Confidence::Extracted,
-                });
-            }
+        if child.kind() == "function_item"
+            && let Some(name) = name_of(child, src)
+        {
+            let child_id = make_id(file, &name);
+            symbols.insert(name, child_id.clone());
+            out.edges.push(Edge {
+                source: parent_id.to_string(),
+                target: child_id,
+                relation: "contains".into(),
+                confidence: Confidence::Extracted,
+            });
         }
     }
 }
@@ -199,10 +201,10 @@ fn emit_references_edges(
     if let Some(params) = fn_node.child_by_field_name("parameters") {
         let mut cursor = params.walk();
         for param in params.children(&mut cursor) {
-            if param.kind() == "parameter" {
-                if let Some(ty_node) = param.child_by_field_name("type") {
-                    emit_type_reference(ty_node, src, file, fn_id, out);
-                }
+            if param.kind() == "parameter"
+                && let Some(ty_node) = param.child_by_field_name("type")
+            {
+                emit_type_reference(ty_node, src, file, fn_id, out);
             }
         }
     }
@@ -259,7 +261,13 @@ fn extract_type_leaf<'a>(node: TsNode<'a>, src: &'a str) -> Option<String> {
         "scoped_type_identifier" => {
             // Take the last path segment and strip generics.
             node.utf8_text(src.as_bytes()).ok().map(|s| {
-                s.rsplit("::").next().unwrap_or(s).split('<').next().unwrap_or(s).to_string()
+                s.rsplit("::")
+                    .next()
+                    .unwrap_or(s)
+                    .split('<')
+                    .next()
+                    .unwrap_or(s)
+                    .to_string()
             })
         }
         "reference_type" | "mutable_specifier" => {
@@ -281,9 +289,27 @@ fn extract_type_leaf<'a>(node: TsNode<'a>, src: &'a str) -> Option<String> {
 fn is_primitive_or_ignored(name: &str) -> bool {
     matches!(
         name,
-        "bool" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-            | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-            | "f32" | "f64" | "str" | "String" | "char" | "()" | "Self" | "self"
+        "bool"
+            | "u8"
+            | "u16"
+            | "u32"
+            | "u64"
+            | "u128"
+            | "usize"
+            | "i8"
+            | "i16"
+            | "i32"
+            | "i64"
+            | "i128"
+            | "isize"
+            | "f32"
+            | "f64"
+            | "str"
+            | "String"
+            | "char"
+            | "()"
+            | "Self"
+            | "self"
     )
 }
 

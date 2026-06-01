@@ -121,8 +121,16 @@ fn about_emits_back_reference_to_index() {
 #[test]
 fn empty_file_emits_zero_nodes_and_edges() {
     let out = extract_file(&fp("empty.html"));
-    assert!(out.nodes.is_empty(), "empty.html produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.html produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.html produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.html produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -192,8 +200,7 @@ fn pipeline_index_references_about_via_href() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     // <a href="about.html"> in index.html -> references edge with target label containing "about.html"
     let has_about_ref = g.graph.edge_references().any(|e| {
-        e.weight().relation == "references"
-            && g.graph[e.target()].label.contains("about.html")
+        e.weight().relation == "references" && g.graph[e.target()].label.contains("about.html")
     });
     assert!(
         has_about_ref,

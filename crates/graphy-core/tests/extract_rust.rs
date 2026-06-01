@@ -147,8 +147,14 @@ fn extracts_const_and_static_items() {
     );
     let out = extract(&p).unwrap();
     let kinds: Vec<_> = out.nodes.iter().filter_map(|n| n.kind.as_deref()).collect();
-    assert!(kinds.contains(&"const"), "expected const node, got {kinds:?}");
-    assert!(kinds.contains(&"static"), "expected static node, got {kinds:?}");
+    assert!(
+        kinds.contains(&"const"),
+        "expected const node, got {kinds:?}"
+    );
+    assert!(
+        kinds.contains(&"static"),
+        "expected static node, got {kinds:?}"
+    );
     let labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
     assert!(labels.contains(&"MAX"));
     assert!(labels.contains(&"NAME"));
@@ -159,7 +165,11 @@ fn extracts_type_alias_items() {
     let dir = tempdir().unwrap();
     let p = write(dir.path(), "x.rs", "pub type Id = u64;\n");
     let out = extract(&p).unwrap();
-    assert!(out.nodes.iter().any(|n| n.label == "Id" && n.kind.as_deref() == Some("type")));
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.label == "Id" && n.kind.as_deref() == Some("type"))
+    );
 }
 
 #[test]
@@ -171,8 +181,17 @@ fn extracts_implements_edge_for_impl_trait_for_type() {
         "pub trait Greet { fn hi(&self); }\npub struct Bot;\nimpl Greet for Bot { fn hi(&self) {} }\n",
     );
     let out = extract(&p).unwrap();
-    let implements: Vec<_> = out.edges.iter().filter(|e| e.relation == "implements").collect();
-    assert_eq!(implements.len(), 1, "expected one implements edge, got {:?}", implements);
+    let implements: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "implements")
+        .collect();
+    assert_eq!(
+        implements.len(),
+        1,
+        "expected one implements edge, got {:?}",
+        implements
+    );
     let e = implements[0];
     assert!(e.source.ends_with("::Bot"), "source = {}", e.source);
     assert!(e.target.ends_with("::Greet"), "target = {}", e.target);
@@ -181,7 +200,11 @@ fn extracts_implements_edge_for_impl_trait_for_type() {
 #[test]
 fn aliased_import_preserves_alias_name() {
     let dir = tempdir().unwrap();
-    let p = write(dir.path(), "x.rs", "use std::io::Result as IoResult;\nfn f() {}\n");
+    let p = write(
+        dir.path(),
+        "x.rs",
+        "use std::io::Result as IoResult;\nfn f() {}\n",
+    );
     let out = extract(&p).unwrap();
     let import_labels: Vec<_> = out
         .nodes
@@ -192,12 +215,12 @@ fn aliased_import_preserves_alias_name() {
 
     // Canonical path must be stored cleanly (without ` as IoResult` suffix).
     assert!(
-        import_labels.iter().any(|l| *l == "std::io::Result"),
+        import_labels.contains(&"std::io::Result"),
         "expected canonical import label 'std::io::Result', got {import_labels:?}"
     );
     // Alias must also be discoverable.
     assert!(
-        import_labels.iter().any(|l| *l == "IoResult"),
+        import_labels.contains(&"IoResult"),
         "expected alias import label 'IoResult', got {import_labels:?}"
     );
 }
@@ -216,7 +239,11 @@ fn implements_edge_strips_generic_args_from_leaf() {
         .iter()
         .filter(|e| e.relation == "implements")
         .collect();
-    assert_eq!(implements.len(), 1, "expected one implements edge, got {implements:?}");
+    assert_eq!(
+        implements.len(),
+        1,
+        "expected one implements edge, got {implements:?}"
+    );
     let e = implements[0];
     // Source must be the struct id without generic args.
     assert!(
@@ -288,7 +315,9 @@ fn impl_method_emitted_as_function_node() {
         "expected method 'bar' as function node; got {labels:?}"
     );
     assert!(
-        out.nodes.iter().any(|n| n.label == "bar" && n.kind.as_deref() == Some("function")),
+        out.nodes
+            .iter()
+            .any(|n| n.label == "bar" && n.kind.as_deref() == Some("function")),
         "method node must have kind 'function'; nodes = {:#?}",
         out.nodes,
     );
@@ -309,7 +338,9 @@ fn impl_contains_edge_from_type_to_method() {
         .filter(|e| e.relation == "contains")
         .collect();
     assert!(
-        contains.iter().any(|e| e.source.ends_with("::Foo") && e.target.ends_with("::bar")),
+        contains
+            .iter()
+            .any(|e| e.source.ends_with("::Foo") && e.target.ends_with("::bar")),
         "expected contains edge from Foo to bar; contains edges = {contains:#?}"
     );
 }
@@ -329,11 +360,13 @@ fn function_references_edges_from_param_and_return_types() {
         .filter(|e| e.relation == "references")
         .collect();
     assert!(
-        refs.iter().any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Bar")),
+        refs.iter()
+            .any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Bar")),
         "expected references edge from foo to Bar; refs = {refs:#?}"
     );
     assert!(
-        refs.iter().any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Baz")),
+        refs.iter()
+            .any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Baz")),
         "expected references edge from foo to Baz; refs = {refs:#?}"
     );
 }
@@ -341,14 +374,12 @@ fn function_references_edges_from_param_and_return_types() {
 #[test]
 fn macro_rules_emits_macro_node() {
     let dir = tempdir().unwrap();
-    let p = write(
-        dir.path(),
-        "x.rs",
-        "macro_rules! foo { () => {} }\n",
-    );
+    let p = write(dir.path(), "x.rs", "macro_rules! foo { () => {} }\n");
     let out = extract(&p).unwrap();
     assert!(
-        out.nodes.iter().any(|n| n.label == "foo" && n.kind.as_deref() == Some("macro")),
+        out.nodes
+            .iter()
+            .any(|n| n.label == "foo" && n.kind.as_deref() == Some("macro")),
         "expected macro node labelled 'foo'; nodes = {:#?}",
         out.nodes,
     );

@@ -59,10 +59,10 @@ fn walk(
                                 // Direct type_identifier child is the parent class.
                                 let mut gc2 = gc.walk();
                                 for item in gc.children(&mut gc2) {
-                                    if item.kind() == "type_identifier" {
-                                        if let Ok(parent) = item.utf8_text(src.as_bytes()) {
-                                            emit_inherits(out, &child_id, parent, "inherits", item);
-                                        }
+                                    if item.kind() == "type_identifier"
+                                        && let Ok(parent) = item.utf8_text(src.as_bytes())
+                                    {
+                                        emit_inherits(out, &child_id, parent, "inherits", item);
                                     }
                                 }
                             }
@@ -70,19 +70,27 @@ fn walk(
                                 // type_list -> type_identifier or direct type_identifier.
                                 let mut gc2 = gc.walk();
                                 for item in gc.children(&mut gc2) {
-                                    if item.kind() == "type_list" || item.kind() == "super_interfaces" {
+                                    if item.kind() == "type_list"
+                                        || item.kind() == "super_interfaces"
+                                    {
                                         let mut gc3 = item.walk();
                                         for ti in item.children(&mut gc3) {
-                                            if ti.kind() == "type_identifier" {
-                                                if let Ok(parent) = ti.utf8_text(src.as_bytes()) {
-                                                    emit_inherits(out, &child_id, parent, "implements", ti);
-                                                }
+                                            if ti.kind() == "type_identifier"
+                                                && let Ok(parent) = ti.utf8_text(src.as_bytes())
+                                            {
+                                                emit_inherits(
+                                                    out,
+                                                    &child_id,
+                                                    parent,
+                                                    "implements",
+                                                    ti,
+                                                );
                                             }
                                         }
-                                    } else if item.kind() == "type_identifier" {
-                                        if let Ok(parent) = item.utf8_text(src.as_bytes()) {
-                                            emit_inherits(out, &child_id, parent, "implements", item);
-                                        }
+                                    } else if item.kind() == "type_identifier"
+                                        && let Ok(parent) = item.utf8_text(src.as_bytes())
+                                    {
+                                        emit_inherits(out, &child_id, parent, "implements", item);
                                     }
                                 }
                             }

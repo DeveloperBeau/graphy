@@ -41,7 +41,8 @@ fn run_pipeline_with_docs() -> (graphy_core::graph::KnowledgeGraph, tempfile::Te
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/markdown"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/markdown"),
         "fixture_dir(markdown) returned unexpected path: {}",
         p.display()
     );
@@ -74,7 +75,10 @@ fn readme_emits_h2_headings() {
 fn readme_emits_link_to_guide() {
     // README.md contains [Guide](guide.md)
     let out = extract_file(&fp("README.md"));
-    let has_guide_ref = out.edges.iter().any(|e| e.target == "link::guide.md" && e.relation == "references");
+    let has_guide_ref = out
+        .edges
+        .iter()
+        .any(|e| e.target == "link::guide.md" && e.relation == "references");
     assert!(
         has_guide_ref,
         "expected references edge to link::guide.md; edges = {:#?}",
@@ -86,7 +90,10 @@ fn readme_emits_link_to_guide() {
 fn readme_emits_link_to_api() {
     // README.md contains [API Reference](api.md)
     let out = extract_file(&fp("README.md"));
-    let has_api_ref = out.edges.iter().any(|e| e.target == "link::api.md" && e.relation == "references");
+    let has_api_ref = out
+        .edges
+        .iter()
+        .any(|e| e.target == "link::api.md" && e.relation == "references");
     assert!(
         has_api_ref,
         "expected references edge to link::api.md; edges = {:#?}",
@@ -98,7 +105,10 @@ fn readme_emits_link_to_api() {
 fn readme_does_not_emit_https_links_as_edges() {
     // External URLs (https://) should NOT produce reference edges.
     let out = extract_file(&fp("README.md"));
-    let has_https = out.edges.iter().any(|e| e.target.starts_with("link::https://") || e.target.starts_with("link::http://"));
+    let has_https = out
+        .edges
+        .iter()
+        .any(|e| e.target.starts_with("link::https://") || e.target.starts_with("link::http://"));
     assert!(
         !has_https,
         "http/https links should not produce edges; edges = {:#?}",
@@ -137,8 +147,16 @@ fn api_emits_headings() {
 #[test]
 fn empty_file_emits_zero_nodes_and_edges() {
     let out = extract_file(&fp("empty.md"));
-    assert!(out.nodes.is_empty(), "empty.md produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.md produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.md produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.md produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------

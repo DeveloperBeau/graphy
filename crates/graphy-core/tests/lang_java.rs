@@ -89,14 +89,26 @@ fn service_emits_all_import_styles() {
 #[test]
 fn service_emits_inherits_and_implements_edges() {
     let out = extract_file(&fp("src/com/example/Service.java"));
-    let inherits: Vec<_> = out.edges.iter().filter(|e| e.relation == "inherits").collect();
+    let inherits: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "inherits")
+        .collect();
     assert!(
-        inherits.iter().any(|e| e.source.ends_with("::Service") && e.target.ends_with("::BaseService")),
+        inherits
+            .iter()
+            .any(|e| e.source.ends_with("::Service") && e.target.ends_with("::BaseService")),
         "missing inherits edge Service -> BaseService; edges = {inherits:#?}"
     );
-    let implements: Vec<_> = out.edges.iter().filter(|e| e.relation == "implements").collect();
+    let implements: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "implements")
+        .collect();
     assert!(
-        implements.iter().any(|e| e.source.ends_with("::Service") && e.target.ends_with("::Greeter")),
+        implements
+            .iter()
+            .any(|e| e.source.ends_with("::Service") && e.target.ends_with("::Greeter")),
         "missing implements edge Service -> Greeter; edges = {implements:#?}"
     );
 }
@@ -105,14 +117,21 @@ fn service_emits_inherits_and_implements_edges() {
 fn service_does_not_emit_call_to_external_println() {
     let out = extract_file(&fp("src/com/example/Service.java"));
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let bad: Vec<_> = all_calls.iter().filter(|e| e.target.contains("println")).collect();
+    let bad: Vec<_> = all_calls
+        .iter()
+        .filter(|e| e.target.contains("println"))
+        .collect();
     assert!(bad.is_empty(), "unexpected call edge to println: {bad:#?}");
 }
 
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/com/example/Empty.java"));
-    assert!(out.nodes.is_empty(), "Empty.java produced nodes: {:#?}", out.nodes);
+    assert!(
+        out.nodes.is_empty(),
+        "Empty.java produced nodes: {:#?}",
+        out.nodes
+    );
 }
 
 // ---------- Edge cases ----------
@@ -157,7 +176,10 @@ fn pipeline_emits_format_name_method() {
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let has_import = g.graph.edge_references().any(|e| e.weight().relation == "imports");
+    let has_import = g
+        .graph
+        .edge_references()
+        .any(|e| e.weight().relation == "imports");
     assert!(has_import, "no imports edges in pipeline output");
 }
 

@@ -86,7 +86,10 @@ fn extract_dispatch(path: &Path) -> Result<ExtractionOutput> {
             // Peek at the file contents to distinguish ObjC headers from plain C headers.
             // ObjC headers use `@interface`, `@protocol`, or `@implementation`.
             let peek = std::fs::read_to_string(path).unwrap_or_default();
-            if peek.contains("@interface") || peek.contains("@protocol") || peek.contains("@implementation") {
+            if peek.contains("@interface")
+                || peek.contains("@protocol")
+                || peek.contains("@implementation")
+            {
                 objc::extract(path)
             } else {
                 c_family::extract(path, c_family::Flavor::C)

@@ -22,7 +22,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/fortran"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/fortran"),
         "unexpected fixture path: {}",
         p.display()
     );
@@ -40,11 +41,11 @@ fn helpers_emits_subroutine_and_function() {
     let out = extract_file(&fp("src/helpers.f90"));
     let node_labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
     assert!(
-        node_labels.iter().any(|l| *l == "format_name"),
+        node_labels.contains(&"format_name"),
         "format_name not found; got {node_labels:?}"
     );
     assert!(
-        node_labels.iter().any(|l| *l == "unrelated_helper"),
+        node_labels.contains(&"unrelated_helper"),
         "unrelated_helper not found; got {node_labels:?}"
     );
 }
@@ -85,7 +86,9 @@ fn service_emits_subroutine_and_function() {
     let out = extract_file(&fp("src/service.f90"));
     let node_labels: Vec<_> = out.nodes.iter().map(|n| n.label.as_str()).collect();
     assert!(
-        node_labels.iter().any(|l| *l == "run_service" || *l == "make_state"),
+        node_labels
+            .iter()
+            .any(|l| *l == "run_service" || *l == "make_state"),
         "run_service/make_state not found; got {node_labels:?}"
     );
 }
@@ -93,8 +96,16 @@ fn service_emits_subroutine_and_function() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.f90"));
-    assert!(out.nodes.is_empty(), "empty.f90 produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.f90 produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.f90 produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.f90 produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -117,7 +128,7 @@ fn non_utf8_bytes_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_helpers_module() {
@@ -155,5 +166,8 @@ fn pipeline_emits_no_inherits_or_implements_edges() {
         .edge_references()
         .filter(|e| matches!(e.weight().relation.as_str(), "inherits" | "implements"))
         .collect();
-    assert!(bad.is_empty(), "unexpected inherits/implements edges: {bad:#?}");
+    assert!(
+        bad.is_empty(),
+        "unexpected inherits/implements edges: {bad:#?}"
+    );
 }

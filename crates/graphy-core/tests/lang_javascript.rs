@@ -16,7 +16,10 @@ fn fp(rel: &str) -> std::path::PathBuf {
 #[test]
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
-    assert!(p.to_string_lossy().ends_with("fixtures/lang-coverage/javascript"));
+    assert!(
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/javascript")
+    );
     assert!(p.join("src/service.js").exists());
 }
 
@@ -62,12 +65,16 @@ fn service_emits_named_default_namespace_aliased_imports() {
     );
     // aliased: `./types.js/AppState` (import { State as AppState })
     assert!(
-        import_labels.iter().any(|l| l.contains("AppState") || l.contains("State")),
+        import_labels
+            .iter()
+            .any(|l| l.contains("AppState") || l.contains("State")),
         "aliased import AppState/State not seen; got {import_labels:?}"
     );
     // namespace: `./helpers.js/*`
     assert!(
-        import_labels.iter().any(|l| l.contains("helpers") && l.contains("*")),
+        import_labels
+            .iter()
+            .any(|l| l.contains("helpers") && l.contains("*")),
         "namespace import not seen; got {import_labels:?}"
     );
 }
@@ -76,14 +83,24 @@ fn service_emits_named_default_namespace_aliased_imports() {
 fn service_does_not_emit_call_to_external_console_log() {
     let out = extract_file(&fp("src/service.js"));
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let bad: Vec<_> = all_calls.iter().filter(|e| e.target.contains("log")).collect();
-    assert!(bad.is_empty(), "unexpected call edge to console.log: {bad:#?}");
+    let bad: Vec<_> = all_calls
+        .iter()
+        .filter(|e| e.target.contains("log"))
+        .collect();
+    assert!(
+        bad.is_empty(),
+        "unexpected call edge to console.log: {bad:#?}"
+    );
 }
 
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.js"));
-    assert!(out.nodes.is_empty(), "empty.js produced nodes: {:#?}", out.nodes);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.js produced nodes: {:#?}",
+        out.nodes
+    );
 }
 
 // ---------- Edge cases ----------
@@ -128,7 +145,10 @@ fn pipeline_emits_format_name_function() {
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let has_import = g.graph.edge_references().any(|e| e.weight().relation == "imports");
+    let has_import = g
+        .graph
+        .edge_references()
+        .any(|e| e.weight().relation == "imports");
     assert!(has_import, "no imports edges in pipeline output");
 }
 

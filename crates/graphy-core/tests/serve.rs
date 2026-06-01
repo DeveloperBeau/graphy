@@ -43,10 +43,10 @@ fn call(idx: &Index, req: Value) -> Value {
     // (`{content:[{type:"text",text:"<json>"}]}`). Unwrap it transparently so
     // tests can assert on the payload fields directly. initialize / tools/list
     // carry no content block and pass through untouched.
-    if let Some(text) = v["result"]["content"][0]["text"].as_str() {
-        if let Ok(payload) = serde_json::from_str::<Value>(text) {
-            v["result"] = payload;
-        }
+    if let Some(text) = v["result"]["content"][0]["text"].as_str()
+        && let Ok(payload) = serde_json::from_str::<Value>(text)
+    {
+        v["result"] = payload;
     }
     v
 }
@@ -430,11 +430,8 @@ fn explicit_null_id_is_treated_as_a_request_not_a_notification() {
     // `id: null` is a real request id per JSON-RPC; clients should not use it,
     // but if they do, we respond (with id=null). Distinct from a missing id.
     let idx = make_index();
-    let resp = handle_line(
-        &idx,
-        r#"{"jsonrpc":"2.0","id":null,"method":"initialize"}"#,
-    )
-    .expect("explicit null id is still a request");
+    let resp = handle_line(&idx, r#"{"jsonrpc":"2.0","id":null,"method":"initialize"}"#)
+        .expect("explicit null id is still a request");
     let v = serde_json::to_value(&resp).unwrap();
     assert_eq!(v["id"], Value::Null);
     assert_eq!(v["result"]["serverInfo"]["name"], "graphy");

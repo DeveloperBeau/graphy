@@ -55,17 +55,17 @@ fn service_emits_require_imports() {
         .collect();
     // require "json"
     assert!(
-        import_labels.iter().any(|l| *l == "json"),
+        import_labels.contains(&"json"),
         "json import not seen; got {import_labels:?}"
     );
     // require_relative "helpers"
     assert!(
-        import_labels.iter().any(|l| *l == "helpers"),
+        import_labels.contains(&"helpers"),
         "helpers import not seen; got {import_labels:?}"
     );
     // require_relative "types"
     assert!(
-        import_labels.iter().any(|l| *l == "types"),
+        import_labels.contains(&"types"),
         "types import not seen; got {import_labels:?}"
     );
 }
@@ -77,15 +77,29 @@ fn service_does_not_emit_call_to_external_puts() {
     // The `run` method calls Helpers.format_name which is not locally resolved,
     // so calls may be empty. We just assert puts is absent.
     let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let puts_calls: Vec<_> = all_calls.iter().filter(|e| e.target.contains("puts")).collect();
-    assert!(puts_calls.is_empty(), "unexpected call edge to puts: {puts_calls:#?}");
+    let puts_calls: Vec<_> = all_calls
+        .iter()
+        .filter(|e| e.target.contains("puts"))
+        .collect();
+    assert!(
+        puts_calls.is_empty(),
+        "unexpected call edge to puts: {puts_calls:#?}"
+    );
 }
 
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("lib/empty.rb"));
-    assert!(out.nodes.is_empty(), "empty.rb produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.rb produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.rb produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.rb produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -130,7 +144,10 @@ fn pipeline_emits_format_name_method() {
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let has_import = g.graph.edge_references().any(|e| e.weight().relation == "imports");
+    let has_import = g
+        .graph
+        .edge_references()
+        .any(|e| e.weight().relation == "imports");
     assert!(has_import, "no imports edges in pipeline output");
 }
 

@@ -29,8 +29,8 @@ pub fn ensure_graphy_out_excluded(workspace: &Path) -> Result<()> {
             .with_context(|| format!("create {}", gitignore.display()))?;
         return Ok(());
     }
-    let existing = fs::read_to_string(&gitignore)
-        .with_context(|| format!("read {}", gitignore.display()))?;
+    let existing =
+        fs::read_to_string(&gitignore).with_context(|| format!("read {}", gitignore.display()))?;
     if has_entry(&existing) {
         return Ok(());
     }

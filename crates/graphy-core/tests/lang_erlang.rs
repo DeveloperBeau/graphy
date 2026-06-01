@@ -22,7 +22,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/erlang"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/erlang"),
         "unexpected fixture path: {}",
         p.display()
     );
@@ -66,11 +67,11 @@ fn helpers_emits_function_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        fn_labels.iter().any(|l| *l == "format_name"),
+        fn_labels.contains(&"format_name"),
         "format_name not found; got {fn_labels:?}"
     );
     assert!(
-        fn_labels.iter().any(|l| *l == "unrelated_helper"),
+        fn_labels.contains(&"unrelated_helper"),
         "unrelated_helper not found; got {fn_labels:?}"
     );
 }
@@ -84,8 +85,16 @@ fn types_emits_module_node() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/empty.erl"));
-    assert!(out.nodes.is_empty(), "empty.erl produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.erl produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.erl produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.erl produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -126,10 +135,7 @@ fn service_emits_import_node_for_import_directive() {
 #[test]
 fn service_emits_imports_edge_for_import_directive() {
     let out = extract_file(&fp("src/service.erl"));
-    let has_edge = out
-        .edges
-        .iter()
-        .any(|e| e.relation == "imports");
+    let has_edge = out.edges.iter().any(|e| e.relation == "imports");
     assert!(
         has_edge,
         "no imports edge emitted from service.erl; edges = {:#?}",
@@ -139,7 +145,7 @@ fn service_emits_imports_edge_for_import_directive() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_helpers_module() {
@@ -177,5 +183,8 @@ fn pipeline_emits_no_inherits_or_implements_edges() {
         .edge_references()
         .filter(|e| matches!(e.weight().relation.as_str(), "inherits" | "implements"))
         .collect();
-    assert!(bad.is_empty(), "unexpected inherits/implements edges: {bad:#?}");
+    assert!(
+        bad.is_empty(),
+        "unexpected inherits/implements edges: {bad:#?}"
+    );
 }

@@ -96,8 +96,16 @@ fn components_emits_nav_id_selector() {
 #[test]
 fn empty_file_emits_zero_nodes_and_edges() {
     let out = extract_file(&fp("empty.css"));
-    assert!(out.nodes.is_empty(), "empty.css produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.css produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.css produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.css produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -170,8 +178,7 @@ fn pipeline_main_imports_theme_css() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     // @import "theme.css" produces imports edge targeting css::theme.css node
     let has_theme_import = g.graph.edge_references().any(|e| {
-        e.weight().relation == "imports"
-            && g.graph[e.target()].label.contains("theme.css")
+        e.weight().relation == "imports" && g.graph[e.target()].label.contains("theme.css")
     });
     assert!(
         has_theme_import,

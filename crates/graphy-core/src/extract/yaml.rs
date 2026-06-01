@@ -28,7 +28,14 @@ pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     // Phase 2: collect alias reference edges into a temporary vec, then append.
     // This avoids a simultaneous immutable + mutable borrow of `out`.
     let mut alias_edges: Vec<crate::schema::Edge> = Vec::new();
-    emit_alias_edges(tree.root_node(), &src, &file, &out, &anchor_map, &mut alias_edges);
+    emit_alias_edges(
+        tree.root_node(),
+        &src,
+        &file,
+        &out,
+        &anchor_map,
+        &mut alias_edges,
+    );
     out.edges.extend(alias_edges);
 
     Ok(out)
@@ -76,14 +83,19 @@ fn walk_keys(
 }
 
 /// Recursively collect anchor_name -> key_id mappings from a value subtree.
-fn collect_anchors(node: TsNode, src: &str, key_id: &str, anchor_map: &mut HashMap<String, String>) {
+fn collect_anchors(
+    node: TsNode,
+    src: &str,
+    key_id: &str,
+    anchor_map: &mut HashMap<String, String>,
+) {
     if node.kind() == "anchor" {
-        if let Some(name_node) = node.named_child(0) {
-            if let Ok(name) = name_node.utf8_text(src.as_bytes()) {
-                let name = name.trim().to_string();
-                if !name.is_empty() {
-                    anchor_map.insert(name, key_id.to_string());
-                }
+        if let Some(name_node) = node.named_child(0)
+            && let Ok(name) = name_node.utf8_text(src.as_bytes())
+        {
+            let name = name.trim().to_string();
+            if !name.is_empty() {
+                anchor_map.insert(name, key_id.to_string());
             }
         }
         return; // anchor is a leaf of this sub-tree; no need to recurse
@@ -155,12 +167,12 @@ fn emit_alias_edges(
 /// Recursively collect alias_names from a value subtree.
 fn collect_aliases(node: TsNode, src: &str, aliases: &mut Vec<String>) {
     if node.kind() == "alias" {
-        if let Some(name_node) = node.named_child(0) {
-            if let Ok(name) = name_node.utf8_text(src.as_bytes()) {
-                let name = name.trim().to_string();
-                if !name.is_empty() {
-                    aliases.push(name);
-                }
+        if let Some(name_node) = node.named_child(0)
+            && let Ok(name) = name_node.utf8_text(src.as_bytes())
+        {
+            let name = name.trim().to_string();
+            if !name.is_empty() {
+                aliases.push(name);
             }
         }
         return;

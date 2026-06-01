@@ -88,8 +88,16 @@ fn config_toml_emits_section_nodes() {
 #[test]
 fn empty_file_emits_zero_nodes_and_edges() {
     let out = extract_file(&fp("empty.toml"));
-    assert!(out.nodes.is_empty(), "empty.toml produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.toml produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.toml produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.toml produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Pair nodes inside sections ----------

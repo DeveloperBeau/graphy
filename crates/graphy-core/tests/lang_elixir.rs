@@ -19,7 +19,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/elixir"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/elixir"),
         "unexpected path: {}",
         p.display()
     );
@@ -40,7 +41,11 @@ fn types_emits_call_edge_for_defp_call() {
     let out = extract_file(&fp("lib/types.ex"));
     // service_name calls internal_name; the extractor emits a calls edge
     let has_calls = out.edges.iter().any(|e| e.relation == "calls");
-    assert!(has_calls, "expected calls edge in types.ex; edges = {:#?}", out.edges);
+    assert!(
+        has_calls,
+        "expected calls edge in types.ex; edges = {:#?}",
+        out.edges
+    );
 }
 
 #[test]
@@ -86,8 +91,16 @@ fn service_emits_alias_import_require() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("lib/empty.ex"));
-    assert!(out.nodes.is_empty(), "empty.ex produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.ex produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.ex produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.ex produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Deferred follow-up: defstruct node ----------
@@ -128,8 +141,6 @@ fn non_utf8_bytes_with_ex_suffix_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-
 #[test]
 fn pipeline_emits_module_nodes() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
@@ -147,7 +158,7 @@ fn pipeline_emits_function_nodes() {
 
 #[test]
 fn pipeline_emits_at_least_one_imports_edge() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_imports = g
         .graph
@@ -158,7 +169,7 @@ fn pipeline_emits_at_least_one_imports_edge() {
 
 #[test]
 fn pipeline_emits_call_edges() {
-    use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+    use petgraph::visit::IntoEdgeReferences;
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let has_calls = g
         .graph

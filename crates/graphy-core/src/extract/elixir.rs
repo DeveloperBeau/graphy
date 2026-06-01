@@ -67,7 +67,11 @@ fn walk(
                             .next()
                             .unwrap_or(arg);
                         if !name.is_empty() {
-                            let kind = if tgt == "defmodule" { "module" } else { "function" };
+                            let kind = if tgt == "defmodule" {
+                                "module"
+                            } else {
+                                "function"
+                            };
                             let id = format!("{file}::{name}");
                             symbols.insert(name.to_string(), id.clone());
                             out.nodes.push(crate::schema::Node {
@@ -81,7 +85,11 @@ fn walk(
                                 kind: Some(kind.into()),
                             });
                             // Recurse with updated module context for defmodule.
-                            let next_module = if tgt == "defmodule" { Some(name) } else { current_module };
+                            let next_module = if tgt == "defmodule" {
+                                Some(name)
+                            } else {
+                                current_module
+                            };
                             walk(child, src, file, next_module, out, symbols);
                             continue;
                         }
@@ -97,10 +105,7 @@ fn walk(
                             id,
                             label: struct_name.to_string(),
                             source_file: Some(file.to_string()),
-                            source_location: Some(format!(
-                                "L{}",
-                                child.start_position().row + 1
-                            )),
+                            source_location: Some(format!("L{}", child.start_position().row + 1)),
                             kind: Some("struct".into()),
                         });
                     }

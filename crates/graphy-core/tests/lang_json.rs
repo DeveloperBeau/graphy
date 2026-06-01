@@ -73,8 +73,16 @@ fn schema_emits_json_schema_key_nodes() {
 fn empty_json_emits_zero_nodes_and_edges() {
     // empty.json contains `{}` - a valid empty object with no keys
     let out = extract_file(&fp("empty.json"));
-    assert!(out.nodes.is_empty(), "empty.json produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.json produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.json produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.json produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -102,7 +110,11 @@ fn empty_object_literal_is_valid_empty_case() {
     let p = dir.path().join("empty.json");
     std::fs::write(&p, "{}").unwrap();
     let out = extract_file(&p);
-    assert!(out.nodes.is_empty(), "{{}} produced nodes: {:#?}", out.nodes);
+    assert!(
+        out.nodes.is_empty(),
+        "{{}} produced nodes: {:#?}",
+        out.nodes
+    );
 }
 
 // ---------- Tier 2: full pipeline ----------
@@ -129,7 +141,10 @@ fn pipeline_emits_ref_edge() {
         .graph
         .edge_references()
         .any(|e| e.weight().relation == "references");
-    assert!(has_ref, "expected at least one references edge in pipeline output");
+    assert!(
+        has_ref,
+        "expected at least one references edge in pipeline output"
+    );
 }
 
 #[test]
@@ -149,8 +164,7 @@ fn pipeline_config_ref_targets_schema_ref_node() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     // The $ref node in config.json should have a references edge to ref::schema.json#/definitions/Config
     let has_schema_ref = g.graph.edge_references().any(|e| {
-        e.weight().relation == "references"
-            && g.graph[e.target()].label.contains("schema.json")
+        e.weight().relation == "references" && g.graph[e.target()].label.contains("schema.json")
     });
     assert!(
         has_schema_ref,

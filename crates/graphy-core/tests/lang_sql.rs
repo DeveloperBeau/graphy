@@ -82,7 +82,10 @@ fn schema_no_self_references() {
         .iter()
         .filter(|e| e.relation == "references" && e.source == e.target)
         .collect();
-    assert!(self_refs.is_empty(), "unexpected self-reference edges: {self_refs:#?}");
+    assert!(
+        self_refs.is_empty(),
+        "unexpected self-reference edges: {self_refs:#?}"
+    );
 }
 
 #[test]
@@ -99,8 +102,16 @@ fn queries_emits_no_nodes() {
 #[test]
 fn empty_file_emits_zero_nodes_and_edges() {
     let out = extract_file(&fp("empty.sql"));
-    assert!(out.nodes.is_empty(), "empty.sql produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.sql produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.sql produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.sql produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------

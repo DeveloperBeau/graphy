@@ -19,7 +19,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/haskell"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/haskell"),
         "unexpected fixture path: {}",
         p.display()
     );
@@ -70,11 +71,11 @@ fn helpers_emits_function_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        fn_labels.iter().any(|l| *l == "formatName"),
+        fn_labels.contains(&"formatName"),
         "formatName not found; got {fn_labels:?}"
     );
     assert!(
-        fn_labels.iter().any(|l| *l == "unrelatedHelper"),
+        fn_labels.contains(&"unrelatedHelper"),
         "unrelatedHelper not found; got {fn_labels:?}"
     );
 }
@@ -127,7 +128,9 @@ fn service_emits_function_nodes() {
         .map(|n| n.label.as_str())
         .collect();
     assert!(
-        fn_labels.iter().any(|l| *l == "runService" || *l == "makeService"),
+        fn_labels
+            .iter()
+            .any(|l| *l == "runService" || *l == "makeService"),
         "runService/makeService not found in functions; got {fn_labels:?}"
     );
 }
@@ -135,8 +138,16 @@ fn service_emits_function_nodes() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("src/Empty.hs"));
-    assert!(out.nodes.is_empty(), "Empty.hs produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "Empty.hs produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "Empty.hs produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "Empty.hs produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Edge cases ----------
@@ -159,7 +170,7 @@ fn non_utf8_bytes_do_not_crash() {
 
 // ---------- Tier 2: full pipeline ----------
 
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::IntoEdgeReferences;
 
 #[test]
 fn pipeline_resolves_format_name_function() {
@@ -169,7 +180,10 @@ fn pipeline_resolves_format_name_function() {
         .graph
         .node_weights()
         .any(|n| n.label == "formatName" && n.kind.as_deref() == Some("function"));
-    assert!(has_fn, "formatName function node missing from pipeline graph");
+    assert!(
+        has_fn,
+        "formatName function node missing from pipeline graph"
+    );
 }
 
 #[test]

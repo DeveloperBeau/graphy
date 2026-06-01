@@ -63,11 +63,11 @@ fn walk(
                                 // base_clause -> name (first `name` child is the parent class)
                                 let mut gc2 = gc.walk();
                                 for item in gc.children(&mut gc2) {
-                                    if item.kind() == "name" || item.kind() == "qualified_name" {
-                                        if let Ok(parent) = item.utf8_text(src.as_bytes()) {
-                                            emit_inherits(out, &child_id, parent, "inherits", item);
-                                            break;
-                                        }
+                                    if (item.kind() == "name" || item.kind() == "qualified_name")
+                                        && let Ok(parent) = item.utf8_text(src.as_bytes())
+                                    {
+                                        emit_inherits(out, &child_id, parent, "inherits", item);
+                                        break;
                                     }
                                 }
                             }
@@ -75,10 +75,10 @@ fn walk(
                                 // class_interface_clause -> name nodes (interfaces)
                                 let mut gc2 = gc.walk();
                                 for item in gc.children(&mut gc2) {
-                                    if item.kind() == "name" || item.kind() == "qualified_name" {
-                                        if let Ok(parent) = item.utf8_text(src.as_bytes()) {
-                                            emit_inherits(out, &child_id, parent, "implements", item);
-                                        }
+                                    if (item.kind() == "name" || item.kind() == "qualified_name")
+                                        && let Ok(parent) = item.utf8_text(src.as_bytes())
+                                    {
+                                        emit_inherits(out, &child_id, parent, "implements", item);
                                     }
                                 }
                             }

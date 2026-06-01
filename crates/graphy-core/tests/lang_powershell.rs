@@ -19,7 +19,8 @@ fn fp(rel: &str) -> std::path::PathBuf {
 fn fixture_dir_points_at_expected_path() {
     let p = fixture_dir(LANG);
     assert!(
-        p.to_string_lossy().ends_with("fixtures/lang-coverage/powershell"),
+        p.to_string_lossy()
+            .ends_with("fixtures/lang-coverage/powershell"),
         "unexpected path: {}",
         p.display()
     );
@@ -49,8 +50,16 @@ fn service_emits_functions() {
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("Empty.ps1"));
-    assert!(out.nodes.is_empty(), "empty.ps1 produced nodes: {:#?}", out.nodes);
-    assert!(out.edges.is_empty(), "empty.ps1 produced edges: {:#?}", out.edges);
+    assert!(
+        out.nodes.is_empty(),
+        "empty.ps1 produced nodes: {:#?}",
+        out.nodes
+    );
+    assert!(
+        out.edges.is_empty(),
+        "empty.ps1 produced edges: {:#?}",
+        out.edges
+    );
 }
 
 // ---------- Deferred follow-up: dot-source as import ----------
@@ -123,9 +132,8 @@ fn pipeline_node_count_floor() {
 #[test]
 fn pipeline_graph_has_edges() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    // PowerShell extractor does not emit calls edges, but imports are expected from dot-source.
-    // Accept any edge type to ensure the pipeline produced a connected graph.
-    let has_any_edge = g.graph.edge_count() >= 0;
-    let _ = has_any_edge; // non-zero not guaranteed; just ensure no panic
+    // PowerShell extractor does not emit calls edges and dot-source imports
+    // are not guaranteed, so edge count is not asserted; just ensure the
+    // pipeline produced nodes without panicking.
     assert!(g.node_count() > 0, "pipeline produced no nodes");
 }
