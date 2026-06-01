@@ -18,10 +18,13 @@ graphy ships as a Claude Code plugin that auto-builds a knowledge graph of any w
 
 ## Prerequisites
 
-1. **`graphy` binary on `$PATH`.** Either:
-   - `cargo install --path crates/graphy-cli` (from this repo), or
-   - Download a release tarball from the [releases page](https://github.com/DeveloperBeau/graphy/releases) and run `install.sh`.
-2. **Language plugins discoverable.** The release tarball drops them under `~/.graphy/plugins/` automatically. `cargo install` users can run:
+1. **`graphy` binary installed.** Pick one:
+   - macOS / Linux: `curl -fsSL https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.sh | sh`
+   - Windows (PowerShell): `irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.ps1 | iex`
+   - From source: `cargo install --path crates/graphy-cli`
+
+   On native Windows the plugin's `sh` hooks and MCP launcher need a `sh` — install [Git for Windows](https://gitforwindows.org/) or run Claude Code under WSL. The CLI itself works without either.
+2. **Language plugins discoverable.** The release installers drop them under `~/.graphy/plugins/` automatically. `cargo install` users can run:
    ```bash
    graphy plugins regenerate-manifest $(dirname $(which graphy))/../share/graphy/plugins
    ```

@@ -17,19 +17,54 @@ graphy-out/
 
 ## Install
 
-```bash
-# Release tarball
-curl -fsSL <release-url>/install.sh | sh
+**macOS / Linux** — download the latest release and add it to your PATH:
 
-# Or from source
+```bash
+curl -fsSL https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.sh | sh
+```
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.ps1 | iex
+```
+
+**From source** (any platform with a Rust toolchain):
+
+```bash
 cargo install --path crates/graphy-cli
 ```
 
-Verify with `graphy doctor && graphy plugins list`. Full install / packaging notes in [docs/install.md](docs/install.md).
+Verify with `graphy doctor && graphy plugins list` — you should see a version line and 37 language plugins. Full install / packaging notes in [docs/install.md](docs/install.md).
 
-## Integrations
+Prebuilt releases cover macOS (Apple Silicon + Intel), Linux x86_64, and Windows x86_64. Other targets: build from source.
 
-Editor- and agent-level wrappers around the `graphy` CLI and its MCP server. Each integration has a self-contained guide.
+## Use with Claude Code
+
+Install the `graphy` binary (above), then add the plugin from Claude Code — two commands:
+
+```
+/plugin marketplace add DeveloperBeau/graphy
+/plugin install graphy@graphy
+```
+
+Choose **user** scope when prompted to make it available in every project. The plugin auto-builds a graph the first time Claude reads a file, then exposes MCP tools (`search_label`, `neighbors`, `query_node`, `shortest_path`, `stats`) so Claude queries the graph instead of grepping.
+
+> The plugin runs `graphy` on disk — install the binary first. On **Windows** the plugin's hooks/MCP server need a `sh` (install [Git for Windows](https://gitforwindows.org/)) or run Claude Code under WSL; the standalone CLI works natively.
+
+To nudge Claude to actually use it, add this to your project's `CLAUDE.md`:
+
+```markdown
+## Code navigation
+A graphy knowledge graph of this repo is available via MCP. Prefer it over grep/file-reading
+to locate symbols, callers, and dependencies: use `search_label` to find a symbol, `neighbors`
+to see callers/callees, `shortest_path` to trace connections, and `stats` for an overview.
+Read files only to confirm details once the graph has pointed you to the right place.
+```
+
+Full setup, slash commands, and troubleshooting: [integrations/claude-code.md](integrations/claude-code.md).
+
+## Other integrations
 
 | Integration | Status | Doc |
 |-------------|--------|-----|

@@ -2,8 +2,8 @@
 # Build the graphy binary + every plugin crate in release mode, generate a
 # manifest, and produce a tarball ready to upload as a release artifact.
 #
-# Output: dist/graphy-<version>-<arch>-<os>.tar.gz containing:
-#   graphy                    (binary)
+# Output: dist/graphy-<version>-<arch>-<os>.{tar.gz|zip} containing:
+#   graphy[.exe]              (binary)
 #   plugins/manifest.toml
 #   plugins/lib*.{dylib,so,dll}
 #   README.md, LICENSE
@@ -17,12 +17,18 @@ VERSION="$(awk -F'"' '/^version/ {print $2; exit}' Cargo.toml)"
 [[ -z "$VERSION" ]] && VERSION="0.0.0"
 
 case "$(uname -s)" in
-  Darwin) OS="macos"; DYLIB_EXT="dylib" ;;
-  Linux)  OS="linux"; DYLIB_EXT="so" ;;
-  MINGW*|MSYS*|CYGWIN*) OS="windows"; DYLIB_EXT="dll" ;;
+  Darwin) OS="macos";   DYLIB_EXT="dylib"; BIN="graphy";     ARCHIVE="tar.gz" ;;
+  Linux)  OS="linux";   DYLIB_EXT="so";    BIN="graphy";     ARCHIVE="tar.gz" ;;
+  MINGW*|MSYS*|CYGWIN*) OS="windows"; DYLIB_EXT="dll"; BIN="graphy.exe"; ARCHIVE="zip" ;;
   *) echo "unsupported OS: $(uname -s)"; exit 1 ;;
 esac
 ARCH="$(uname -m)"
+
+# Portable sha256: macos ships `shasum`, linux/git-bash ship `sha256sum`.
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1"
+  else shasum -a 256 "$1"; fi
+}
 
 STAGE="$REPO/dist/stage"
 OUT="$REPO/dist"
@@ -36,7 +42,7 @@ for c in $PLUGIN_CRATES; do PLUGIN_ARGS+=(-p "$c"); done
 cargo build --release -p graphy-cli "${PLUGIN_ARGS[@]}" 2>&1 | tail -20
 
 echo "[2/4] staging artifacts…"
-cp "$REPO/target/release/graphy" "$STAGE/graphy"
+cp "$REPO/target/release/$BIN" "$STAGE/$BIN"
 for c in $PLUGIN_CRATES; do
   stem="$(echo "$c" | tr - _)"
   case "$OS" in
@@ -53,15 +59,21 @@ done
 cp "$REPO/README.md" "$STAGE/" 2>/dev/null || true
 
 echo "[3/4] generating manifest.toml…"
-"$STAGE/graphy" plugins regenerate-manifest "$STAGE/plugins" >/dev/null
+"$STAGE/$BIN" plugins regenerate-manifest "$STAGE/plugins" >/dev/null
 
 echo "[4/4] archiving…"
-TAR="$OUT/graphy-${VERSION}-${ARCH}-${OS}.tar.gz"
-( cd "$STAGE" && tar -czf "$TAR" . )
-SHA="$(shasum -a 256 "$TAR" | awk '{print $1}')"
-echo "$SHA  $(basename "$TAR")" > "${TAR}.sha256"
+ART="$OUT/graphy-${VERSION}-${ARCH}-${OS}.${ARCHIVE}"
+rm -f "$ART"
+if [[ "$ARCHIVE" == "zip" ]]; then
+  # GitHub windows runners ship 7z; produces a standard zip Expand-Archive reads.
+  ( cd "$STAGE" && 7z a -tzip "$ART" ./* >/dev/null )
+else
+  ( cd "$STAGE" && tar -czf "$ART" . )
+fi
+SHA="$(sha256_of "$ART" | awk '{print $1}')"
+echo "$SHA  $(basename "$ART")" > "${ART}.sha256"
 
 echo
-echo "==> $TAR"
+echo "==> $ART"
 echo "    sha256: $SHA"
-echo "    size:   $(du -h "$TAR" | awk '{print $1}')"
+echo "    size:   $(du -h "$ART" | awk '{print $1}')"
