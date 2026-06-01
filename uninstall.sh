@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# graphy uninstaller — removes what install.sh created: the ~/.graphy tree
+# graphy uninstaller. Removes what install.sh created: the ~/.graphy tree
 # (binary + plugins) and the PATH line added to your shell profile.
 #
 # Usage:

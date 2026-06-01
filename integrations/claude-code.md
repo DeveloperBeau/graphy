@@ -23,8 +23,8 @@ graphy ships as a Claude Code plugin that auto-builds a knowledge graph of any w
    - Windows (PowerShell): `irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.ps1 | iex`
    - From source: `cargo install --path crates/graphy-cli`
 
-   On native Windows the plugin's `sh` hooks and MCP launcher need a `sh` — install [Git for Windows](https://gitforwindows.org/) or run Claude Code under WSL. The CLI itself works without either.
-2. **Language plugins discoverable.** The release installers drop them under `~/.graphy/plugins/` automatically. `cargo install` users can run:
+   On native Windows the plugin's hooks and MCP launcher run as `sh` scripts: install [Git for Windows](https://gitforwindows.org/) or run Claude Code under WSL. The CLI itself works without either.
+2. **Language plugins discoverable.** The release installers drop them under `~/.graphy/plugins/`. `cargo install` users can run:
    ```bash
    graphy plugins regenerate-manifest $(dirname $(which graphy))/../share/graphy/plugins
    ```
@@ -47,7 +47,7 @@ graphy is distributed as a Claude Code plugin through a marketplace manifest (`.
 /plugin marketplace add DeveloperBeau/graphy
 /plugin install graphy@graphy
 
-# From a local checkout (development — install from your own source)
+# From a local checkout (install from your own dev source)
 git clone git@github.com:DeveloperBeau/graphy.git ~/code/graphy
 /plugin marketplace add ~/code/graphy
 /plugin install graphy@graphy
@@ -56,6 +56,20 @@ git clone git@github.com:DeveloperBeau/graphy.git ~/code/graphy
 Choose **user** scope when prompted to make graphy available in every project, or **local** to scope it to the current project. Run `/plugins` afterward to confirm it is enabled.
 
 While developing against a local checkout, the marketplace caches a snapshot of your source. After editing the plugin, refresh it with `/plugin marketplace update graphy` and reinstall.
+
+## Recommended: tell Claude to prefer graphy
+
+The bundled `graphy` skill already teaches Claude when to query the graph. A line in your **user-level** `CLAUDE.md` (`~/.claude/CLAUDE.md`) reinforces it across every project and matches the user-scoped plugin install. Add:
+
+```markdown
+## Code navigation
+A graphy knowledge graph of the workspace is available via MCP. Prefer it over grep/file-reading
+to locate symbols, callers, and dependencies: use `search_label` to find a symbol, `neighbors`
+to see callers/callees, `shortest_path` to trace connections, and `stats` for an overview.
+Read files only to confirm details once the graph has pointed you to the right place.
+```
+
+Drop it in a project's `CLAUDE.md` instead if you only want the hint for that repo.
 
 ## Configuration
 
@@ -166,7 +180,7 @@ curl -fsSL https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall
 irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall.ps1 | iex         # Windows
 ```
 
-`cargo install` users instead run `cargo uninstall graphy-cli`. Optionally also remove generated graphs:
+`cargo install` users instead run `cargo uninstall graphy-cli`. To also remove generated graphs:
 
 ```bash
 find . -type d -name graphy-out -prune -exec rm -rf {} +
