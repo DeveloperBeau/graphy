@@ -99,14 +99,26 @@ fn serve_responds_to_initialize_and_tools_call() {
     reader.read_line(&mut line).unwrap();
     let v1: Value = serde_json::from_str(line.trim()).unwrap();
     assert_eq!(v1["id"], 1);
-    assert_eq!(v1["result"]["name"], "graphy");
+    // MCP requires server name/version nested under `serverInfo`; a flat
+    // `name` here fails the client's initialize validation and the server
+    // never registers its tools.
+    assert_eq!(v1["result"]["serverInfo"]["name"], "graphy");
+    assert!(v1["result"]["serverInfo"]["version"].is_string());
+    assert_eq!(v1["result"]["protocolVersion"], "2024-11-05");
+    assert!(v1["result"]["capabilities"]["tools"].is_object());
 
     line.clear();
     reader.read_line(&mut line).unwrap();
     let v2: Value = serde_json::from_str(line.trim()).unwrap();
     assert_eq!(v2["id"], 2);
-    assert_eq!(v2["result"]["nodes"], 2);
-    assert_eq!(v2["result"]["edges"], 1);
+    // MCP wraps tool output in a content array; the structured payload is
+    // JSON text inside the first text block.
+    let text = v2["result"]["content"][0]["text"]
+        .as_str()
+        .expect("tools/call result has content[0].text");
+    let payload: Value = serde_json::from_str(text).unwrap();
+    assert_eq!(payload["nodes"], 2);
+    assert_eq!(payload["edges"], 1);
 
     let _ = child.wait();
 }
