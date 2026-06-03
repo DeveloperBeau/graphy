@@ -254,6 +254,20 @@ fn loader_dispatches_scala_plugin_typed_signature_layer() {
     )
     .unwrap();
     let out = reg.extract(&scala).unwrap().unwrap();
+fn loader_dispatches_kotlin_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-kotlin"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let kt = src_dir.path().join("a.kt");
+    fs::write(
+        &kt,
+        "data class Widget(val label: String)\n\
+         fun build(widget: Widget): Widget { return widget }\n",
+    )
+    .unwrap();
+    let out = reg.extract(&kt).unwrap().unwrap();
 
     let hp = out
         .edges
@@ -261,6 +275,10 @@ fn loader_dispatches_scala_plugin_typed_signature_layer() {
         .find(|e| e.relation == "has_param")
         .expect("has_param edge");
     assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
+    assert_eq!(
+        hp.attr.as_ref().and_then(|a| a.name.as_deref()),
+        Some("widget")
+    );
 
     let build = out
         .nodes
