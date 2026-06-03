@@ -11,9 +11,9 @@ function Service.new(name)
     return self
 end
 
-function Service:run()
+function Service:run(mode)
     local greeting = helpers.format_name(self.name)
-    return greeting
+    return greeting, mode
 end
 
 function Service:describe()

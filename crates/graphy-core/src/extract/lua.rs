@@ -6,8 +6,30 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use super::common::{emit_call, emit_def, emit_import, name_of};
-use crate::schema::ExtractionOutput;
+use super::common::{attach_signature, emit_call, emit_def, emit_import, name_of};
+use crate::schema::{ExtractionOutput, ParamSig, Signature};
+
+/// Build a name-only `Signature` for a Lua function/method. Lua's grammar
+/// carries no type annotations, so each parameter contributes a `ParamSig`
+/// with `ty: None`; no `returns` and no `fields`.
+fn lua_signature(decl: TsNode, src: &str) -> Signature {
+    let mut sig = Signature::default();
+    if let Some(params) = decl.child_by_field_name("parameters") {
+        let mut cursor = params.walk();
+        for p in params.children(&mut cursor) {
+            if p.kind() != "identifier" {
+                continue;
+            }
+            if let Ok(name) = p.utf8_text(src.as_bytes()) {
+                sig.params.push(ParamSig {
+                    name: name.to_string(),
+                    ty: None,
+                });
+            }
+        }
+    }
+    sig
+}
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
@@ -38,7 +60,9 @@ fn walk(
         match child.kind() {
             "function_declaration" | "function_definition" | "local_function" => {
                 if let Some(n) = name_of(child, src) {
+                    let sig = lua_signature(child, src);
                     emit_def(out, symbols, file, "function", n, child);
+                    attach_signature(out, sig);
                 }
             }
             "function_call" => {

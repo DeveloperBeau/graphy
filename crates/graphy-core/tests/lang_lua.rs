@@ -90,6 +90,65 @@ fn empty_file_emits_zero_nodes() {
     );
 }
 
+// ---------- Typed signature layer (NAME-ONLY) ----------
+
+#[test]
+fn function_signature_carries_param_names_with_null_type() {
+    let out = extract_file(&fp("src/types.lua"));
+    let new_state = out
+        .nodes
+        .iter()
+        .find(|n| n.kind.as_deref() == Some("function") && n.label.contains("new_state"))
+        .expect("new_state function node");
+    let sig = new_state.signature.as_ref().expect("signature payload");
+    let names: Vec<&str> = sig.params.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(names, ["name"], "expected param names; got {names:?}");
+    assert!(
+        sig.params.iter().all(|p| p.ty.is_none()),
+        "name-only: all param types must be None"
+    );
+    assert!(sig.returns.is_none(), "name-only: no returns");
+    assert!(sig.fields.is_empty(), "name-only: no fields");
+}
+
+#[test]
+fn method_signature_carries_param_names_with_null_type() {
+    let out = extract_file(&fp("src/service.lua"));
+    let run = out
+        .nodes
+        .iter()
+        .find(|n| n.kind.as_deref() == Some("function") && n.label.contains("run"))
+        .expect("Service:run method node");
+    let sig = run.signature.as_ref().expect("signature payload");
+    let names: Vec<&str> = sig.params.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(
+        names,
+        ["mode"],
+        "expected method param names; got {names:?}"
+    );
+    assert!(
+        sig.params.iter().all(|p| p.ty.is_none()),
+        "name-only: all param types must be None"
+    );
+}
+
+#[test]
+fn no_typed_edges_or_type_nodes() {
+    for f in ["src/types.lua", "src/service.lua", "src/helpers.lua"] {
+        let out = extract_file(&fp(f));
+        assert!(
+            !out.edges
+                .iter()
+                .any(|e| matches!(e.relation.as_str(), "has_param" | "returns" | "has_field")),
+            "{f}: name-only mode emits no typed edges"
+        );
+        assert!(
+            !out.nodes.iter().any(|n| n.kind.as_deref() == Some("type")),
+            "{f}: name-only mode emits no kind:\"type\" nodes"
+        );
+    }
+}
+
 // ---------- Edge cases ----------
 
 #[test]
