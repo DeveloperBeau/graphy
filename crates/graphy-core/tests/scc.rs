@@ -248,6 +248,7 @@ fn scc_patch_after_adding_cycle_edge() {
         EdgeData {
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         },
     );
 
@@ -317,6 +318,7 @@ fn scc_patch_merges_two_smaller_components() {
         EdgeData {
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         },
     );
     g.graph.add_edge(
@@ -325,6 +327,7 @@ fn scc_patch_merges_two_smaller_components() {
         EdgeData {
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         },
     );
 
