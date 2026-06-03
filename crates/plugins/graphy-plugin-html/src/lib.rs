@@ -79,6 +79,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
                             source_file: Some(file.to_string()),
                             source_location: Some(format!("L{}", c.start_position().row + 1)),
                             kind: Some(tag_name.to_string()),
+                            signature: None,
                         });
                     }
                     if let Some(target) = href.or(src_attr) {
@@ -87,6 +88,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
                             target: format!("link::{target}"),
                             relation: "references".into(),
                             confidence: EXTRACTED,
+                            attr: None,
                         });
                     }
                 }

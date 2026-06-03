@@ -94,6 +94,14 @@ pub fn emit_inherits(
     });
 }
 
+/// Set a computed signature on the node most recently pushed to `out`.
+/// Used by the typed-layer extractors after `emit_def` appends the node.
+pub fn attach_signature(out: &mut ExtractionOutput, sig: crate::schema::Signature) {
+    if let Some(n) = out.nodes.last_mut() {
+        n.signature = Some(sig);
+    }
+}
+
 pub fn emit_call(
     out: &mut ExtractionOutput,
     symbols: &HashMap<String, String>,

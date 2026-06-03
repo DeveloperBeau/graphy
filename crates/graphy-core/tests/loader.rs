@@ -202,3 +202,38 @@ fn loader_dispatches_rust_plugin_typed_signature_layer() {
         Some("Widget")
     );
 }
+
+#[test]
+fn loader_dispatches_go_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-go"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let go = src_dir.path().join("a.go");
+    fs::write(
+        &go,
+        "package p\n\
+         type Widget struct { W Widget }\n\
+         func Build(w Widget) Widget { return w }\n",
+    )
+    .unwrap();
+    let out = reg.extract(&go).unwrap().unwrap();
+
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "Build")
+        .expect("Build node");
+    assert_eq!(
+        build.signature.as_ref().and_then(|s| s.returns.as_deref()),
+        Some("Widget")
+    );
+}

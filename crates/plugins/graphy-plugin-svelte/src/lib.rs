@@ -32,6 +32,7 @@ fn walk(node: TsNode, file: &str, out: &mut Output) {
                 source_file: Some(file.to_string()),
                 source_location: Some(line_loc(child.start_position().row)),
                 kind: Some("svelte_block".into()),
+                signature: None,
             });
         }
         walk(child, file, out);
