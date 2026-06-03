@@ -548,6 +548,38 @@ fn index_cache_drops_state_when_file_deleted_mid_session() {
 }
 
 #[test]
+fn query_node_returns_signature_and_neighbors_carry_attr() {
+    let g = json!({
+        "nodes": [
+            {"id":"f.rs::build","label":"build","kind":"function",
+             "signature":{"params":[{"name":"w","ty":"Widget"}],"returns":"Widget"}},
+            {"id":"extern::Widget","label":"Widget","kind":"type"}
+        ],
+        "edges": [
+            {"source":"f.rs::build","target":"extern::Widget","relation":"has_param",
+             "confidence":"EXTRACTED","attr":{"name":"w","index":0}}
+        ]
+    });
+    let stored: graphy_core::serve::StoredGraph = serde_json::from_value(g).unwrap();
+    let idx = Index::from_graph(stored);
+
+    let qn = call(
+        &idx,
+        json!({"jsonrpc":"2.0","id":1,"method":"tools/call",
+        "params":{"name":"query_node","arguments":{"id":"f.rs::build"}}}),
+    );
+    assert_eq!(qn["result"]["signature"]["returns"], "Widget");
+
+    let nb = call(
+        &idx,
+        json!({"jsonrpc":"2.0","id":2,"method":"tools/call",
+        "params":{"name":"neighbors","arguments":{"id":"f.rs::build"}}}),
+    );
+    assert_eq!(nb["result"]["outgoing"][0]["relation"], "has_param");
+    assert_eq!(nb["result"]["outgoing"][0]["attr"]["name"], "w");
+}
+
+#[test]
 fn index_cache_retains_last_good_index_across_transient_parse_failure() {
     // If the build pipeline crashes mid-write leaving an invalid JSON on disk,
     // the server should not blank itself — keep serving the previously-loaded

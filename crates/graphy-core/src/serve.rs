@@ -45,6 +45,8 @@ pub struct StoredNode {
     pub kind: Option<String>,
     #[serde(default)]
     pub community: Option<u32>,
+    #[serde(default)]
+    pub signature: Option<crate::schema::Signature>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -53,6 +55,8 @@ pub struct StoredEdge {
     pub target: String,
     pub relation: String,
     pub confidence: String,
+    #[serde(default)]
+    pub attr: Option<crate::schema::EdgeAttr>,
 }
 
 /// Pre-indexed view of a stored graph for fast lookup.
@@ -396,11 +400,11 @@ fn run_tool(idx: &Index, name: &str, args: &Value) -> Result<Value> {
             Ok(json!({
                 "outgoing": out.iter().map(|e| json!({
                     "target": e.target, "relation": e.relation,
-                    "confidence": e.confidence,
+                    "confidence": e.confidence, "attr": e.attr,
                 })).collect::<Vec<_>>(),
                 "incoming": inc.iter().map(|e| json!({
                     "source": e.source, "relation": e.relation,
-                    "confidence": e.confidence,
+                    "confidence": e.confidence, "attr": e.attr,
                 })).collect::<Vec<_>>(),
             }))
         }
