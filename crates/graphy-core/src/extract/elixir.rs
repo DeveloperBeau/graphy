@@ -83,6 +83,7 @@ fn walk(
                                     child.start_position().row + 1
                                 )),
                                 kind: Some(kind.into()),
+                                signature: None,
                             });
                             // Recurse with updated module context for defmodule.
                             let next_module = if tgt == "defmodule" {
@@ -107,6 +108,7 @@ fn walk(
                             source_file: Some(file.to_string()),
                             source_location: Some(format!("L{}", child.start_position().row + 1)),
                             kind: Some("struct".into()),
+                            signature: None,
                         });
                     }
                 }

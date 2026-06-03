@@ -12,6 +12,7 @@ fn n(id: &str) -> Node {
         source_file: None,
         source_location: None,
         kind: None,
+        signature: None,
     }
 }
 
@@ -21,6 +22,7 @@ fn e(s: &str, t: &str) -> Edge {
         target: t.into(),
         relation: "calls".into(),
         confidence: Confidence::Extracted,
+        attr: None,
     }
 }
 
@@ -112,6 +114,7 @@ fn cluster_seeded_scc_reduces_community_count_vs_no_scc() {
                     source_file: None,
                     source_location: None,
                     kind: Some("function".into()),
+                    signature: None,
                 })
                 .collect(),
             edges: vec![("A", "B"), ("B", "C"), ("C", "D"), ("D", "A")]
@@ -121,6 +124,7 @@ fn cluster_seeded_scc_reduces_community_count_vs_no_scc() {
                     target: t.into(),
                     relation: "calls".into(),
                     confidence: Confidence::Extracted,
+                    attr: None,
                 })
                 .collect(),
         };

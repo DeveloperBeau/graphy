@@ -56,6 +56,7 @@ fn walk_block(
                     source_file: Some(file.to_string()),
                     source_location: Some(format!("L{}", child.start_position().row + 1)),
                     kind: Some("heading".into()),
+                    signature: None,
                 });
             }
         }
@@ -95,6 +96,7 @@ fn collect_link_edges(node: TsNode, src: &[u8], file: &str, edges: &mut Vec<Edge
                             target: format!("link::{dest}"),
                             relation: "references".into(),
                             confidence: Confidence::Extracted,
+                            attr: None,
                         });
                     }
                 }

@@ -65,6 +65,7 @@ fn walk_items(
                         source_file: Some(file.to_string()),
                         source_location: Some(line_loc(child)),
                         kind: Some(kind.trim_end_matches("_item").to_string()),
+                        signature: None,
                     });
                     // Emit references edges from function parameters and return type.
                     if kind == "function_item" {
@@ -100,6 +101,7 @@ fn walk_items(
                                 target: target_id,
                                 relation: "implements".into(),
                                 confidence: Confidence::Inferred,
+                                attr: None,
                             });
                         }
                         // contains edges from the impl type to each method.
@@ -123,6 +125,7 @@ fn walk_items(
                         source_file: Some(file.to_string()),
                         source_location: Some(line_loc(child)),
                         kind: Some("macro".to_string()),
+                        signature: None,
                     });
                 }
             }
@@ -139,12 +142,14 @@ fn walk_items(
                             source_file: Some(file.to_string()),
                             source_location: Some(line_loc(child)),
                             kind: Some("import".into()),
+                            signature: None,
                         });
                         out.edges.push(Edge {
                             source: file.to_string(),
                             target: import_id,
                             relation: "imports".into(),
                             confidence: Confidence::Extracted,
+                            attr: None,
                         });
                     }
                 }
@@ -183,6 +188,7 @@ fn emit_contains_from_body(
                 target: child_id,
                 relation: "contains".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             });
         }
     }
@@ -236,6 +242,7 @@ fn emit_type_reference(
             target: extern_target,
             relation: "references".into(),
             confidence: Confidence::Inferred,
+            attr: None,
         });
         // Local target lets dedup resolve to a node defined in the same file.
         let local_target = make_id(file, &name);
@@ -244,6 +251,7 @@ fn emit_type_reference(
             target: local_target,
             relation: "references".into(),
             confidence: Confidence::Inferred,
+            attr: None,
         });
     }
 }
@@ -359,6 +367,7 @@ fn collect_calls_in(
                     target: target_id.clone(),
                     relation: "calls".into(),
                     confidence: Confidence::Inferred,
+                    attr: None,
                 });
             }
         }

@@ -82,6 +82,7 @@ fn dedup_map_apply_redirects_node_drop_and_edge_retarget() {
                 source_file: Some("src/x.rs".into()),
                 source_location: Some("L1".into()),
                 kind: Some("import".into()),
+                signature: None,
             },
             Node {
                 id: "src/x.rs::caller".into(),
@@ -89,6 +90,7 @@ fn dedup_map_apply_redirects_node_drop_and_edge_retarget() {
                 source_file: Some("src/x.rs".into()),
                 source_location: Some("L5".into()),
                 kind: Some("function".into()),
+                signature: None,
             },
         ],
         edges: vec![Edge {
@@ -96,6 +98,7 @@ fn dedup_map_apply_redirects_node_drop_and_edge_retarget() {
             target: "extern::a::b".into(),
             relation: "imports".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         }],
     };
     let m = DedupMap {
@@ -124,6 +127,7 @@ fn dedup_map_apply_no_op_on_empty_map() {
             source_file: None,
             source_location: None,
             kind: None,
+            signature: None,
         }],
         edges: vec![],
     };
@@ -140,6 +144,7 @@ fn dedup_map_apply_marks_ambiguous() {
             source_file: Some("src/c.rs".into()),
             source_location: Some("L1".into()),
             kind: Some("function".into()),
+            signature: None,
         }],
         edges: vec![],
     };
@@ -164,6 +169,7 @@ fn dedup_map_apply_handles_unknown_redirect_target() {
             source_file: None,
             source_location: None,
             kind: None,
+            signature: None,
         }],
         edges: vec![],
     };

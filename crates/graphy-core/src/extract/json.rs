@@ -44,6 +44,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
                     source_file: Some(file.to_string()),
                     source_location: Some(format!("L{}", key.start_position().row + 1)),
                     kind: Some("json_key".into()),
+                    signature: None,
                 });
                 if label == "$ref" {
                     let value = child
@@ -57,6 +58,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
                             target: format!("ref::{target}"),
                             relation: "references".into(),
                             confidence: Confidence::Extracted,
+                            attr: None,
                         });
                     }
                 }

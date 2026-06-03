@@ -17,6 +17,7 @@ fn ex(nodes: &[&str]) -> ExtractionOutput {
                 source_file: None,
                 source_location: None,
                 kind: None,
+                signature: None,
             })
             .collect(),
         edges: vec![],

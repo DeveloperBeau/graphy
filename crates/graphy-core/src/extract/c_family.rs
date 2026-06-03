@@ -99,6 +99,7 @@ fn walk(
                         source_file: Some(file.to_string()),
                         source_location: Some(super::common::line_loc(child)),
                         kind: Some("namespace".to_string()),
+                        signature: None,
                     });
                     symbols.insert(n.to_string(), canonical_id);
                 }

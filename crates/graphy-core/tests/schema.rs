@@ -50,11 +50,26 @@ fn node_serialize_skips_none_fields() {
         source_file: None,
         source_location: None,
         kind: None,
+        signature: None,
     };
     let s = serde_json::to_string(&n).unwrap();
     assert!(!s.contains("source_file"));
     assert!(!s.contains("source_location"));
     assert!(!s.contains("kind"));
+    assert!(!s.contains("signature"));
+}
+
+#[test]
+fn edge_serialize_skips_none_attr() {
+    let e = Edge {
+        source: "a".into(),
+        target: "b".into(),
+        relation: "calls".into(),
+        confidence: Confidence::Inferred,
+        attr: None,
+    };
+    let s = serde_json::to_string(&e).unwrap();
+    assert!(!s.contains("attr"));
 }
 
 // ---------- edge ----------
@@ -124,6 +139,7 @@ fn node(id: &str) -> Node {
         source_file: None,
         source_location: None,
         kind: None,
+        signature: None,
     }
 }
 
@@ -133,5 +149,6 @@ fn edge(s: &str, t: &str, rel: &str, c: Confidence) -> Edge {
         target: t.into(),
         relation: rel.into(),
         confidence: c,
+        attr: None,
     }
 }

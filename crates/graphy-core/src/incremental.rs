@@ -419,6 +419,7 @@ fn load_prior_graph(out_root: &Path) -> Option<KnowledgeGraph> {
             target,
             relation,
             confidence,
+            attr: None,
         });
     }
     Some(g)

@@ -70,6 +70,7 @@ fn walk_keys(
                     source_file: Some(file.to_string()),
                     source_location: Some(format!("L{}", key.start_position().row + 1)),
                     kind: Some("yaml_key".into()),
+                    signature: None,
                 });
 
                 // If the VALUE side has an anchor, record it.
@@ -153,6 +154,7 @@ fn emit_alias_edges(
                                     target: target_id.clone(),
                                     relation: "references".into(),
                                     confidence: Confidence::Extracted,
+                                    attr: None,
                                 });
                             }
                         }

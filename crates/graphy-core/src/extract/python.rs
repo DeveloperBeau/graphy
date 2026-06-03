@@ -64,6 +64,7 @@ fn walk_defs(
                                             target: target_id,
                                             relation: "inherits".into(),
                                             confidence: Confidence::Extracted,
+                                            attr: None,
                                         });
                                     }
                                 }

@@ -12,6 +12,7 @@ fn n(id: &str) -> Node {
         source_file: None,
         source_location: None,
         kind: None,
+        signature: None,
     }
 }
 
@@ -21,6 +22,7 @@ fn e(s: &str, t: &str, c: Confidence) -> Edge {
         target: t.into(),
         relation: "calls".into(),
         confidence: c,
+        attr: None,
     }
 }
 

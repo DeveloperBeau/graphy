@@ -40,6 +40,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut ExtractionOutput) {
                 source_file: Some(file.to_string()),
                 source_location: Some(format!("L{}", child.start_position().row + 1)),
                 kind: Some("svelte_block".into()),
+                signature: None,
             });
 
             // For script blocks, re-parse the raw JS content through the JS extractor

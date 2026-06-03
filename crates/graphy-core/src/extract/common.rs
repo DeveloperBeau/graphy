@@ -35,6 +35,7 @@ pub fn emit_def(
         source_file: Some(file.to_string()),
         source_location: Some(line_loc(node)),
         kind: Some(kind.to_string()),
+        signature: None,
     });
 }
 
@@ -50,12 +51,14 @@ pub fn emit_import(out: &mut ExtractionOutput, file: &str, target: &str, node: T
         source_file: Some(file.to_string()),
         source_location: Some(line_loc(node)),
         kind: Some("import".into()),
+        signature: None,
     });
     out.edges.push(Edge {
         source: file.to_string(),
         target: import_id,
         relation: "imports".into(),
         confidence: Confidence::Extracted,
+        attr: None,
     });
 }
 
@@ -80,12 +83,14 @@ pub fn emit_inherits(
         source_file: None,
         source_location: Some(line_loc(node)),
         kind: Some("extern".into()),
+        signature: None,
     });
     out.edges.push(Edge {
         source: child_id.to_string(),
         target: target_id,
         relation: relation.to_string(),
         confidence: Confidence::Extracted,
+        attr: None,
     });
 }
 
@@ -105,6 +110,7 @@ pub fn emit_call(
             target: target_id.clone(),
             relation: "calls".into(),
             confidence: Confidence::Inferred,
+            attr: None,
         });
     }
 }
