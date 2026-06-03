@@ -211,3 +211,104 @@ fn pipeline_preserves_inherits_edge_through_dedup() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     assert_edge(&g, "Service", "Greet", "inherits");
 }
+
+// ---------- Typed signature layer (annotation-gated) ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_partial_signature_untyped_param_has_null_ty_no_edge() {
+    let out = extract_file(&fp("signatures.py"));
+
+    let hp = has_param_edges(&out, "::build");
+    // Only w: Widget is annotated + non-primitive.
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(hp[0].attr.as_ref().unwrap().name.as_deref(), Some("w"));
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(0));
+
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::build")
+        && e.target == "extern::Widget"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("Widget"));
+    assert_eq!(sig.params.len(), 3);
+    assert_eq!(sig.params[0].name, "w");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.params[1].name, "n");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("int"));
+    // The unannotated parameter: present, ty == None, no edge.
+    assert_eq!(sig.params[2].name, "untyped");
+    assert_eq!(sig.params[2].ty, None);
+}
+
+#[test]
+fn order_param_index_counts_all_params() {
+    let out = extract_file(&fp("signatures.py"));
+    let hp = has_param_edges(&out, "::order");
+    assert_eq!(hp.len(), 1); // only w: Widget
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(1)); // n is index 0
+}
+
+#[test]
+fn method_skips_self_and_emits_has_param() {
+    let out = extract_file(&fp("signatures.py"));
+    let hp = has_param_edges(&out, "::do");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].attr.as_ref().unwrap().name.as_deref(), Some("x"));
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(0)); // self not counted
+
+    let do_node = out.nodes.iter().find(|n| n.id.ends_with("::do")).unwrap();
+    let sig = do_node.signature.as_ref().unwrap();
+    assert_eq!(
+        sig.params
+            .iter()
+            .map(|p| p.name.as_str())
+            .collect::<Vec<_>>(),
+        vec!["x", "n"]
+    );
+}
+
+#[test]
+fn class_emits_has_field_for_annotated_attrs() {
+    let out = extract_file(&fp("signatures.py"));
+    let hf: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "has_field" && e.source.ends_with("::Svc"))
+        .collect();
+    assert_eq!(hf.len(), 1); // w: Widget; count: int is primitive
+    assert_eq!(hf[0].target, "extern::Widget");
+    assert_eq!(hf[0].attr.as_ref().unwrap().name.as_deref(), Some("w"));
+
+    let svc = out.nodes.iter().find(|n| n.id.ends_with("::Svc")).unwrap();
+    let fields: Vec<_> = svc
+        .signature
+        .as_ref()
+        .unwrap()
+        .fields
+        .iter()
+        .map(|f| f.name.as_str())
+        .collect();
+    assert_eq!(fields, vec!["w", "count"]);
+
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::Widget")
+    );
+}

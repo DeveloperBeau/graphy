@@ -31,9 +31,12 @@ no type for that position.
 | C++ | full | full | full | static types |
 | Java | full | full | full | static types, class fields |
 | Ruby | names | none | none | no type info in grammar |
+| Python | partial | partial | partial | only where annotated |
 
 Columns are `full` / `partial` / `none`. Rows are added as each grammar's
 extractor lands. Statically typed languages (Go, Java, C#, TypeScript, C++,
 Swift, Kotlin, Scala) target `full`. Python and PHP are `partial` (types only
 where annotations are present). JavaScript, Ruby, Lua, and Bash are `none`
 (no type information in the grammar).
+
+`partial` means types are emitted only where a type annotation is present.
