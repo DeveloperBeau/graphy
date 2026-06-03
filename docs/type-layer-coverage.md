@@ -33,6 +33,7 @@ no type for that position.
 | Ruby | names | none | none | no type info in grammar |
 | Python | partial | partial | partial | only where annotated |
 | PHP | partial | partial | partial | only where annotated |
+| Lua | names | none | none | no type info in grammar |
 
 Columns are `full` / `partial` / `none`. Rows are added as each grammar's
 extractor lands. Statically typed languages (Go, Java, C#, TypeScript, C++,

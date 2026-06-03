@@ -591,3 +591,57 @@ fn loader_dispatches_php_plugin_typed_signature_layer() {
         Some("Widget")
     );
 }
+
+#[test]
+fn loader_dispatches_lua_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-lua"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let lua = src_dir.path().join("a.lua");
+    fs::write(
+        &lua,
+        "function M.new_state(name, opts)\n  return name\nend\n\
+         function Service:run(mode)\n  return mode\nend\n",
+    )
+    .unwrap();
+    let out = reg.extract(&lua).unwrap().unwrap();
+
+    // Function-with-params carries parameter names, all with ty:None.
+    let new_state = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "M.new_state")
+        .expect("new_state node");
+    let sig = new_state.signature.as_ref().expect("signature payload");
+    let names: Vec<&str> = sig.params.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(names, ["name", "opts"]);
+    assert!(sig.params.iter().all(|p| p.ty.is_none()));
+    assert!(sig.returns.is_none());
+    assert!(sig.fields.is_empty());
+
+    // Method-with-params likewise.
+    let run = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "Service:run")
+        .expect("run node");
+    let run_names: Vec<&str> = run
+        .signature
+        .as_ref()
+        .unwrap()
+        .params
+        .iter()
+        .map(|p| p.name.as_str())
+        .collect();
+    assert_eq!(run_names, ["mode"]);
+
+    // Name-only: no typed edges, no kind:"type" nodes.
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| matches!(e.relation.as_str(), "has_param" | "returns" | "has_field"))
+    );
+    assert!(!out.nodes.iter().any(|n| n.kind.as_deref() == Some("type")));
+}
