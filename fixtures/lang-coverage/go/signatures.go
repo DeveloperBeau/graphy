@@ -28,3 +28,9 @@ func Pair() (Widget, error) {
 type Multi struct {
 	A, B Widget
 }
+
+// Generic instantiation: Box[Widget] should emit edges to both the
+// container base Box and the inner Widget; the bare w stays one edge.
+func Wrap(b Box[Widget], w Widget) Widget {
+	return w
+}

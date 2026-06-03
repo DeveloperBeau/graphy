@@ -264,6 +264,56 @@ fn multi_name_struct_field_emits_edge_per_name() {
     assert_eq!(fields, vec!["A", "B"]);
 }
 
+#[test]
+fn generic_param_emits_edges_to_container_and_inner() {
+    let out = extract_file(&fp("signatures.go"));
+    let hp = has_param_edges(&out, "::Wrap");
+
+    // b Box[Widget] -> edges to both Box (container base) and Widget (inner);
+    // w Widget -> one edge to Widget.
+    let b_targets: Vec<_> = hp
+        .iter()
+        .filter(|e| e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("b"))
+        .map(|e| e.target.as_str())
+        .collect();
+    assert!(
+        b_targets.contains(&"extern::Box"),
+        "b should have an edge to the container Box; got {b_targets:?}"
+    );
+    assert!(
+        b_targets.contains(&"extern::Widget"),
+        "b should have an edge to the inner Widget; got {b_targets:?}"
+    );
+
+    // Both leaves of the same param share index 0 and name "b".
+    for e in hp
+        .iter()
+        .filter(|e| e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("b"))
+    {
+        assert_eq!(e.attr.as_ref().unwrap().index, Some(0));
+    }
+
+    // Bare param w: Widget is the SECOND param (index 1), one edge.
+    let w_edges: Vec<_> = hp
+        .iter()
+        .filter(|e| e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("w"))
+        .collect();
+    assert_eq!(
+        w_edges.len(),
+        1,
+        "bare param w should emit exactly one edge"
+    );
+    assert_eq!(w_edges[0].target, "extern::Widget");
+    assert_eq!(w_edges[0].attr.as_ref().unwrap().index, Some(1));
+
+    // Payload `ty` keeps the FULL generic text, not just the leaf.
+    let wrap = out.nodes.iter().find(|n| n.id.ends_with("::Wrap")).unwrap();
+    let sig = wrap.signature.as_ref().expect("signature");
+    assert_eq!(sig.params[0].name, "b");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Box[Widget]"));
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Widget"));
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};

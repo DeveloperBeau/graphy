@@ -120,27 +120,70 @@ fn collect_calls(
     }
 }
 
-fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+/// Recursively collect leaf type names (including primitives). A `generic_type`
+/// pushes its BASE name then recurses each type argument:
+/// `Box[Pair[Foo, Bar]]` -> `[Box, Pair, Foo, Bar]`. Pointer / slice / array /
+/// qualified wrappers strip or recurse. A `parameter_list` (Go multi-return)
+/// descends into each `parameter_declaration`'s type field. Container
+/// suppression happens at the emit site via `is_primitive_or_ignored`.
+fn extract_type_leaves(node: TsNode, src: &str, out: &mut Vec<String>) {
     match node.kind() {
-        "type_identifier" => node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
-        "qualified_type" => node
-            .utf8_text(src.as_bytes())
-            .ok()
-            .and_then(|s| s.rsplit('.').next().map(|x| x.to_string())),
-        "pointer_type" | "slice_type" | "array_type" | "generic_type" => {
+        "type_identifier" => {
+            if let Ok(s) = node.utf8_text(src.as_bytes()) {
+                out.push(s.to_string());
+            }
+        }
+        "qualified_type" => {
+            if let Ok(s) = node.utf8_text(src.as_bytes())
+                && let Some(last) = s.rsplit('.').next()
+            {
+                out.push(last.to_string());
+            }
+        }
+        "generic_type" => {
+            if let Some(base) = node.child_by_field_name("type") {
+                extract_type_leaves(base, src, out);
+            }
+            if let Some(args) = node.child_by_field_name("type_arguments") {
+                let mut c = args.walk();
+                for arg in args.children(&mut c).filter(|a| a.is_named()) {
+                    extract_type_leaves(arg, src, out);
+                }
+            }
+        }
+        "type_elem" | "pointer_type" | "slice_type" | "array_type" => {
             let mut c = node.walk();
-            node.children(&mut c)
-                .find_map(|ch| extract_type_leaf(ch, src))
+            for ch in node.children(&mut c).filter(|ch| ch.is_named()) {
+                extract_type_leaves(ch, src, out);
+            }
         }
         "parameter_list" => {
             let mut c = node.walk();
-            node.children(&mut c)
+            for decl in node
+                .children(&mut c)
                 .filter(|ch| ch.kind() == "parameter_declaration")
-                .filter_map(|ch| ch.child_by_field_name("type"))
-                .find_map(|t| extract_type_leaf(t, src).filter(|l| !is_primitive_or_ignored(l)))
+            {
+                if let Some(t) = decl.child_by_field_name("type") {
+                    extract_type_leaves(t, src, out);
+                }
+            }
         }
-        _ => None,
+        _ => {}
     }
+}
+
+/// Collect type leaves, de-duped order-preservingly (`Pair[Foo, Foo]` -> one
+/// `Foo`).
+fn type_leaves(node: TsNode, src: &str) -> Vec<String> {
+    let mut raw = Vec::new();
+    extract_type_leaves(node, src, &mut raw);
+    let mut out = Vec::new();
+    for s in raw {
+        if !out.contains(&s) {
+            out.push(s);
+        }
+    }
+    out
 }
 
 fn is_primitive_or_ignored(name: &str) -> bool {
@@ -183,9 +226,7 @@ fn go_signature(decl: TsNode, src: &str, file: &str, fn_id: &str, out: &mut Outp
             let ty_text = ty_node
                 .and_then(|t| t.utf8_text(src.as_bytes()).ok())
                 .map(|s| s.trim().to_string());
-            let leaf = ty_node
-                .and_then(|t| extract_type_leaf(t, src))
-                .filter(|l| !is_primitive_or_ignored(l));
+            let leaves = ty_node.map(|t| type_leaves(t, src)).unwrap_or_default();
             let mut nc = p.walk();
             let mut names: Vec<String> = p
                 .children(&mut nc)
@@ -196,7 +237,10 @@ fn go_signature(decl: TsNode, src: &str, file: &str, fn_id: &str, out: &mut Outp
                 names.push("_".to_string());
             }
             for name in names {
-                if let Some(leaf) = &leaf {
+                for leaf in &leaves {
+                    if is_primitive_or_ignored(leaf) {
+                        continue;
+                    }
                     out.edges.push(Edge {
                         source: fn_id.to_string(),
                         target: format!("extern::{leaf}"),
@@ -228,7 +272,10 @@ fn go_signature(decl: TsNode, src: &str, file: &str, fn_id: &str, out: &mut Outp
         if let Ok(text) = ret.utf8_text(src.as_bytes()) {
             sig.returns = Some(text.trim().to_string());
         }
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -288,11 +335,12 @@ fn go_struct_signature(
         let ty_text = ty_node
             .and_then(|t| t.utf8_text(src.as_bytes()).ok())
             .map(|s| s.trim().to_string());
-        let leaf = ty_node
-            .and_then(|t| extract_type_leaf(t, src))
-            .filter(|l| !is_primitive_or_ignored(l));
+        let leaves = ty_node.map(|t| type_leaves(t, src)).unwrap_or_default();
         for name in names {
-            if let Some(leaf) = &leaf {
+            for leaf in &leaves {
+                if is_primitive_or_ignored(leaf) {
+                    continue;
+                }
                 out.edges.push(Edge {
                     source: type_id.to_string(),
                     target: format!("extern::{leaf}"),
@@ -366,5 +414,31 @@ mod tests {
         let order = nodes.iter().find(|n| n["id"] == "s.go::Order").unwrap();
         assert_eq!(order["signature"]["returns"], "Widget");
         assert_eq!(order["signature"]["params"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn generic_param_emits_container_and_inner_edges() {
+        let v = extract("package p\nfunc collect(b Box[Widget]) {}\n");
+        let edges = v["edges"].as_array().unwrap();
+
+        // Box[Widget] -> edges to BOTH the container base and the inner type,
+        // both carrying param name "b" / index 0.
+        for target in ["extern::Box", "extern::Widget"] {
+            let e = edges
+                .iter()
+                .find(|e| {
+                    e["relation"] == "has_param"
+                        && e["source"] == "s.go::collect"
+                        && e["target"] == target
+                })
+                .unwrap_or_else(|| panic!("missing {target} edge in {edges:#?}"));
+            assert_eq!(e["attr"]["name"], "b");
+            assert_eq!(e["attr"]["index"], 0);
+        }
+
+        // Payload keeps the full generic text.
+        let nodes = v["nodes"].as_array().unwrap();
+        let collect = nodes.iter().find(|n| n["id"] == "s.go::collect").unwrap();
+        assert_eq!(collect["signature"]["params"][0]["ty"], "Box[Widget]");
     }
 }
