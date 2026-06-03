@@ -789,3 +789,53 @@ fn loader_csharp_generic_param_resolves_to_inner_type() {
         Some("List<Widget>")
     );
 }
+
+#[test]
+fn loader_go_generic_param_emits_container_and_inner() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-go"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let go = src_dir.path().join("a.go");
+    fs::write(
+        &go,
+        "package p\n\
+         func collect(b Box[Widget]) {}\n",
+    )
+    .unwrap();
+    let out = reg.extract(&go).unwrap().unwrap();
+
+    // Go generics have no stdlib named container, so the user base Box and the
+    // inner Widget BOTH get has_param edges. Survives the FFI + loader round-trip.
+    let hp: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "has_param")
+        .collect();
+    assert!(
+        hp.iter().any(|e| e.target == "extern::Box"),
+        "missing container edge; edges = {:#?}",
+        out.edges
+    );
+    assert!(
+        hp.iter().any(|e| e.target == "extern::Widget"),
+        "missing inner edge; edges = {:#?}",
+        out.edges
+    );
+
+    // Signature payload keeps the full textual type.
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "collect")
+        .expect("collect node");
+    assert_eq!(
+        collect
+            .signature
+            .as_ref()
+            .and_then(|s| s.params.first())
+            .and_then(|p| p.ty.as_deref()),
+        Some("Box[Widget]")
+    );
+}
