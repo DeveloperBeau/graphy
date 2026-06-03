@@ -114,6 +114,112 @@ fn non_utf8_bytes_with_cpp_suffix_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Typed signature layer ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_emits_has_param_returns_and_payload() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+
+    let hp = has_param_edges(&out, "::build");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges); // n int is primitive
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("w"));
+    assert_eq!(attr.index, Some(0));
+
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::build")
+        && e.target == "extern::Widget"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build") && !n.id.starts_with("extern::"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("Widget"));
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "w");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.params[1].name, "n");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("int"));
+}
+
+#[test]
+fn order_param_index_counts_all_params() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+    let hp = has_param_edges(&out, "::order");
+    assert_eq!(hp.len(), 1); // only w: Widget
+    assert_eq!(hp[0].target, "extern::Widget");
+    // n is index 0 (primitive, no edge); w is the SECOND param.
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(1));
+}
+
+#[test]
+fn method_process_emits_has_param() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+    let hp = has_param_edges(&out, "::process");
+    assert_eq!(hp.len(), 1); // n primitive emits no edge
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().unwrap();
+    assert_eq!(attr.name.as_deref(), Some("w"));
+    assert_eq!(attr.index, Some(1));
+}
+
+#[test]
+fn holder_emits_has_field() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+    let hf = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_field" && e.source.ends_with("::Holder"))
+        .expect("Holder has_field");
+    assert_eq!(hf.target, "extern::Widget");
+    assert_eq!(hf.attr.as_ref().unwrap().name.as_deref(), Some("item"));
+}
+
+#[test]
+fn primitive_param_has_no_edge() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+    // build has two params (Widget w, int n); only the Widget gets an edge.
+    assert_eq!(has_param_edges(&out, "::build").len(), 1);
+}
+
+#[test]
+fn type_node_kind_exists() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::Widget"),
+        "no extern::Widget type node; nodes = {:#?}",
+        out.nodes
+    );
+}
+
+#[test]
+fn build_signature_includes_primitive_param() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build") && !n.id.starts_with("extern::"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    // The primitive param carries its textual type in the payload.
+    assert_eq!(sig.params[1].ty.as_deref(), Some("int"));
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
