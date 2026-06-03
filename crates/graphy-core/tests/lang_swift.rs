@@ -99,6 +99,115 @@ fn non_utf8_bytes_with_swift_suffix_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Typed signature layer ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_emits_has_param_returns_and_payload() {
+    let out = extract_file(&fp("Sources/Signatures.swift"));
+
+    let hp = has_param_edges(&out, "::build");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges); // n: Int is primitive
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("w"));
+    assert_eq!(attr.index, Some(0));
+
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::build")
+        && e.target == "extern::Widget"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("Widget"));
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "w");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.params[1].name, "n");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Int"));
+}
+
+#[test]
+fn order_param_index_counts_all_params() {
+    let out = extract_file(&fp("Sources/Signatures.swift"));
+    let hp = has_param_edges(&out, "::order");
+    assert_eq!(hp.len(), 1); // only w: Widget
+    assert_eq!(hp[0].target, "extern::Widget");
+    // n: Int is index 0 (primitive, no edge); w: Widget is the SECOND param.
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(1));
+}
+
+#[test]
+fn method_process_emits_has_param() {
+    let out = extract_file(&fp("Sources/Signatures.swift"));
+    let hp = has_param_edges(&out, "::process");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().unwrap();
+    assert_eq!(attr.name.as_deref(), Some("widget"));
+    // count: Int is index 0 (primitive); widget: Widget is index 1.
+    assert_eq!(attr.index, Some(1));
+}
+
+#[test]
+fn structs_and_classes_emit_has_field_and_skip_primitives() {
+    let out = extract_file(&fp("Sources/Signatures.swift"));
+
+    // Factory.item : Widget -> has_field
+    let item = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_field" && e.source.ends_with("::Factory"))
+        .expect("Factory has_field");
+    assert_eq!(item.target, "extern::Widget");
+    assert_eq!(item.attr.as_ref().unwrap().name.as_deref(), Some("item"));
+
+    // Widget.next : Widget? -> has_field to Widget (optional unwrap)
+    let next = out.edges.iter().find(|e| {
+        e.relation == "has_field"
+            && e.source.ends_with("::Widget")
+            && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("next")
+    });
+    assert!(
+        next.is_some(),
+        "Widget.next has_field; edges = {:#?}",
+        out.edges
+    );
+
+    // Widget.label : String is primitive -> no has_field for it
+    assert!(!out.edges.iter().any(|e| e.relation == "has_field"
+        && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("label")));
+
+    // Exclude extern:: nodes (those are type references, not the def node)
+    let widget = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Widget") && !n.id.starts_with("extern::"))
+        .unwrap();
+    let sig = widget.signature.as_ref().expect("struct signature");
+    let names: Vec<_> = sig.fields.iter().map(|f| f.name.as_str()).collect();
+    assert_eq!(names, vec!["label", "next"]);
+
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::Widget")
+    );
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
