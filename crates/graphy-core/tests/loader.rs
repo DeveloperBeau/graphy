@@ -239,21 +239,6 @@ fn loader_dispatches_go_plugin_typed_signature_layer() {
 }
 
 #[test]
-fn loader_dispatches_scala_plugin_typed_signature_layer() {
-    let dir = tempdir().unwrap();
-    stage(dir.path(), &["graphy-plugin-scala"]);
-    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
-
-    let src_dir = tempdir().unwrap();
-    let scala = src_dir.path().join("a.scala");
-    fs::write(
-        &scala,
-        "package p\n\
-         class Widget(val inner: Widget)\n\
-         def build(w: Widget): Widget = w\n",
-    )
-    .unwrap();
-    let out = reg.extract(&scala).unwrap().unwrap();
 fn loader_dispatches_kotlin_plugin_typed_signature_layer() {
     let dir = tempdir().unwrap();
     stage(dir.path(), &["graphy-plugin-kotlin"]);
@@ -274,11 +259,45 @@ fn loader_dispatches_kotlin_plugin_typed_signature_layer() {
         .iter()
         .find(|e| e.relation == "has_param")
         .expect("has_param edge");
-    assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
     assert_eq!(
         hp.attr.as_ref().and_then(|a| a.name.as_deref()),
         Some("widget")
     );
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "build")
+        .expect("build node");
+    assert_eq!(
+        build.signature.as_ref().and_then(|s| s.returns.as_deref()),
+        Some("Widget")
+    );
+}
+
+#[test]
+fn loader_dispatches_scala_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-scala"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let scala = src_dir.path().join("a.scala");
+    fs::write(
+        &scala,
+        "package p\n\
+         class Widget(val inner: Widget)\n\
+         def build(w: Widget): Widget = w\n",
+    )
+    .unwrap();
+    let out = reg.extract(&scala).unwrap().unwrap();
+
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
 
     let build = out
         .nodes
