@@ -676,3 +676,23 @@ fn loader_dispatches_sql_plugin_typed_signature_layer() {
         Some("widget_type")
     );
 }
+
+#[test]
+fn loader_rust_plugin_emits_generic_inner_types() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-rust"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let rs = src_dir.path().join("a.rs");
+    fs::write(&rs, "pub fn g(items: Vec<Widget>) {}\n").unwrap();
+    let out = reg.extract(&rs).unwrap().unwrap();
+
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(hp.target, "extern::Widget");
+    assert!(!out.edges.iter().any(|e| e.target == "extern::Vec"));
+}
