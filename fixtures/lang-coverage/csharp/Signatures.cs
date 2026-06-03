@@ -1,0 +1,35 @@
+// Coverage fixture for the typed signature layer.
+// Exercises all five mandated scenarios.
+
+public class Widget
+{
+    public string Label { get; set; }   // primitive property -> no has_field edge
+    public Widget Inner { get; set; }    // non-primitive property -> has_field edge
+    public int Count;                    // primitive field -> no has_field edge
+    public Widget Owner;                 // non-primitive field -> has_field edge
+}
+
+public class Svc
+{
+    // Requirement 2: method inside a class with parameters
+    public Widget Process(Widget input)
+    {
+        return input;
+    }
+}
+
+// Requirement 1: static method acting as free-function equivalent, non-primitive
+// param + non-primitive return, also carries a primitive param (requirement 4).
+public static class Factory
+{
+    public static Widget Build(Widget w, int n)
+    {
+        return w;
+    }
+
+    // Requirement 5: primitive-first ordering -> non-primitive param must assert index >= 1
+    public static Widget Order(int n, Widget w)
+    {
+        return w;
+    }
+}
