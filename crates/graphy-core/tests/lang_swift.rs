@@ -208,6 +208,49 @@ fn structs_and_classes_emit_has_field_and_skip_primitives() {
     );
 }
 
+#[test]
+fn collect_emits_generic_inner_type_edges() {
+    let out = extract_file(&fp("Sources/Signatures.swift"));
+    let hp = has_param_edges(&out, "::collect");
+
+    // items: [Widget] -> ONE edge to the inner Widget (Array sugar suppressed).
+    let items: Vec<_> = hp
+        .iter()
+        .filter(|e| e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("items"))
+        .collect();
+    assert_eq!(items.len(), 1, "items edges = {items:#?}");
+    assert_eq!(items[0].target, "extern::Widget");
+    assert_eq!(items[0].attr.as_ref().unwrap().index, Some(0));
+
+    // payload `ty` keeps the full sugar text.
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::collect"))
+        .unwrap();
+    let sig = collect.signature.as_ref().expect("signature");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("[Widget]"));
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Pair<Foo, Bar>"));
+
+    // pair: Pair<Foo, Bar> -> Foo AND Bar, both at the SAME param index (1).
+    // Pair is a user generic (not a stdlib container), so it ALSO gets an edge.
+    let pair: Vec<_> = hp
+        .iter()
+        .filter(|e| e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("pair"))
+        .collect();
+    let targets: Vec<&str> = pair.iter().map(|e| e.target.as_str()).collect();
+    assert!(targets.contains(&"extern::Foo"), "targets = {targets:?}");
+    assert!(targets.contains(&"extern::Bar"), "targets = {targets:?}");
+    assert!(targets.contains(&"extern::Pair"), "targets = {targets:?}");
+    for e in &pair {
+        assert_eq!(
+            e.attr.as_ref().unwrap().index,
+            Some(1),
+            "all leaves of one param share the param index"
+        );
+    }
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
