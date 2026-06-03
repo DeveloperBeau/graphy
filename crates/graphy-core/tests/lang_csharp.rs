@@ -274,6 +274,51 @@ fn class_fields_emit_has_field_and_skip_primitives() {
     assert!(names.contains(&"Label"), "fields = {names:?}");
 }
 
+#[test]
+fn collect_emits_generic_inner_type_edges() {
+    // List<Widget>: container List suppressed, inner Widget gets the has_param edge.
+    // Pair<Foo, Bar>: Pair (user generic) AND its inner Foo, Bar all get edges,
+    // all sharing the param's index. Payload `ty` keeps the full textual type.
+    let out = extract_file(&fp("Signatures.cs"));
+    let hp = has_param_edges(&out, "::Collect");
+
+    let targets: Vec<&str> = hp.iter().map(|e| e.target.as_str()).collect();
+    assert!(targets.contains(&"extern::Widget"), "targets = {targets:?}");
+    assert!(targets.contains(&"extern::Pair"), "targets = {targets:?}");
+    assert!(targets.contains(&"extern::Foo"), "targets = {targets:?}");
+    assert!(targets.contains(&"extern::Bar"), "targets = {targets:?}");
+
+    // Suppressed container List must NOT produce an edge.
+    assert!(
+        !targets.contains(&"extern::List"),
+        "List container leaked an edge: {targets:?}"
+    );
+
+    // items (index 0) -> Widget; pair (index 1) -> Pair, Foo, Bar all at index 1.
+    let widget = hp
+        .iter()
+        .find(|e| e.target == "extern::Widget")
+        .expect("Widget edge");
+    assert_eq!(widget.attr.as_ref().unwrap().name.as_deref(), Some("items"));
+    assert_eq!(widget.attr.as_ref().unwrap().index, Some(0));
+
+    for t in ["extern::Pair", "extern::Foo", "extern::Bar"] {
+        let e = hp.iter().find(|e| e.target == t).expect(t);
+        assert_eq!(e.attr.as_ref().unwrap().name.as_deref(), Some("pair"));
+        assert_eq!(e.attr.as_ref().unwrap().index, Some(1), "edge {t}");
+    }
+
+    // Payload `ty` keeps the full textual generic type, unchanged.
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Collect"))
+        .unwrap();
+    let sig = collect.signature.as_ref().expect("signature");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("List<Widget>"));
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Pair<Foo, Bar>"));
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};

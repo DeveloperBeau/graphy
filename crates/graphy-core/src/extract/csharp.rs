@@ -11,37 +11,69 @@ use crate::schema::{
     Confidence, Edge, EdgeAttr, ExtractionOutput, FieldSig, Node, ParamSig, Signature,
 };
 
-/// Extract the leaf type name from a C# type node. Returns `None` for
-/// keyword primitives (`predefined_type`) and unrecognized shapes.
-fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+/// Recursively collect leaf type names from a C# type node. A keyword primitive
+/// (`predefined_type`, e.g. `string`) is skipped. A `generic_name` pushes its
+/// BASE name (via the `identifier` arm) then recurses into each type argument:
+/// `List<Widget>` -> `[List, Widget]`, `Pair<Foo, Bar>` -> `[Pair, Foo, Bar]`.
+/// Container suppression happens at the emit site via `is_primitive_or_ignored`,
+/// not here, so user generics like `Pair` keep their own edge.
+fn extract_type_leaves(node: TsNode, src: &str, out: &mut Vec<String>) {
     match node.kind() {
-        "predefined_type" => None,
-        "identifier" => node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
-        "qualified_name" => node
-            .child_by_field_name("name")
-            .and_then(|n| n.utf8_text(src.as_bytes()).ok())
-            .map(|s| s.to_string()),
+        "predefined_type" => {}
+        "identifier" => {
+            if let Ok(s) = node.utf8_text(src.as_bytes()) {
+                out.push(s.to_string());
+            }
+        }
+        "qualified_name" => {
+            if let Some(s) = node
+                .child_by_field_name("name")
+                .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+            {
+                out.push(s.to_string());
+            }
+        }
         "generic_name" => {
             let mut c = node.walk();
-            node.children(&mut c)
-                .find(|ch| ch.kind() == "identifier")
-                .and_then(|id| id.utf8_text(src.as_bytes()).ok())
-                .map(|s| s.to_string())
+            for ch in node.children(&mut c) {
+                if ch.kind() == "type_argument_list" {
+                    let mut cc = ch.walk();
+                    for arg in ch.children(&mut cc).filter(|a| a.is_named()) {
+                        extract_type_leaves(arg, src, out);
+                    }
+                } else {
+                    extract_type_leaves(ch, src, out);
+                }
+            }
         }
-        "nullable_type" => {
+        "nullable_type" | "array_type" => {
             let mut c = node.walk();
-            node.children(&mut c)
-                .find_map(|ch| extract_type_leaf(ch, src))
+            for ch in node.children(&mut c).filter(|ch| ch.is_named()) {
+                extract_type_leaves(ch, src, out);
+            }
         }
-        "array_type" => node
-            .child_by_field_name("type")
-            .and_then(|t| extract_type_leaf(t, src)),
-        _ => None,
+        _ => {}
     }
 }
 
-/// C# identifier-spelled BCL aliases that should not produce typed edges.
-/// (Keyword primitives are `predefined_type` nodes and already return `None`.)
+/// Collect type leaves, de-duped order-preservingly (`Pair<Foo, Foo>` -> one
+/// `Foo`).
+fn type_leaves(node: TsNode, src: &str) -> Vec<String> {
+    let mut raw = Vec::new();
+    extract_type_leaves(node, src, &mut raw);
+    let mut out = Vec::new();
+    for s in raw {
+        if !out.contains(&s) {
+            out.push(s);
+        }
+    }
+    out
+}
+
+/// C# identifier-spelled BCL aliases and stdlib generic containers that should
+/// not produce typed edges. (Keyword primitives are `predefined_type` nodes and
+/// are skipped in `extract_type_leaves`.) Containers are suppressed so only
+/// their inner meaningful type arguments get edges.
 fn is_primitive_or_ignored(name: &str) -> bool {
     matches!(
         name,
@@ -63,6 +95,20 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "Byte"
             | "SByte"
             | "Void"
+            // Stdlib generic containers.
+            | "List"
+            | "IList"
+            | "IEnumerable"
+            | "ICollection"
+            | "Dictionary"
+            | "IDictionary"
+            | "HashSet"
+            | "ISet"
+            | "Task"
+            | "ValueTask"
+            | "Nullable"
+            | "Span"
+            | "ReadOnlySpan"
     )
 }
 
@@ -92,28 +138,30 @@ fn csharp_signature(
                 .and_then(|n| n.utf8_text(src.as_bytes()).ok())
                 .unwrap_or("_")
                 .to_string();
-            let leaf = ty_node
-                .and_then(|t| extract_type_leaf(t, src))
-                .filter(|l| !is_primitive_or_ignored(l));
-            if let Some(ref leaf) = leaf {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: Confidence::Extracted,
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                out.nodes.push(Node {
-                    id: format!("extern::{leaf}"),
-                    label: leaf.clone(),
-                    source_file: Some(file.to_string()),
-                    source_location: Some(line_loc(p)),
-                    kind: Some("type".into()),
-                    signature: None,
-                });
+            if let Some(t) = ty_node {
+                for leaf in type_leaves(t, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: Confidence::Extracted,
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    out.nodes.push(Node {
+                        id: format!("extern::{leaf}"),
+                        label: leaf.clone(),
+                        source_file: Some(file.to_string()),
+                        source_location: Some(line_loc(p)),
+                        kind: Some("type".into()),
+                        signature: None,
+                    });
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -126,7 +174,10 @@ fn csharp_signature(
                 sig.returns = Some(trimmed.to_string());
             }
         }
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -224,8 +275,10 @@ fn emit_field(
         .utf8_text(src.as_bytes())
         .ok()
         .map(|s| s.trim().to_string());
-    let leaf = extract_type_leaf(ty_node, src).filter(|l| !is_primitive_or_ignored(l));
-    if let Some(leaf) = &leaf {
+    for leaf in type_leaves(ty_node, src) {
+        if is_primitive_or_ignored(&leaf) {
+            continue;
+        }
         out.edges.push(Edge {
             source: type_id.to_string(),
             target: format!("extern::{leaf}"),

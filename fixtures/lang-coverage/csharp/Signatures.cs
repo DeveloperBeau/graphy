@@ -32,4 +32,11 @@ public static class Factory
     {
         return w;
     }
+
+    // Generic inner types: container suppressed (List), inner Widget gets the edge;
+    // Pair is a user generic so it AND its two inner args (Foo, Bar) all get edges,
+    // all sharing the param index. Payload `ty` keeps the full textual type.
+    public static void Collect(List<Widget> items, Pair<Foo, Bar> pair)
+    {
+    }
 }

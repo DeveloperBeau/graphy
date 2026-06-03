@@ -742,3 +742,50 @@ fn loader_typescript_generic_param_resolves_to_inner_type() {
         Some("Array<Widget>")
     );
 }
+
+#[test]
+fn loader_csharp_generic_param_resolves_to_inner_type() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-csharp"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let cs = src_dir.path().join("a.cs");
+    fs::write(
+        &cs,
+        "public class Widget { public string Label { get; set; } }\n\
+         public class Svc { public void Collect(List<Widget> items) {} }\n",
+    )
+    .unwrap();
+    let out = reg.extract(&cs).unwrap().unwrap();
+
+    // The List container is suppressed; the has_param edge resolves to the inner
+    // Widget. Survives the FFI + loader round-trip.
+    let hp: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "has_param")
+        .collect();
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::List")
+    );
+
+    // Signature payload keeps the full textual type.
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "Collect")
+        .expect("Collect node");
+    assert_eq!(
+        collect
+            .signature
+            .as_ref()
+            .and_then(|s| s.params.first())
+            .and_then(|p| p.ty.as_deref()),
+        Some("List<Widget>")
+    );
+}
