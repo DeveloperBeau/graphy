@@ -205,18 +205,19 @@ fn service_emits_contains_edges_from_service_to_methods() {
 }
 
 #[test]
-fn service_emits_references_edge_from_run_to_io_result() {
+fn service_emits_returns_edge_from_run_to_io_result() {
     let out = extract_file(&fp("src/service.rs"));
-    // `fn run(&self) -> IoResult<()>` -> references edge from run to IoResult.
-    let refs: Vec<_> = out
+    // `fn run(&self) -> IoResult<()>` -> returns edge from run to IoResult.
+    let returns: Vec<_> = out
         .edges
         .iter()
-        .filter(|e| e.relation == "references")
+        .filter(|e| e.relation == "returns")
         .collect();
     assert!(
-        refs.iter()
+        returns
+            .iter()
             .any(|e| e.source.ends_with("::run") && e.target.contains("IoResult")),
-        "missing references edge run -> IoResult; refs = {refs:#?}"
+        "missing returns edge run -> IoResult; returns = {returns:#?}"
     );
 }
 
@@ -372,4 +373,80 @@ fn pipeline_node_count_matches_fixture_expectation() {
          did the extractor regress?",
         g.node_count()
     );
+}
+
+// ---------- Typed signature layer ----------
+
+#[test]
+fn build_emits_has_param_and_returns_for_widget() {
+    let out = extract_file(&fp("src/signatures.rs"));
+
+    let has_param: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.source.ends_with("::build") && e.relation == "has_param")
+        .collect();
+    // Only the non-primitive `widget: Widget` param produces a type edge.
+    assert_eq!(has_param.len(), 1, "edges = {:#?}", out.edges);
+    let e = has_param[0];
+    assert_eq!(e.target, "extern::Widget");
+    let attr = e.attr.as_ref().expect("has_param attr");
+    assert_eq!(attr.name.as_deref(), Some("widget"));
+    assert_eq!(attr.index, Some(0));
+
+    let returns: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.source.ends_with("::build") && e.relation == "returns")
+        .collect();
+    assert_eq!(returns.len(), 1);
+    assert_eq!(returns[0].target, "extern::Widget");
+}
+
+#[test]
+fn build_node_carries_full_signature_payload() {
+    let out = extract_file(&fp("src/signatures.rs"));
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build"))
+        .expect("build node");
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("Widget"));
+    // Both params present in the payload, even the primitive one.
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "widget");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.params[1].name, "count");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("u32"));
+}
+
+#[test]
+fn holder_emits_has_field_and_field_payload() {
+    let out = extract_file(&fp("src/signatures.rs"));
+
+    let has_field: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.source.ends_with("::Holder") && e.relation == "has_field")
+        .collect();
+    // Only `item: Widget` is a non-primitive field.
+    assert_eq!(has_field.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(has_field[0].target, "extern::Widget");
+    assert_eq!(
+        has_field[0].attr.as_ref().unwrap().name.as_deref(),
+        Some("item")
+    );
+
+    let holder = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Holder") && n.label == "Holder")
+        .unwrap();
+    let sig = holder.signature.as_ref().expect("struct signature");
+    assert_eq!(sig.fields.len(), 2);
+    assert_eq!(sig.fields[0].name, "item");
+    assert_eq!(sig.fields[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.fields[1].name, "count");
+    assert_eq!(sig.fields[1].ty.as_deref(), Some("u32"));
 }
