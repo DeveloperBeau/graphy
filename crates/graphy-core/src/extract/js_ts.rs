@@ -7,8 +7,10 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Language, Node as TsNode, Parser};
 
-use super::common::{emit_call, emit_def, emit_import, name_of};
-use crate::schema::ExtractionOutput;
+use super::common::{attach_signature, emit_call, emit_def, emit_import, line_loc, name_of};
+use crate::schema::{
+    Confidence, Edge, EdgeAttr, ExtractionOutput, FieldSig, Node, ParamSig, Signature,
+};
 
 #[derive(Copy, Clone)]
 pub enum Flavor {
@@ -59,7 +61,12 @@ fn walk_defs(
         match child.kind() {
             "function_declaration" | "generator_function_declaration" => {
                 if let Some(n) = name_of(child, src) {
+                    let id = format!("{file}::{n}");
+                    let sig = ts_signature(child, src, file, &id, out);
                     emit_def(out, symbols, file, "function", n, child);
+                    if !sig_is_empty(&sig) {
+                        attach_signature(out, sig);
+                    }
                 }
             }
             "class_declaration"
@@ -73,12 +80,22 @@ fn walk_defs(
                         "abstract_class_declaration" => "class",
                         other => other.trim_end_matches("_declaration"),
                     };
+                    let id = format!("{file}::{n}");
+                    let sig = ts_class_or_interface_signature(child, src, file, &id, out);
                     emit_def(out, symbols, file, kind, n, child);
+                    if !sig_is_empty(&sig) {
+                        attach_signature(out, sig);
+                    }
                 }
             }
             "method_definition" => {
                 if let Some(n) = name_of(child, src) {
+                    let id = format!("{file}::{n}");
+                    let sig = ts_signature(child, src, file, &id, out);
                     emit_def(out, symbols, file, "method", n, child);
+                    if !sig_is_empty(&sig) {
+                        attach_signature(out, sig);
+                    }
                 }
             }
             "import_statement" => {
@@ -185,4 +202,197 @@ fn collect_calls(
         }
         collect_calls(child, src, caller_id, out, symbols);
     }
+}
+
+// ---------- Typed signature layer (TypeScript only) ----------
+//
+// All emission below is gated on the presence of TS-only `type_annotation`
+// nodes. JavaScript params are bare `identifier` nodes (no `required_parameter`
+// wrapper) and JS class fields are `field_definition` (not
+// `public_field_definition`), so these functions produce empty signatures and
+// no edges for JS. The conditional `attach_signature` then leaves JS nodes
+// byte-identical.
+
+fn sig_is_empty(sig: &Signature) -> bool {
+    sig.params.is_empty() && sig.returns.is_none() && sig.fields.is_empty()
+}
+
+/// Text of the first named, non-`:` child of a `type_annotation`. For
+/// `": Widget"` returns `"Widget"`; for `": number"` returns `"number"`.
+fn bare_type_text(type_annotation: TsNode, src: &str) -> Option<String> {
+    let mut c = type_annotation.walk();
+    type_annotation
+        .children(&mut c)
+        .find(|ch| ch.is_named())
+        .and_then(|ch| ch.utf8_text(src.as_bytes()).ok())
+        .map(|s| s.trim().to_string())
+}
+
+/// Leaf type name (including primitives). Caller applies
+/// `is_primitive_or_ignored` to decide whether to emit an edge.
+fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+    match node.kind() {
+        "type_identifier" | "predefined_type" => {
+            node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string())
+        }
+        "type_annotation" | "array_type" | "union_type" | "intersection_type" | "generic_type" => {
+            let mut c = node.walk();
+            node.children(&mut c)
+                .filter(|ch| ch.is_named())
+                .find_map(|ch| extract_type_leaf(ch, src))
+        }
+        _ => None,
+    }
+}
+
+/// TypeScript primitive / builtin types that should not produce typed edges.
+fn is_primitive_or_ignored(name: &str) -> bool {
+    matches!(
+        name,
+        "number"
+            | "string"
+            | "boolean"
+            | "null"
+            | "undefined"
+            | "void"
+            | "never"
+            | "any"
+            | "unknown"
+            | "object"
+            | "symbol"
+            | "bigint"
+    )
+}
+
+/// Build a function/method `Signature` and emit `has_param` / `returns` edges.
+fn ts_signature(
+    decl: TsNode,
+    src: &str,
+    file: &str,
+    fn_id: &str,
+    out: &mut ExtractionOutput,
+) -> Signature {
+    let mut sig = Signature::default();
+    if let Some(params) = decl.child_by_field_name("parameters") {
+        let mut cursor = params.walk();
+        let mut index: u32 = 0;
+        for p in params.children(&mut cursor) {
+            if !matches!(p.kind(), "required_parameter" | "optional_parameter") {
+                continue;
+            }
+            let name = p
+                .child_by_field_name("pattern")
+                .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "_".to_string());
+            let ty_anno = p.child_by_field_name("type");
+            let ty_text = ty_anno.and_then(|t| bare_type_text(t, src));
+            let leaf = ty_anno
+                .and_then(|t| extract_type_leaf(t, src))
+                .filter(|l| !is_primitive_or_ignored(l));
+            if let Some(leaf) = &leaf {
+                out.edges.push(Edge {
+                    source: fn_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_param".into(),
+                    confidence: Confidence::Extracted,
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: Some(index),
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(p)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
+            sig.params.push(ParamSig { name, ty: ty_text });
+            index += 1;
+        }
+    }
+    if let Some(ret) = decl.child_by_field_name("return_type") {
+        sig.returns = bare_type_text(ret, src);
+        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+            out.edges.push(Edge {
+                source: fn_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "returns".into(),
+                confidence: Confidence::Extracted,
+                attr: None,
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(ret)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+    }
+    sig
+}
+
+/// Build a class/interface `Signature.fields` and emit `has_field` edges.
+/// Returns an empty signature for type aliases, enums, and JS classes.
+fn ts_class_or_interface_signature(
+    decl: TsNode,
+    src: &str,
+    file: &str,
+    type_id: &str,
+    out: &mut ExtractionOutput,
+) -> Signature {
+    let mut sig = Signature::default();
+    let Some(body) = decl.child_by_field_name("body") else {
+        return sig;
+    };
+    let member_kind = match body.kind() {
+        "class_body" => "public_field_definition",
+        "interface_body" => "property_signature",
+        _ => return sig,
+    };
+    let mut cursor = body.walk();
+    for member in body.children(&mut cursor) {
+        if member.kind() != member_kind {
+            continue;
+        }
+        let Some(name) = member
+            .child_by_field_name("name")
+            .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+            .map(|s| s.to_string())
+        else {
+            continue;
+        };
+        let Some(ty_anno) = member.child_by_field_name("type") else {
+            continue;
+        };
+        let ty_text = bare_type_text(ty_anno, src);
+        let leaf = extract_type_leaf(ty_anno, src).filter(|l| !is_primitive_or_ignored(l));
+        if let Some(leaf) = &leaf {
+            out.edges.push(Edge {
+                source: type_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "has_field".into(),
+                confidence: Confidence::Extracted,
+                attr: Some(EdgeAttr {
+                    name: Some(name.clone()),
+                    index: None,
+                }),
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(member)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+        sig.fields.push(FieldSig { name, ty: ty_text });
+    }
+    sig
 }

@@ -123,6 +123,160 @@ fn non_utf8_bytes_with_ts_suffix_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Typed signature layer ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_emits_has_param_with_correct_index() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    let hp = has_param_edges(&out, "::build");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges); // count: number is primitive
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("pet"));
+    assert_eq!(attr.index, Some(1)); // counts the primitive count first
+}
+
+#[test]
+fn build_emits_returns_edge() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::build")
+        && e.target == "extern::Widget"));
+}
+
+#[test]
+fn build_signature_payload_includes_both_params() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "count");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("number"));
+    assert_eq!(sig.params[1].name, "pet");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Widget"));
+}
+
+#[test]
+fn build_signature_returns_is_bare_type() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build"))
+        .unwrap();
+    assert_eq!(
+        build.signature.as_ref().unwrap().returns.as_deref(),
+        Some("Widget")
+    );
+}
+
+#[test]
+fn primitive_param_emits_no_type_edge() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::number")
+    );
+}
+
+#[test]
+fn method_process_emits_has_param() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    let hp = has_param_edges(&out, "::process");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(
+        hp[0].attr.as_ref().unwrap().name.as_deref(),
+        Some("visitor")
+    );
+}
+
+#[test]
+fn class_field_emits_has_field() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    let owner = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_field" && e.source.ends_with("::Widget"))
+        .expect("Widget has_field");
+    assert_eq!(owner.target, "extern::Person");
+    assert_eq!(owner.attr.as_ref().unwrap().name.as_deref(), Some("owner"));
+
+    assert!(out.edges.iter().any(|e| e.relation == "has_field"
+        && e.source.ends_with("::Svc")
+        && e.target == "extern::Widget"));
+}
+
+#[test]
+fn interface_property_emits_has_field() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    assert!(out.edges.iter().any(|e| e.relation == "has_field"
+        && e.source.ends_with("::Shape")
+        && e.target == "extern::Widget"
+        && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("area")));
+}
+
+#[test]
+fn primitive_field_emits_no_has_field() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_field" && e.target == "extern::string")
+    );
+}
+
+#[test]
+fn type_node_has_kind_type() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.id == "extern::Widget" && n.kind.as_deref() == Some("type"))
+    );
+}
+
+#[test]
+fn order_param_pet_index_is_zero() {
+    let out = extract_file(&fp("src/signatures.ts"));
+    let hp = has_param_edges(&out, "::order");
+    assert_eq!(hp.len(), 1); // only pet: Widget
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(0));
+}
+
+#[test]
+fn js_function_emits_no_typed_edges() {
+    // JS has no type_annotation nodes, so the typed layer is a no-op: no
+    // typed edges and the function node carries no signature.
+    let dir = tempfile::tempdir().unwrap();
+    let p = dir.path().join("s.js");
+    std::fs::write(&p, "function build(count, pet) { return pet; }\n").unwrap();
+    let out = extract_file(&p);
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| matches!(e.relation.as_str(), "has_param" | "has_field" | "returns"))
+    );
+    let build = out.nodes.iter().find(|n| n.label == "build").unwrap();
+    assert!(build.signature.is_none());
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};

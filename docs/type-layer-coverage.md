@@ -26,6 +26,7 @@ no type for that position.
 | Scala | full | full | full | static types |
 | Kotlin | full | full | full | static types |
 | C# | full | full | full | static types |
+| TypeScript | full | full | full | static types |
 
 Columns are `full` / `partial` / `none`. Rows are added as each grammar's
 extractor lands. Statically typed languages (Go, Java, C#, TypeScript, C++,
