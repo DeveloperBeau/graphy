@@ -306,19 +306,65 @@ fn bare_type_text(type_annotation: TsNode, src: &str) -> Option<String> {
         .map(|s| s.trim().to_string())
 }
 
-fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+/// Recursively collect leaf type names (including primitives and stdlib
+/// containers). A `generic_type` pushes its BASE name then recurses into each
+/// named type argument: `Array<Pair<Foo,Bar>>` -> `[Array, Pair, Foo, Bar]`.
+/// Container suppression happens at the emit site via `is_primitive_or_ignored`,
+/// not here, so user generics like `Pair` keep their own edge.
+fn extract_type_leaves(node: TsNode, src: &str, out: &mut Vec<String>) {
     match node.kind() {
         "type_identifier" | "predefined_type" => {
-            node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string())
+            if let Ok(s) = node.utf8_text(src.as_bytes()) {
+                out.push(s.to_string());
+            }
         }
-        "type_annotation" | "array_type" | "union_type" | "intersection_type" | "generic_type" => {
+        "nested_type_identifier" => {
+            // Qualified `ns.Widget` -> trailing segment (last type_identifier).
             let mut c = node.walk();
-            node.children(&mut c)
-                .filter(|ch| ch.is_named())
-                .find_map(|ch| extract_type_leaf(ch, src))
+            if let Some(last) = node
+                .children(&mut c)
+                .filter(|ch| ch.kind() == "type_identifier")
+                .last()
+                && let Ok(s) = last.utf8_text(src.as_bytes())
+            {
+                out.push(s.to_string());
+            }
         }
-        _ => None,
+        "generic_type" => {
+            let mut c = node.walk();
+            for ch in node.children(&mut c).filter(|ch| ch.is_named()) {
+                if ch.kind() == "type_arguments" {
+                    let mut cc = ch.walk();
+                    for arg in ch.children(&mut cc).filter(|a| a.is_named()) {
+                        extract_type_leaves(arg, src, out);
+                    }
+                } else {
+                    extract_type_leaves(ch, src, out);
+                }
+            }
+        }
+        "type_annotation" | "array_type" | "union_type" | "intersection_type" => {
+            let mut c = node.walk();
+            for ch in node.children(&mut c).filter(|ch| ch.is_named()) {
+                extract_type_leaves(ch, src, out);
+            }
+        }
+        _ => {}
     }
+}
+
+/// Collect type leaves, de-duped order-preservingly (`Pair<Foo,Foo>` -> one
+/// `Foo`).
+fn type_leaves(node: TsNode, src: &str) -> Vec<String> {
+    let mut raw = Vec::new();
+    extract_type_leaves(node, src, &mut raw);
+    let mut out = Vec::new();
+    for s in raw {
+        if !out.contains(&s) {
+            out.push(s);
+        }
+    }
+    out
 }
 
 fn is_primitive_or_ignored(name: &str) -> bool {
@@ -336,6 +382,20 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "object"
             | "symbol"
             | "bigint"
+            // Stdlib generic containers.
+            | "Array"
+            | "ReadonlyArray"
+            | "Promise"
+            | "Map"
+            | "Set"
+            | "ReadonlyMap"
+            | "ReadonlySet"
+            | "Record"
+            | "Partial"
+            | "Readonly"
+            | "Required"
+            | "Pick"
+            | "Omit"
     )
 }
 
@@ -355,28 +415,30 @@ fn ts_signature(decl: TsNode, src: &str, file: &str, fn_id: &str, out: &mut Outp
                 .unwrap_or_else(|| "_".to_string());
             let ty_anno = p.child_by_field_name("type");
             let ty_text = ty_anno.and_then(|t| bare_type_text(t, src));
-            let leaf = ty_anno
-                .and_then(|t| extract_type_leaf(t, src))
-                .filter(|l| !is_primitive_or_ignored(l));
-            if let Some(leaf) = &leaf {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: EXTRACTED,
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                out.nodes.push(Node {
-                    id: format!("extern::{leaf}"),
-                    label: leaf.clone(),
-                    source_file: Some(file.to_string()),
-                    source_location: Some(line_loc(p.start_position().row)),
-                    kind: Some("type".into()),
-                    signature: None,
-                });
+            if let Some(t) = ty_anno {
+                for leaf in type_leaves(t, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: EXTRACTED,
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    out.nodes.push(Node {
+                        id: format!("extern::{leaf}"),
+                        label: leaf.clone(),
+                        source_file: Some(file.to_string()),
+                        source_location: Some(line_loc(p.start_position().row)),
+                        kind: Some("type".into()),
+                        signature: None,
+                    });
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -384,7 +446,10 @@ fn ts_signature(decl: TsNode, src: &str, file: &str, fn_id: &str, out: &mut Outp
     }
     if let Some(ret) = decl.child_by_field_name("return_type") {
         sig.returns = bare_type_text(ret, src);
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -437,8 +502,10 @@ fn ts_class_or_interface_signature(
             continue;
         };
         let ty_text = bare_type_text(ty_anno, src);
-        let leaf = extract_type_leaf(ty_anno, src).filter(|l| !is_primitive_or_ignored(l));
-        if let Some(leaf) = &leaf {
+        for leaf in type_leaves(ty_anno, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: type_id.to_string(),
                 target: format!("extern::{leaf}"),
