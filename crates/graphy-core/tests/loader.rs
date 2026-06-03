@@ -163,3 +163,42 @@ fn manifest_can_be_written_and_read_back() {
             .any(|p| p.name == "graphy-plugin-rust" && p.extensions.contains(&"rs".to_string()))
     );
 }
+
+#[test]
+fn loader_dispatches_rust_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-rust"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let rs = src_dir.path().join("a.rs");
+    fs::write(
+        &rs,
+        "pub struct Widget { pub label: String }\n\
+         pub fn build(widget: Widget) -> Widget { widget }\n",
+    )
+    .unwrap();
+    let out = reg.extract(&rs).unwrap().unwrap();
+
+    // The has_param edge and its attr survive the FFI + loader round-trip.
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(
+        hp.attr.as_ref().and_then(|a| a.name.as_deref()),
+        Some("widget")
+    );
+
+    // The signature payload survives onto the schema node.
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "build")
+        .expect("build node");
+    assert_eq!(
+        build.signature.as_ref().and_then(|s| s.returns.as_deref()),
+        Some("Widget")
+    );
+}
