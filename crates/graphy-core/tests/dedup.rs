@@ -12,6 +12,7 @@ fn n(id: &str, kind: &str, source_file: &str) -> Node {
         source_file: Some(source_file.into()),
         source_location: Some("L1".into()),
         kind: Some(kind.into()),
+        signature: None,
     }
 }
 
@@ -23,6 +24,7 @@ fn ext(id: &str, source_file: &str) -> Node {
         source_file: Some(source_file.into()),
         source_location: Some("L1".into()),
         kind: Some("import".into()),
+        signature: None,
     }
 }
 
@@ -32,6 +34,7 @@ fn e(s: &str, t: &str, rel: &str, c: Confidence) -> Edge {
         target: t.into(),
         relation: rel.into(),
         confidence: c,
+        attr: None,
     }
 }
 
@@ -250,6 +253,7 @@ fn split_legacy_compound_externs_walks_braced_label() {
                 source_file: Some("src/x.rs".into()),
                 source_location: Some("L1".into()),
                 kind: Some("import".into()),
+                signature: None,
             },
             Node {
                 id: "src/a.rs::helper".into(),
@@ -257,6 +261,7 @@ fn split_legacy_compound_externs_walks_braced_label() {
                 source_file: Some("src/a.rs".into()),
                 source_location: Some("L2".into()),
                 kind: Some("function".into()),
+                signature: None,
             },
         ],
         edges: vec![Edge {
@@ -264,6 +269,7 @@ fn split_legacy_compound_externs_walks_braced_label() {
             target: "extern::crate::a::{helper, other}".into(),
             relation: "imports".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         }],
     };
     let mut g = graphy_core::build::build_graph(vec![ex]);
@@ -298,6 +304,7 @@ fn split_legacy_compound_preserves_alias_on_existing_node() {
                 source_file: Some("src/x.rs".into()),
                 source_location: Some("L1".into()),
                 kind: Some("import".into()),
+                signature: None,
             },
             // Legacy compound that needs splitting.
             Node {
@@ -306,6 +313,7 @@ fn split_legacy_compound_preserves_alias_on_existing_node() {
                 source_file: Some("src/x.rs".into()),
                 source_location: Some("L1".into()),
                 kind: Some("import".into()),
+                signature: None,
             },
         ],
         edges: vec![],

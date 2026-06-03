@@ -346,7 +346,7 @@ fn impl_contains_edge_from_type_to_method() {
 }
 
 #[test]
-fn function_references_edges_from_param_and_return_types() {
+fn function_typed_edges_from_param_and_return_types() {
     let dir = tempdir().unwrap();
     let p = write(
         dir.path(),
@@ -354,20 +354,27 @@ fn function_references_edges_from_param_and_return_types() {
         "pub struct Bar;\npub struct Baz;\nfn foo(x: Bar) -> Baz { todo!() }\n",
     );
     let out = extract(&p).unwrap();
-    let refs: Vec<_> = out
+    let has_param: Vec<_> = out
         .edges
         .iter()
-        .filter(|e| e.relation == "references")
+        .filter(|e| e.relation == "has_param")
         .collect();
     assert!(
-        refs.iter()
+        has_param
+            .iter()
             .any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Bar")),
-        "expected references edge from foo to Bar; refs = {refs:#?}"
+        "expected has_param edge from foo to Bar; has_param = {has_param:#?}"
     );
+    let returns: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "returns")
+        .collect();
     assert!(
-        refs.iter()
+        returns
+            .iter()
             .any(|e| e.source.ends_with("::foo") && e.target.ends_with("::Baz")),
-        "expected references edge from foo to Baz; refs = {refs:#?}"
+        "expected returns edge from foo to Baz; returns = {returns:#?}"
     );
 }
 

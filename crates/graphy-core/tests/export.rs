@@ -15,6 +15,7 @@ fn n(id: &str) -> Node {
         source_file: None,
         source_location: None,
         kind: None,
+        signature: None,
     }
 }
 
@@ -45,6 +46,7 @@ fn graph_json_is_pretty_and_parses() {
             target: "b".into(),
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         }],
     };
     let g = build_graph(vec![ex]);
@@ -80,12 +82,14 @@ fn graph_html_is_self_contained_interactive_viewer() {
                 target: "a".into(),
                 relation: "calls".into(),
                 confidence: Confidence::Inferred,
+                attr: None,
             },
             Edge {
                 source: "hub".into(),
                 target: "b".into(),
                 relation: "imports".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             },
         ],
     };

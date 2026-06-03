@@ -125,6 +125,7 @@ fn walk(
                         target: target_id,
                         relation: "references".into(),
                         confidence: Confidence::Extracted,
+                        attr: None,
                     });
                 }
             }

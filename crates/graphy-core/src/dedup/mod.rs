@@ -438,6 +438,7 @@ fn pre_split_compound_externs(g: &mut KnowledgeGraph) -> usize {
                     kind: Some("import".into()),
                     community: None,
                     aliases: vec![compound_id.clone()],
+                    signature: None,
                 },
             );
             // If the node already existed (ensure_node returned an existing

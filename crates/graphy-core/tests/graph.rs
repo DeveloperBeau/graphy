@@ -10,6 +10,7 @@ fn node(id: &str) -> Node {
         source_file: None,
         source_location: None,
         kind: None,
+        signature: None,
     }
 }
 
@@ -57,6 +58,7 @@ fn add_edge_record_inserts_missing_endpoints() {
         target: "b".into(),
         relation: "calls".into(),
         confidence: Confidence::Extracted,
+        attr: None,
     });
     assert_eq!(g.node_count(), 2);
     assert_eq!(g.edge_count(), 1);
@@ -71,6 +73,7 @@ fn parallel_edges_are_allowed() {
             target: "b".into(),
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         });
     }
     assert_eq!(g.edge_count(), 3);
@@ -85,12 +88,14 @@ fn to_json_value_round_trip_preserves_structure() {
         source_file: Some("x.rs".into()),
         source_location: Some("L1".into()),
         kind: Some("function".into()),
+        signature: None,
     });
     g.add_edge_record(Edge {
         source: "a".into(),
         target: "b".into(),
         relation: "calls".into(),
         confidence: Confidence::Inferred,
+        attr: None,
     });
     let v = g.to_json_value();
     let nodes = v.get("nodes").unwrap().as_array().unwrap();
@@ -108,6 +113,7 @@ fn self_loops_supported() {
         target: "x".into(),
         relation: "recurses".into(),
         confidence: Confidence::Inferred,
+        attr: None,
     });
     assert_eq!(g.edge_count(), 1);
 }

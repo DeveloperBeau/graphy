@@ -128,6 +128,7 @@ fn collect_type_identifiers(
                     target: format!("extern::{name}"),
                     relation: relation.to_string(),
                     confidence: Confidence::Extracted,
+                    attr: None,
                 });
             }
         }

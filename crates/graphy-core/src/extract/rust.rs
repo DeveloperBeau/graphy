@@ -4,7 +4,7 @@
 //! `static`, `type`, and `macro_rules!` items, plus edges for `use` (imports),
 //! direct call expressions inside fn bodies, `impl Trait for Type`
 //! (`implements`), parent-to-child structural relationships (`contains`), and
-//! type usage in function signatures (`references`).
+//! type usage in function signatures (`has_param`, `returns`, `has_field`).
 
 use std::collections::HashMap;
 use std::fs;
@@ -13,7 +13,9 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use crate::schema::{Confidence, Edge, ExtractionOutput, Node};
+use crate::schema::{
+    Confidence, Edge, EdgeAttr, ExtractionOutput, FieldSig, Node, ParamSig, Signature,
+};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     let src = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
@@ -59,17 +61,21 @@ fn walk_items(
                 if let Some(name) = name_of(child, src) {
                     let id = make_id(file, &name);
                     symbols.insert(name.clone(), id.clone());
+                    let signature = if kind == "function_item" {
+                        Some(function_signature(child, src, file, &id, out))
+                    } else if kind == "struct_item" {
+                        Some(struct_signature(child, src, file, &id, out))
+                    } else {
+                        None
+                    };
                     out.nodes.push(Node {
                         id: id.clone(),
                         label: name.clone(),
                         source_file: Some(file.to_string()),
                         source_location: Some(line_loc(child)),
                         kind: Some(kind.trim_end_matches("_item").to_string()),
+                        signature,
                     });
-                    // Emit references edges from function parameters and return type.
-                    if kind == "function_item" {
-                        emit_references_edges(child, src, file, &id, out);
-                    }
                     // Emit contains edges from mod to its direct child items.
                     if kind == "mod_item" {
                         emit_contains_from_body(child, src, file, &id, out, symbols);
@@ -100,6 +106,7 @@ fn walk_items(
                                 target: target_id,
                                 relation: "implements".into(),
                                 confidence: Confidence::Inferred,
+                                attr: None,
                             });
                         }
                         // contains edges from the impl type to each method.
@@ -123,6 +130,7 @@ fn walk_items(
                         source_file: Some(file.to_string()),
                         source_location: Some(line_loc(child)),
                         kind: Some("macro".to_string()),
+                        signature: None,
                     });
                 }
             }
@@ -139,12 +147,14 @@ fn walk_items(
                             source_file: Some(file.to_string()),
                             source_location: Some(line_loc(child)),
                             kind: Some("import".into()),
+                            signature: None,
                         });
                         out.edges.push(Edge {
                             source: file.to_string(),
                             target: import_id,
                             relation: "imports".into(),
                             confidence: Confidence::Extracted,
+                            attr: None,
                         });
                     }
                 }
@@ -183,69 +193,146 @@ fn emit_contains_from_body(
                 target: child_id,
                 relation: "contains".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             });
         }
     }
 }
 
-/// Emit `references` edges from `fn_id` to each named type mentioned in the
-/// function's parameter list and return type.
-fn emit_references_edges(
+/// Build the function's `Signature` and emit `has_param` / `returns` edges to
+/// the (non-primitive) types in its parameter list and return position.
+fn function_signature(
     fn_node: TsNode,
     src: &str,
     file: &str,
     fn_id: &str,
     out: &mut ExtractionOutput,
-) {
-    // Walk parameters field.
+) -> Signature {
+    let mut sig = Signature::default();
     if let Some(params) = fn_node.child_by_field_name("parameters") {
         let mut cursor = params.walk();
+        let mut index: u32 = 0;
         for param in params.children(&mut cursor) {
-            if param.kind() == "parameter"
-                && let Some(ty_node) = param.child_by_field_name("type")
-            {
-                emit_type_reference(ty_node, src, file, fn_id, out);
+            if param.kind() != "parameter" {
+                continue;
             }
+            let name = param
+                .child_by_field_name("pattern")
+                .and_then(|p| p.utf8_text(src.as_bytes()).ok())
+                .unwrap_or("_")
+                .to_string();
+            let ty_node = param.child_by_field_name("type");
+            let ty_text = ty_node
+                .and_then(|t| t.utf8_text(src.as_bytes()).ok())
+                .map(|s| s.trim().to_string());
+            // Type-node edge only for non-primitive named types.
+            if let Some(ty_node) = ty_node
+                && let Some(leaf) = extract_type_leaf(ty_node, src)
+                && !is_primitive_or_ignored(&leaf)
+            {
+                out.edges.push(Edge {
+                    source: fn_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_param".into(),
+                    confidence: Confidence::Extracted,
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: Some(index),
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(param)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
+            sig.params.push(ParamSig { name, ty: ty_text });
+            index += 1;
         }
     }
-    // Walk return_type field.
     if let Some(ret) = fn_node.child_by_field_name("return_type") {
-        emit_type_reference(ret, src, file, fn_id, out);
+        if let Ok(text) = ret.utf8_text(src.as_bytes()) {
+            sig.returns = Some(text.trim().to_string());
+        }
+        if let Some(leaf) = extract_type_leaf(ret, src)
+            && !is_primitive_or_ignored(&leaf)
+        {
+            out.edges.push(Edge {
+                source: fn_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "returns".into(),
+                confidence: Confidence::Extracted,
+                attr: None,
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(ret)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
     }
+    sig
 }
 
-/// Emit a single `references` edge from `source_id` to the type named by
-/// `type_node`, stripping generic arguments.  Emits both an extern target
-/// (for unresolved types) and a local target (so dedup can collapse to a
-/// locally defined type).
-fn emit_type_reference(
-    type_node: TsNode,
+/// Build a struct's `Signature.fields` and emit `has_field` edges to the
+/// (non-primitive) field types.
+fn struct_signature(
+    struct_node: TsNode,
     src: &str,
     file: &str,
-    source_id: &str,
+    struct_id: &str,
     out: &mut ExtractionOutput,
-) {
-    let type_name = extract_type_leaf(type_node, src);
-    if let Some(name) = type_name {
-        if is_primitive_or_ignored(&name) {
-            return;
+) -> Signature {
+    let mut sig = Signature::default();
+    let Some(body) = struct_node.child_by_field_name("body") else {
+        return sig;
+    };
+    let mut cursor = body.walk();
+    for field in body.children(&mut cursor) {
+        if field.kind() != "field_declaration" {
+            continue;
         }
-        let extern_target = format!("extern::{name}");
-        out.edges.push(Edge {
-            source: source_id.to_string(),
-            target: extern_target,
-            relation: "references".into(),
-            confidence: Confidence::Inferred,
-        });
-        // Local target lets dedup resolve to a node defined in the same file.
-        let local_target = make_id(file, &name);
-        out.edges.push(Edge {
-            source: source_id.to_string(),
-            target: local_target,
-            relation: "references".into(),
-            confidence: Confidence::Inferred,
-        });
+        let name = field
+            .child_by_field_name("name")
+            .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+            .unwrap_or("_")
+            .to_string();
+        let ty_node = field.child_by_field_name("type");
+        let ty_text = ty_node
+            .and_then(|t| t.utf8_text(src.as_bytes()).ok())
+            .map(|s| s.trim().to_string());
+        if let Some(ty_node) = ty_node
+            && let Some(leaf) = extract_type_leaf(ty_node, src)
+            && !is_primitive_or_ignored(&leaf)
+        {
+            out.edges.push(Edge {
+                source: struct_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "has_field".into(),
+                confidence: Confidence::Extracted,
+                attr: Some(EdgeAttr {
+                    name: Some(name.clone()),
+                    index: None,
+                }),
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(field)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+        sig.fields.push(FieldSig { name, ty: ty_text });
     }
+    sig
 }
 
 /// Recursively extract the leaf type name from a type AST node.
@@ -284,8 +371,8 @@ fn extract_type_leaf<'a>(node: TsNode<'a>, src: &'a str) -> Option<String> {
     }
 }
 
-/// Returns true for types that should not produce `references` edges because
-/// they are either Rust primitives or well-known built-in names.
+/// Returns true for types that should not produce `has_param` / `returns` / `has_field` edges
+/// because they are either Rust primitives or well-known built-in names.
 fn is_primitive_or_ignored(name: &str) -> bool {
     matches!(
         name,
@@ -359,6 +446,7 @@ fn collect_calls_in(
                     target: target_id.clone(),
                     relation: "calls".into(),
                     confidence: Confidence::Inferred,
+                    attr: None,
                 });
             }
         }

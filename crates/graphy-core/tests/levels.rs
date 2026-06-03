@@ -81,6 +81,7 @@ fn recorder_captures_one_level_per_outer_pass() {
             source_file: None,
             source_location: None,
             kind: None,
+            signature: None,
         })
         .collect();
     let edges = vec![(0, 1), (1, 2), (0, 2), (3, 4), (4, 5), (3, 5), (2, 3)]
@@ -90,6 +91,7 @@ fn recorder_captures_one_level_per_outer_pass() {
             target: t.to_string(),
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         })
         .collect();
     let mut g = graphy_core::build::build_graph(vec![ExtractionOutput { nodes, edges }]);
@@ -114,6 +116,7 @@ fn graph_hash_changes_when_any_edge_changes() {
                 source_file: None,
                 source_location: None,
                 kind: None,
+                signature: None,
             },
             Node {
                 id: "b".into(),
@@ -121,6 +124,7 @@ fn graph_hash_changes_when_any_edge_changes() {
                 source_file: None,
                 source_location: None,
                 kind: None,
+                signature: None,
             },
         ],
         edges: vec![Edge {
@@ -128,6 +132,7 @@ fn graph_hash_changes_when_any_edge_changes() {
             target: "b".into(),
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         }],
     }]);
     let g_b = graphy_core::build::build_graph(vec![ExtractionOutput {
@@ -138,6 +143,7 @@ fn graph_hash_changes_when_any_edge_changes() {
                 source_file: None,
                 source_location: None,
                 kind: None,
+                signature: None,
             },
             Node {
                 id: "b".into(),
@@ -145,6 +151,7 @@ fn graph_hash_changes_when_any_edge_changes() {
                 source_file: None,
                 source_location: None,
                 kind: None,
+                signature: None,
             },
         ],
         edges: vec![],
@@ -208,6 +215,7 @@ fn hierarchical_seeded_preserves_unchanged_communities() {
             source_file: None,
             source_location: None,
             kind: None,
+            signature: None,
         })
         .collect();
     let edges = [(0, 1), (1, 2), (0, 2), (3, 4), (4, 5), (3, 5)]
@@ -217,6 +225,7 @@ fn hierarchical_seeded_preserves_unchanged_communities() {
             target: t.to_string(),
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         })
         .collect();
     let mut g = graphy_core::build::build_graph(vec![ExtractionOutput { nodes, edges }]);

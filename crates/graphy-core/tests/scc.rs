@@ -14,6 +14,7 @@ fn cycle3() -> graphy_core::graph::KnowledgeGraph {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             },
             Node {
                 id: "B".into(),
@@ -21,6 +22,7 @@ fn cycle3() -> graphy_core::graph::KnowledgeGraph {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             },
             Node {
                 id: "C".into(),
@@ -28,6 +30,7 @@ fn cycle3() -> graphy_core::graph::KnowledgeGraph {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             },
         ],
         edges: vec![
@@ -36,18 +39,21 @@ fn cycle3() -> graphy_core::graph::KnowledgeGraph {
                 target: "B".into(),
                 relation: "calls".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             },
             Edge {
                 source: "B".into(),
                 target: "C".into(),
                 relation: "calls".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             },
             Edge {
                 source: "C".into(),
                 target: "A".into(),
                 relation: "calls".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             },
         ],
     };
@@ -90,6 +96,7 @@ fn scc_acyclic_graph_has_no_multi_node_components() {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             },
             Node {
                 id: "B".into(),
@@ -97,6 +104,7 @@ fn scc_acyclic_graph_has_no_multi_node_components() {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             },
         ],
         edges: vec![Edge {
@@ -104,6 +112,7 @@ fn scc_acyclic_graph_has_no_multi_node_components() {
             target: "B".into(),
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         }],
     };
     let g = build_graph(vec![ex]);
@@ -150,6 +159,7 @@ fn scc_build_handles_thousand_nodes_under_one_second() {
             source_file: None,
             source_location: None,
             kind: Some("function".into()),
+            signature: None,
         });
         if i > 0 {
             edges.push(Edge {
@@ -157,6 +167,7 @@ fn scc_build_handles_thousand_nodes_under_one_second() {
                 target: format!("n{i}"),
                 relation: "calls".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             });
         }
     }
@@ -166,6 +177,7 @@ fn scc_build_handles_thousand_nodes_under_one_second() {
         target: "n900".into(),
         relation: "calls".into(),
         confidence: Confidence::Extracted,
+        attr: None,
     });
     let g = build_graph(vec![ExtractionOutput { nodes, edges }]);
     let start = Instant::now();
@@ -187,6 +199,7 @@ fn scc_patch_after_adding_cycle_edge() {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             },
             Node {
                 id: "B".into(),
@@ -194,6 +207,7 @@ fn scc_patch_after_adding_cycle_edge() {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             },
             Node {
                 id: "C".into(),
@@ -201,6 +215,7 @@ fn scc_patch_after_adding_cycle_edge() {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             },
         ],
         edges: vec![
@@ -209,12 +224,14 @@ fn scc_patch_after_adding_cycle_edge() {
                 target: "B".into(),
                 relation: "calls".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             },
             Edge {
                 source: "B".into(),
                 target: "C".into(),
                 relation: "calls".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             },
         ],
     };
@@ -231,6 +248,7 @@ fn scc_patch_after_adding_cycle_edge() {
         EdgeData {
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         },
     );
 
@@ -272,6 +290,7 @@ fn scc_patch_merges_two_smaller_components() {
                 source_file: None,
                 source_location: None,
                 kind: Some("function".into()),
+                signature: None,
             })
             .collect(),
         edges: vec![("A", "B"), ("B", "A"), ("C", "D"), ("D", "C")]
@@ -281,6 +300,7 @@ fn scc_patch_merges_two_smaller_components() {
                 target: t.into(),
                 relation: "calls".into(),
                 confidence: Confidence::Extracted,
+                attr: None,
             })
             .collect(),
     };
@@ -298,6 +318,7 @@ fn scc_patch_merges_two_smaller_components() {
         EdgeData {
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         },
     );
     g.graph.add_edge(
@@ -306,6 +327,7 @@ fn scc_patch_merges_two_smaller_components() {
         EdgeData {
             relation: "calls".into(),
             confidence: Confidence::Extracted,
+            attr: None,
         },
     );
 

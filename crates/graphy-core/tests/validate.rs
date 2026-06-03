@@ -10,6 +10,7 @@ fn node(id: &str, label: &str) -> Node {
         source_file: None,
         source_location: None,
         kind: None,
+        signature: None,
     }
 }
 
@@ -19,6 +20,7 @@ fn edge(s: &str, t: &str, rel: &str) -> Edge {
         target: t.into(),
         relation: rel.into(),
         confidence: Confidence::Extracted,
+        attr: None,
     }
 }
 
