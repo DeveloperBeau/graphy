@@ -117,6 +117,153 @@ fn non_utf8_bytes_with_go_suffix_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Typed signature layer ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_emits_has_param_returns_and_payload() {
+    let out = extract_file(&fp("signatures.go"));
+
+    let hp = has_param_edges(&out, "::Build");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges); // n int is primitive
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("w"));
+    assert_eq!(attr.index, Some(0));
+
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::Build")
+        && e.target == "extern::Widget"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Build"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("Widget"));
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "w");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.params[1].name, "n");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("int"));
+}
+
+#[test]
+fn order_param_index_counts_all_params() {
+    let out = extract_file(&fp("signatures.go"));
+    let hp = has_param_edges(&out, "::Order");
+    assert_eq!(hp.len(), 1); // only w: Widget
+    assert_eq!(hp[0].target, "extern::Widget");
+    // n is index 0 (primitive, no edge); w is the SECOND param.
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(1));
+}
+
+#[test]
+fn method_do_emits_has_param() {
+    let out = extract_file(&fp("signatures.go"));
+    let hp = has_param_edges(&out, "::Do");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(hp[0].attr.as_ref().unwrap().name.as_deref(), Some("x"));
+}
+
+#[test]
+fn structs_emit_has_field_and_skip_primitives() {
+    let out = extract_file(&fp("signatures.go"));
+
+    // Svc.W : Widget -> has_field
+    let svc = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_field" && e.source.ends_with("::Svc"))
+        .expect("Svc has_field");
+    assert_eq!(svc.target, "extern::Widget");
+    assert_eq!(svc.attr.as_ref().unwrap().name.as_deref(), Some("W"));
+
+    // Widget.Inner : *Widget -> has_field to Widget (pointer leaf)
+    let inner = out.edges.iter().find(|e| {
+        e.relation == "has_field"
+            && e.source.ends_with("::Widget")
+            && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("Inner")
+    });
+    assert!(
+        inner.is_some(),
+        "Widget.Inner has_field; edges = {:#?}",
+        out.edges
+    );
+    // Widget.Label : string is primitive -> no has_field for it
+    assert!(!out.edges.iter().any(|e| e.relation == "has_field"
+        && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("Label")));
+
+    // Exclude extern:: nodes (those are type references, not the def node)
+    let widget = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Widget") && !n.id.starts_with("extern::"))
+        .unwrap();
+    let sig = widget.signature.as_ref().expect("struct signature");
+    let names: Vec<_> = sig.fields.iter().map(|f| f.name.as_str()).collect();
+    assert_eq!(names, vec!["Label", "Inner"]);
+
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::Widget")
+    );
+}
+
+#[test]
+fn multi_return_emits_returns_edge_to_first_non_primitive() {
+    let out = extract_file(&fp("signatures.go"));
+    assert!(
+        out.edges.iter().any(|e| e.relation == "returns"
+            && e.source.ends_with("::Pair")
+            && e.target == "extern::Widget"),
+        "edges = {:#?}",
+        out.edges
+    );
+}
+
+#[test]
+fn multi_name_struct_field_emits_edge_per_name() {
+    let out = extract_file(&fp("signatures.go"));
+    let names: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "has_field" && e.source.ends_with("::Multi"))
+        .filter_map(|e| e.attr.as_ref().and_then(|a| a.name.clone()))
+        .collect();
+    assert!(
+        names.contains(&"A".to_string()) && names.contains(&"B".to_string()),
+        "got {names:?}"
+    );
+
+    let multi = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Multi"))
+        .unwrap();
+    let fields: Vec<_> = multi
+        .signature
+        .as_ref()
+        .unwrap()
+        .fields
+        .iter()
+        .map(|f| f.name.as_str())
+        .collect();
+    assert_eq!(fields, vec!["A", "B"]);
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
