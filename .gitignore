@@ -12,3 +12,4 @@ graphy-out/
 **/graphy-out/
 CLAUDE.local.md
 bench/comparison.md
+.claude/

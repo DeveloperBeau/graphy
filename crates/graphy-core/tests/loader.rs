@@ -529,3 +529,31 @@ fn loader_dispatches_ruby_plugin_typed_signature_layer() {
         "unexpected kind:type node in NAME-ONLY round-trip"
     );
 }
+
+#[test]
+fn loader_dispatches_python_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-python"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let py = src_dir.path().join("a.py");
+    fs::write(
+        &py,
+        "class Widget:\n    pass\n\ndef build(w: Widget, untyped) -> Widget:\n    return w\n",
+    )
+    .unwrap();
+    let out = reg.extract(&py).unwrap().unwrap();
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "build")
+        .expect("build node");
+    assert_eq!(build.signature.as_ref().unwrap().params.len(), 2);
+}

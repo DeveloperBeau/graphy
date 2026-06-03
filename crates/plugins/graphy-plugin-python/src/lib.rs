@@ -26,6 +26,8 @@ struct Node {
     source_location: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    signature: Option<Signature>,
 }
 
 #[derive(Serialize)]
@@ -34,6 +36,40 @@ struct Edge {
     target: String,
     relation: String,
     confidence: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    attr: Option<EdgeAttr>,
+}
+
+#[derive(Serialize, Default)]
+struct Signature {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    params: Vec<ParamSig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    returns: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    fields: Vec<FieldSig>,
+}
+
+#[derive(Serialize)]
+struct ParamSig {
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ty: Option<String>,
+}
+
+#[derive(Serialize)]
+struct FieldSig {
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ty: Option<String>,
+}
+
+#[derive(Serialize)]
+struct EdgeAttr {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    index: Option<u32>,
 }
 
 #[unsafe(no_mangle)]
@@ -77,27 +113,25 @@ pub unsafe extern "C" fn graphy_plugin_extract(
     let Ok(source) = std::str::from_utf8(src_bytes) else {
         return err_result(STATUS_INTERNAL_ERROR, "source not utf-8");
     };
-
-    let mut parser = Parser::new();
-    if parser
-        .set_language(&tree_sitter_python::LANGUAGE.into())
-        .is_err()
-    {
-        return err_result(STATUS_INTERNAL_ERROR, "load tree-sitter-python failed");
+    match extract_to_json(path, source) {
+        Ok(b) => ok_result(b),
+        Err(e) => err_result(STATUS_INTERNAL_ERROR, e),
     }
-    let Some(tree) = parser.parse(source, None) else {
-        return err_result(STATUS_INTERNAL_ERROR, "parse returned None");
-    };
+}
 
+fn extract_to_json(path: &str, source: &str) -> Result<Vec<u8>, String> {
+    let mut parser = Parser::new();
+    parser
+        .set_language(&tree_sitter_python::LANGUAGE.into())
+        .map_err(|e| format!("load tree-sitter-python: {e}"))?;
+    let tree = parser
+        .parse(source, None)
+        .ok_or_else(|| "parse returned None".to_string())?;
     let mut out = Output::default();
     let mut symbols: HashMap<String, String> = HashMap::new();
     walk(tree.root_node(), source, path, &mut out, &mut symbols);
     walk_calls(tree.root_node(), source, path, &mut out, &symbols);
-
-    match serde_json::to_vec(&out) {
-        Ok(b) => ok_result(b),
-        Err(e) => err_result(STATUS_INTERNAL_ERROR, format!("serde: {e}")),
-    }
+    serde_json::to_vec(&out).map_err(|e| e.to_string())
 }
 
 #[unsafe(no_mangle)]
@@ -108,6 +142,16 @@ pub extern "C" fn graphy_plugin_free(result: GraphyPluginExtractResult) {
 fn name_of<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
     node.child_by_field_name("name")
         .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+}
+
+fn line_loc(node: TsNode) -> String {
+    format!("L{}", node.start_position().row + 1)
+}
+
+fn attach_signature(out: &mut Output, sig: Signature) {
+    if let Some(n) = out.nodes.last_mut() {
+        n.signature = Some(sig);
+    }
 }
 
 fn emit_def(
@@ -124,8 +168,9 @@ fn emit_def(
         id,
         label: name.to_string(),
         source_file: Some(file.to_string()),
-        source_location: Some(format!("L{}", node.start_position().row + 1)),
+        source_location: Some(line_loc(node)),
         kind: Some(kind.to_string()),
+        signature: None,
     });
 }
 
@@ -141,12 +186,18 @@ fn walk(
         match child.kind() {
             "function_definition" => {
                 if let Some(n) = name_of(child, src) {
+                    let id = format!("{file}::{n}");
+                    let sig = python_signature(child, src, file, &id, out);
                     emit_def(out, symbols, file, "function", n, child);
+                    attach_signature(out, sig);
                 }
             }
             "class_definition" => {
                 if let Some(n) = name_of(child, src) {
+                    let class_id = format!("{file}::{n}");
+                    let sig = python_class_signature(child, src, file, &class_id, out);
                     emit_def(out, symbols, file, "class", n, child);
+                    attach_signature(out, sig);
                 }
             }
             "import_statement" | "import_from_statement" => {
@@ -197,12 +248,14 @@ fn walk(
                         source_file: Some(file.to_string()),
                         source_location: Some(format!("L{}", row + 1)),
                         kind: Some("import".into()),
+                        signature: None,
                     });
                     out.edges.push(Edge {
                         source: file.to_string(),
                         target: import_id,
                         relation: "imports".into(),
                         confidence: "EXTRACTED",
+                        attr: None,
                     });
                 }
             }
@@ -252,11 +305,212 @@ fn collect_calls(
                     target: target_id.clone(),
                     relation: "calls".into(),
                     confidence: "INFERRED",
+                    attr: None,
                 });
             }
         }
         collect_calls(child, src, caller_id, out, symbols);
     }
+}
+
+/// Extract the leaf type name from a Python `type` annotation node.
+fn extract_type_leaf(type_node: TsNode, src: &str) -> Option<String> {
+    let mut c = type_node.walk();
+    let inner = type_node.children(&mut c).find(|ch| ch.is_named())?;
+    match inner.kind() {
+        "identifier" => inner.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
+        "subscript" => inner
+            .child_by_field_name("value")
+            .and_then(|v| v.utf8_text(src.as_bytes()).ok())
+            .map(|s| s.rsplit('.').next().unwrap_or(s).to_string()),
+        "attribute" => inner
+            .utf8_text(src.as_bytes())
+            .ok()
+            .map(|s| s.rsplit('.').next().unwrap_or(s).to_string()),
+        _ => None,
+    }
+}
+
+/// Python builtins / typing names that should not produce typed edges.
+fn is_primitive_or_ignored(name: &str) -> bool {
+    matches!(
+        name,
+        "int"
+            | "str"
+            | "float"
+            | "bool"
+            | "bytes"
+            | "bytearray"
+            | "complex"
+            | "None"
+            | "object"
+            | "Any"
+            | "list"
+            | "dict"
+            | "set"
+            | "tuple"
+            | "frozenset"
+            | "type"
+    )
+}
+
+/// The declared name of a parameter node (handles typed/default forms).
+fn param_name<'s>(p: TsNode, src: &'s str) -> Option<&'s str> {
+    if let Some(n) = p.child_by_field_name("name") {
+        return n.utf8_text(src.as_bytes()).ok();
+    }
+    if p.kind() == "identifier" {
+        return p.utf8_text(src.as_bytes()).ok();
+    }
+    let mut c = p.walk();
+    p.children(&mut c)
+        .find(|ch| ch.kind() == "identifier")
+        .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+}
+
+/// Build a function/method `Signature` and emit `has_param` / `returns` edges
+/// for annotated, non-primitive types. Every parameter appears in the payload;
+/// `ty` is the annotation text or `None`. `self`/`cls` are skipped and not counted.
+fn python_signature(
+    fn_node: TsNode,
+    src: &str,
+    file: &str,
+    fn_id: &str,
+    out: &mut Output,
+) -> Signature {
+    let mut sig = Signature::default();
+    if let Some(params) = fn_node.child_by_field_name("parameters") {
+        let mut cursor = params.walk();
+        let mut index: u32 = 0;
+        for p in params.children(&mut cursor) {
+            if !matches!(
+                p.kind(),
+                "identifier" | "typed_parameter" | "default_parameter" | "typed_default_parameter"
+            ) {
+                continue;
+            }
+            let Some(name) = param_name(p, src).map(|s| s.to_string()) else {
+                continue;
+            };
+            if name == "self" || name == "cls" {
+                continue;
+            }
+            let ty_node = p.child_by_field_name("type");
+            let ty_text = ty_node
+                .and_then(|t| t.utf8_text(src.as_bytes()).ok())
+                .map(|s| s.trim().to_string());
+            if let Some(ty_node) = ty_node
+                && let Some(leaf) = extract_type_leaf(ty_node, src)
+                && !is_primitive_or_ignored(&leaf)
+            {
+                out.edges.push(Edge {
+                    source: fn_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_param".into(),
+                    confidence: "EXTRACTED",
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: Some(index),
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(p)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
+            sig.params.push(ParamSig { name, ty: ty_text });
+            index += 1;
+        }
+    }
+    if let Some(ret) = fn_node.child_by_field_name("return_type") {
+        if let Ok(text) = ret.utf8_text(src.as_bytes()) {
+            sig.returns = Some(text.trim().to_string());
+        }
+        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+            out.edges.push(Edge {
+                source: fn_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "returns".into(),
+                confidence: "EXTRACTED",
+                attr: None,
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(ret)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+    }
+    sig
+}
+
+/// Build a class `Signature.fields` from annotated class attributes and emit
+/// `has_field` edges for non-primitive annotated types.
+fn python_class_signature(
+    class_node: TsNode,
+    src: &str,
+    file: &str,
+    class_id: &str,
+    out: &mut Output,
+) -> Signature {
+    let mut sig = Signature::default();
+    let Some(body) = class_node.child_by_field_name("body") else {
+        return sig;
+    };
+    let mut cursor = body.walk();
+    for stmt in body.children(&mut cursor) {
+        if stmt.kind() != "expression_statement" {
+            continue;
+        }
+        let mut sc = stmt.walk();
+        let Some(assign) = stmt.children(&mut sc).find(|c| c.kind() == "assignment") else {
+            continue;
+        };
+        let Some(ty_node) = assign.child_by_field_name("type") else {
+            continue;
+        };
+        let Some(name) = assign
+            .child_by_field_name("left")
+            .and_then(|l| l.utf8_text(src.as_bytes()).ok())
+            .map(|s| s.to_string())
+        else {
+            continue;
+        };
+        let ty_text = ty_node
+            .utf8_text(src.as_bytes())
+            .ok()
+            .map(|s| s.trim().to_string());
+        if let Some(leaf) = extract_type_leaf(ty_node, src).filter(|l| !is_primitive_or_ignored(l))
+        {
+            out.edges.push(Edge {
+                source: class_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "has_field".into(),
+                confidence: "EXTRACTED",
+                attr: Some(EdgeAttr {
+                    name: Some(name.clone()),
+                    index: None,
+                }),
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(stmt)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+        sig.fields.push(FieldSig { name, ty: ty_text });
+    }
+    sig
 }
 
 /// Expand an import path that may contain brace groups into individual
@@ -334,4 +588,47 @@ fn expand_import_paths(raw: &str) -> Vec<String> {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::Value;
+
+    fn extract(src: &str) -> Value {
+        let bytes = extract_to_json("s.py", src).unwrap();
+        serde_json::from_slice(&bytes).unwrap()
+    }
+
+    #[test]
+    fn emits_partial_typed_layer() {
+        let v = extract(
+            "class Svc:\n    w: Widget\n    def do(self, x: Widget, n: int) -> Widget:\n        return x\n\ndef build(w: Widget, untyped) -> Widget:\n    return w\n",
+        );
+        let edges = v["edges"].as_array().unwrap();
+        let nodes = v["nodes"].as_array().unwrap();
+
+        let hp = edges
+            .iter()
+            .find(|e| e["relation"] == "has_param" && e["source"] == "s.py::build")
+            .expect("has_param edge");
+        assert_eq!(hp["target"], "extern::Widget");
+        assert_eq!(hp["attr"]["name"], "w");
+        assert_eq!(hp["attr"]["index"], 0);
+
+        assert!(edges.iter().any(|e| e["relation"] == "has_field"
+            && e["source"] == "s.py::Svc"
+            && e["attr"]["name"] == "w"));
+        assert!(
+            nodes
+                .iter()
+                .any(|n| n["kind"] == "type" && n["id"] == "extern::Widget")
+        );
+
+        let build = nodes.iter().find(|n| n["id"] == "s.py::build").unwrap();
+        let params = build["signature"]["params"].as_array().unwrap();
+        assert_eq!(params.len(), 2);
+        assert_eq!(params[1]["name"], "untyped");
+        assert!(params[1].get("ty").is_none() || params[1]["ty"].is_null());
+    }
 }

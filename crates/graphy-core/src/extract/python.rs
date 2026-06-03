@@ -6,8 +6,10 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use super::common::{emit_call, emit_def, emit_import, name_of};
-use crate::schema::{Confidence, Edge, ExtractionOutput};
+use super::common::{attach_signature, emit_call, emit_def, emit_import, line_loc, name_of};
+use crate::schema::{
+    Confidence, Edge, EdgeAttr, ExtractionOutput, FieldSig, Node, ParamSig, Signature,
+};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
@@ -40,13 +42,18 @@ fn walk_defs(
         match child.kind() {
             "function_definition" => {
                 if let Some(n) = name_of(child, src) {
+                    let id = format!("{file}::{n}");
+                    let sig = python_signature(child, src, file, &id, out);
                     emit_def(out, symbols, file, "function", n, child);
+                    attach_signature(out, sig);
                 }
             }
             "class_definition" => {
                 if let Some(n) = name_of(child, src) {
                     let class_id = format!("{file}::{n}");
+                    let sig = python_class_signature(child, src, file, &class_id, out);
                     emit_def(out, symbols, file, "class", n, child);
+                    attach_signature(out, sig);
                     // Emit `inherits` edge for each base class in the argument_list.
                     let mut cc = child.walk();
                     for gc in child.children(&mut cc) {
@@ -160,4 +167,204 @@ fn collect_calls(
         }
         collect_calls(child, src, caller_id, out, symbols);
     }
+}
+
+/// Extract the leaf type name from a Python `type` annotation node.
+fn extract_type_leaf(type_node: TsNode, src: &str) -> Option<String> {
+    let mut c = type_node.walk();
+    let inner = type_node.children(&mut c).find(|ch| ch.is_named())?;
+    match inner.kind() {
+        "identifier" => inner.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
+        "subscript" => inner
+            .child_by_field_name("value")
+            .and_then(|v| v.utf8_text(src.as_bytes()).ok())
+            .map(|s| s.rsplit('.').next().unwrap_or(s).to_string()),
+        "attribute" => inner
+            .utf8_text(src.as_bytes())
+            .ok()
+            .map(|s| s.rsplit('.').next().unwrap_or(s).to_string()),
+        _ => None,
+    }
+}
+
+/// Python builtins / typing names that should not produce typed edges.
+fn is_primitive_or_ignored(name: &str) -> bool {
+    matches!(
+        name,
+        "int"
+            | "str"
+            | "float"
+            | "bool"
+            | "bytes"
+            | "bytearray"
+            | "complex"
+            | "None"
+            | "object"
+            | "Any"
+            | "list"
+            | "dict"
+            | "set"
+            | "tuple"
+            | "frozenset"
+            | "type"
+    )
+}
+
+/// The declared name of a parameter node (handles typed/default forms).
+fn param_name<'s>(p: TsNode, src: &'s str) -> Option<&'s str> {
+    if let Some(n) = p.child_by_field_name("name") {
+        return n.utf8_text(src.as_bytes()).ok();
+    }
+    if p.kind() == "identifier" {
+        return p.utf8_text(src.as_bytes()).ok();
+    }
+    let mut c = p.walk();
+    p.children(&mut c)
+        .find(|ch| ch.kind() == "identifier")
+        .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+}
+
+/// Build a function/method `Signature` and emit `has_param` / `returns` edges
+/// for annotated, non-primitive types. Every parameter appears in the payload;
+/// `ty` is the annotation text or `None`. `self`/`cls` are skipped and not counted.
+fn python_signature(
+    fn_node: TsNode,
+    src: &str,
+    file: &str,
+    fn_id: &str,
+    out: &mut ExtractionOutput,
+) -> Signature {
+    let mut sig = Signature::default();
+    if let Some(params) = fn_node.child_by_field_name("parameters") {
+        let mut cursor = params.walk();
+        let mut index: u32 = 0;
+        for p in params.children(&mut cursor) {
+            if !matches!(
+                p.kind(),
+                "identifier" | "typed_parameter" | "default_parameter" | "typed_default_parameter"
+            ) {
+                continue;
+            }
+            let Some(name) = param_name(p, src).map(|s| s.to_string()) else {
+                continue;
+            };
+            if name == "self" || name == "cls" {
+                continue;
+            }
+            let ty_node = p.child_by_field_name("type");
+            let ty_text = ty_node
+                .and_then(|t| t.utf8_text(src.as_bytes()).ok())
+                .map(|s| s.trim().to_string());
+            if let Some(ty_node) = ty_node
+                && let Some(leaf) = extract_type_leaf(ty_node, src)
+                && !is_primitive_or_ignored(&leaf)
+            {
+                out.edges.push(Edge {
+                    source: fn_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_param".into(),
+                    confidence: Confidence::Extracted,
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: Some(index),
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(p)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
+            sig.params.push(ParamSig { name, ty: ty_text });
+            index += 1;
+        }
+    }
+    if let Some(ret) = fn_node.child_by_field_name("return_type") {
+        if let Ok(text) = ret.utf8_text(src.as_bytes()) {
+            sig.returns = Some(text.trim().to_string());
+        }
+        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+            out.edges.push(Edge {
+                source: fn_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "returns".into(),
+                confidence: Confidence::Extracted,
+                attr: None,
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(ret)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+    }
+    sig
+}
+
+/// Build a class `Signature.fields` from annotated class attributes and emit
+/// `has_field` edges for non-primitive annotated types.
+fn python_class_signature(
+    class_node: TsNode,
+    src: &str,
+    file: &str,
+    class_id: &str,
+    out: &mut ExtractionOutput,
+) -> Signature {
+    let mut sig = Signature::default();
+    let Some(body) = class_node.child_by_field_name("body") else {
+        return sig;
+    };
+    let mut cursor = body.walk();
+    for stmt in body.children(&mut cursor) {
+        if stmt.kind() != "expression_statement" {
+            continue;
+        }
+        let mut sc = stmt.walk();
+        let Some(assign) = stmt.children(&mut sc).find(|c| c.kind() == "assignment") else {
+            continue;
+        };
+        let Some(ty_node) = assign.child_by_field_name("type") else {
+            continue;
+        };
+        let Some(name) = assign
+            .child_by_field_name("left")
+            .and_then(|l| l.utf8_text(src.as_bytes()).ok())
+            .map(|s| s.to_string())
+        else {
+            continue;
+        };
+        let ty_text = ty_node
+            .utf8_text(src.as_bytes())
+            .ok()
+            .map(|s| s.trim().to_string());
+        if let Some(leaf) = extract_type_leaf(ty_node, src).filter(|l| !is_primitive_or_ignored(l))
+        {
+            out.edges.push(Edge {
+                source: class_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "has_field".into(),
+                confidence: Confidence::Extracted,
+                attr: Some(EdgeAttr {
+                    name: Some(name.clone()),
+                    index: None,
+                }),
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(stmt)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+        sig.fields.push(FieldSig { name, ty: ty_text });
+    }
+    sig
 }
