@@ -11,8 +11,8 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use super::common::{emit_call, emit_def, emit_import};
-use crate::schema::ExtractionOutput;
+use super::common::{attach_signature, emit_call, emit_def, emit_import};
+use crate::schema::{ExtractionOutput, ParamSig, Signature};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
@@ -41,6 +41,35 @@ fn ruby_name<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
     None
 }
 
+/// Build a NAME-ONLY signature for a method / singleton_method. Ruby's grammar
+/// carries no type annotations, so every parameter is `{name, ty: None}` and
+/// `returns` / `fields` stay empty. Walks `method_parameters` collecting names:
+/// bare `identifier` params plus the `name`-field of optional / splat / keyword /
+/// hash_splat / block parameter wrappers.
+fn ruby_signature(decl: TsNode, src: &str) -> Signature {
+    let mut sig = Signature::default();
+    let Some(params) = decl.child_by_field_name("parameters") else {
+        return sig;
+    };
+    let mut cursor = params.walk();
+    for p in params.children(&mut cursor) {
+        let name = match p.kind() {
+            "identifier" => p.utf8_text(src.as_bytes()).ok(),
+            "(" | ")" | "," => None,
+            _ => p
+                .child_by_field_name("name")
+                .and_then(|n| n.utf8_text(src.as_bytes()).ok()),
+        };
+        if let Some(name) = name {
+            sig.params.push(ParamSig {
+                name: name.to_string(),
+                ty: None,
+            });
+        }
+    }
+    sig
+}
+
 fn walk(
     node: TsNode,
     src: &str,
@@ -53,7 +82,9 @@ fn walk(
         match child.kind() {
             "method" | "singleton_method" => {
                 if let Some(n) = ruby_name(child, src) {
+                    let sig = ruby_signature(child, src);
                     emit_def(out, symbols, file, "method", n, child);
+                    attach_signature(out, sig);
                 }
             }
             "class" | "module" => {

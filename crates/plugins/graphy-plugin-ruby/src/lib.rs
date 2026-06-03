@@ -2,7 +2,9 @@
 
 use std::collections::HashMap;
 
-use graphy_plugin_api::helpers::{Output, emit_call, emit_def, emit_import};
+use graphy_plugin_api::helpers::{
+    Output, ParamSig, Signature, attach_signature, emit_call, emit_def, emit_import,
+};
 use tree_sitter::{Node as TsNode, Parser};
 
 graphy_plugin_api::define_plugin! {
@@ -36,6 +38,33 @@ fn ruby_name<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
     None
 }
 
+/// Build a NAME-ONLY signature for a method / singleton_method. Ruby's grammar
+/// carries no type annotations, so every parameter is `{name, ty: None}` and
+/// `returns` / `fields` stay empty. Mirrors the built-in extractor.
+fn ruby_signature(decl: TsNode, src: &str) -> Signature {
+    let mut sig = Signature::default();
+    let Some(params) = decl.child_by_field_name("parameters") else {
+        return sig;
+    };
+    let mut cursor = params.walk();
+    for p in params.children(&mut cursor) {
+        let name = match p.kind() {
+            "identifier" => p.utf8_text(src.as_bytes()).ok(),
+            "(" | ")" | "," => None,
+            _ => p
+                .child_by_field_name("name")
+                .and_then(|n| n.utf8_text(src.as_bytes()).ok()),
+        };
+        if let Some(name) = name {
+            sig.params.push(ParamSig {
+                name: name.to_string(),
+                ty: None,
+            });
+        }
+    }
+    sig
+}
+
 fn walk(
     node: TsNode,
     src: &str,
@@ -48,7 +77,9 @@ fn walk(
         match child.kind() {
             "method" | "singleton_method" => {
                 if let Some(n) = ruby_name(child, src) {
+                    let sig = ruby_signature(child, src);
                     emit_def(out, symbols, file, "method", n, child.start_position().row);
+                    attach_signature(out, sig);
                 }
             }
             "class" | "module" => {
@@ -131,5 +162,55 @@ fn collect_calls(
             _ => {}
         }
         collect_calls(child, src, caller_id, out, symbols);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::Value;
+
+    fn extract(src: &str) -> Value {
+        let bytes = extract_to_json("s.rb", src).unwrap();
+        serde_json::from_slice(&bytes).unwrap()
+    }
+
+    #[test]
+    fn name_only_signature_no_typed_edges_or_nodes() {
+        let v = extract(
+            "def greet(name, greeting = \"hi\")\n  name\nend\n\n\
+             class C\n  def run(a, b)\n    a\n  end\nend\n",
+        );
+        let edges = v["edges"].as_array().unwrap();
+        let nodes = v["nodes"].as_array().unwrap();
+
+        // Parameter names captured with ty absent (null / omitted).
+        let greet = nodes.iter().find(|n| n["id"] == "s.rb::greet").unwrap();
+        let params = greet["signature"]["params"].as_array().unwrap();
+        let pnames: Vec<&str> = params.iter().map(|p| p["name"].as_str().unwrap()).collect();
+        assert_eq!(pnames, vec!["name", "greeting"]);
+        assert!(params.iter().all(|p| p["ty"].is_null()));
+        assert!(greet["signature"]["returns"].is_null());
+
+        let run = nodes.iter().find(|n| n["id"] == "s.rb::run").unwrap();
+        let rnames: Vec<&str> = run["signature"]["params"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|p| p["name"].as_str().unwrap())
+            .collect();
+        assert_eq!(rnames, vec!["a", "b"]);
+
+        // NAME-ONLY: no typed edges and no kind:"type" nodes.
+        for rel in ["has_param", "returns", "has_field"] {
+            assert!(
+                !edges.iter().any(|e| e["relation"] == rel),
+                "unexpected {rel} edge in NAME-ONLY output"
+            );
+        }
+        assert!(
+            !nodes.iter().any(|n| n["kind"] == "type"),
+            "unexpected kind:type node in NAME-ONLY output"
+        );
     }
 }

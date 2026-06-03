@@ -87,6 +87,63 @@ fn service_does_not_emit_call_to_external_puts() {
     );
 }
 
+// ---------- Tier 1: typed signature layer (NAME-ONLY) ----------
+
+#[test]
+fn signatures_capture_param_names_with_null_type() {
+    let out = extract_file(&fp("lib/signatures.rb"));
+
+    // Module-level function `deliver` carries its parameter names, ty absent.
+    let deliver = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "deliver")
+        .expect("deliver node");
+    let sig = deliver.signature.as_ref().expect("deliver signature");
+    let names: Vec<&str> = sig.params.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(names, vec!["recipient", "subject", "attachments"]);
+    assert!(
+        sig.params.iter().all(|p| p.ty.is_none()),
+        "NAME-ONLY: every param ty must be None, got {:#?}",
+        sig.params
+    );
+    assert!(sig.returns.is_none(), "NAME-ONLY: returns must be None");
+    assert!(sig.fields.is_empty(), "NAME-ONLY: fields must be empty");
+
+    // Instance method `archive` likewise.
+    let archive = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "archive")
+        .expect("archive node");
+    let asig = archive.signature.as_ref().expect("archive signature");
+    let anames: Vec<&str> = asig.params.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(anames, vec!["message", "folder"]);
+    assert!(asig.params.iter().all(|p| p.ty.is_none()));
+}
+
+#[test]
+fn signatures_emit_no_typed_edges_or_type_nodes() {
+    let out = extract_file(&fp("lib/signatures.rb"));
+
+    for rel in ["has_param", "returns", "has_field"] {
+        let count = out.edges.iter().filter(|e| e.relation == rel).count();
+        assert_eq!(
+            count, 0,
+            "NAME-ONLY: expected zero {rel} edges, got {count}"
+        );
+    }
+    let type_nodes = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("type"))
+        .count();
+    assert_eq!(
+        type_nodes, 0,
+        "NAME-ONLY: expected zero kind:type nodes, got {type_nodes}"
+    );
+}
+
 #[test]
 fn empty_file_emits_zero_nodes() {
     let out = extract_file(&fp("lib/empty.rb"));
