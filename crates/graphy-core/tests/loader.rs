@@ -309,3 +309,37 @@ fn loader_dispatches_scala_plugin_typed_signature_layer() {
         Some("Widget")
     );
 }
+
+#[test]
+fn loader_dispatches_csharp_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-csharp"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let cs = src_dir.path().join("a.cs");
+    fs::write(
+        &cs,
+        "public class Widget { public Widget Inner { get; set; } }\n\
+         public class Svc { public Widget Build(Widget w) { return w; } }\n",
+    )
+    .unwrap();
+    let out = reg.extract(&cs).unwrap().unwrap();
+
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "Build")
+        .expect("Build node");
+    assert_eq!(
+        build.signature.as_ref().and_then(|s| s.returns.as_deref()),
+        Some("Widget")
+    );
+}
