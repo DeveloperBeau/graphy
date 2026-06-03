@@ -209,33 +209,51 @@ fn collect_calls_in(
     }
 }
 
-/// Recursively extract the leaf type name from a type AST node.
-fn extract_type_leaf<'a>(node: TsNode<'a>, src: &'a str) -> Option<String> {
+/// Collect the outer type name and every generic type-argument name from a type
+/// node, depth first. `Vec<Pair<Foo, Bar>>` -> ["Vec", "Pair", "Foo", "Bar"].
+fn extract_type_leaves<'a>(node: TsNode<'a>, src: &'a str, out: &mut Vec<String>) {
     match node.kind() {
         "type_identifier" | "identifier" => {
-            node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string())
+            if let Ok(t) = node.utf8_text(src.as_bytes()) {
+                out.push(t.to_string());
+            }
         }
-        "generic_type" => node.named_child(0).and_then(|c| extract_type_leaf(c, src)),
-        "scoped_type_identifier" => node.utf8_text(src.as_bytes()).ok().map(|s| {
-            s.rsplit("::")
-                .next()
-                .unwrap_or(s)
-                .split('<')
-                .next()
-                .unwrap_or(s)
-                .to_string()
-        }),
-        "reference_type" | "mutable_specifier" => {
-            let mut cursor = node.walk();
-            for child in node.children(&mut cursor) {
-                if let Some(name) = extract_type_leaf(child, src) {
-                    return Some(name);
+        "generic_type" => {
+            if let Some(base) = node.child_by_field_name("type") {
+                extract_type_leaves(base, src, out);
+            }
+            if let Some(args) = node.child_by_field_name("type_arguments") {
+                let mut c = args.walk();
+                for arg in args.children(&mut c) {
+                    if arg.is_named() {
+                        extract_type_leaves(arg, src, out);
+                    }
                 }
             }
-            None
         }
-        _ => None,
+        "scoped_type_identifier" => {
+            if let Ok(t) = node.utf8_text(src.as_bytes()) {
+                out.push(t.rsplit("::").next().unwrap_or(t).trim().to_string());
+            }
+        }
+        "reference_type" | "mutable_specifier" => {
+            let mut c = node.walk();
+            for child in node.children(&mut c) {
+                extract_type_leaves(child, src, out);
+            }
+        }
+        _ => {}
     }
+}
+
+/// `extract_type_leaves` plus order-preserving de-duplication, so one type
+/// produces at most one edge per position.
+fn type_leaves<'a>(node: TsNode<'a>, src: &'a str) -> Vec<String> {
+    let mut v = Vec::new();
+    extract_type_leaves(node, src, &mut v);
+    let mut seen = std::collections::HashSet::new();
+    v.retain(|x| seen.insert(x.clone()));
+    v
 }
 
 /// Types that should not produce typed edges (Rust primitives / built-ins).
@@ -263,6 +281,21 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "()"
             | "Self"
             | "self"
+            | "Vec"
+            | "Option"
+            | "Box"
+            | "Rc"
+            | "Arc"
+            | "Result"
+            | "HashMap"
+            | "HashSet"
+            | "BTreeMap"
+            | "BTreeSet"
+            | "Cow"
+            | "RefCell"
+            | "Cell"
+            | "Mutex"
+            | "RwLock"
     )
 }
 
@@ -292,28 +325,30 @@ fn function_signature(
             let ty_text = ty_node
                 .and_then(|t| t.utf8_text(src.as_bytes()).ok())
                 .map(|s| s.trim().to_string());
-            if let Some(ty_node) = ty_node
-                && let Some(leaf) = extract_type_leaf(ty_node, src)
-                && !is_primitive_or_ignored(&leaf)
-            {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: "EXTRACTED",
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                out.nodes.push(Node {
-                    id: format!("extern::{leaf}"),
-                    label: leaf.clone(),
-                    source_file: Some(file.to_string()),
-                    source_location: Some(line_loc(param)),
-                    kind: Some("type".into()),
-                    signature: None,
-                });
+            if let Some(ty_node) = ty_node {
+                for leaf in type_leaves(ty_node, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: "EXTRACTED",
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    out.nodes.push(Node {
+                        id: format!("extern::{leaf}"),
+                        label: leaf.clone(),
+                        source_file: Some(file.to_string()),
+                        source_location: Some(line_loc(param)),
+                        kind: Some("type".into()),
+                        signature: None,
+                    });
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -323,9 +358,10 @@ fn function_signature(
         if let Ok(text) = ret.utf8_text(src.as_bytes()) {
             sig.returns = Some(text.trim().to_string());
         }
-        if let Some(leaf) = extract_type_leaf(ret, src)
-            && !is_primitive_or_ignored(&leaf)
-        {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -373,28 +409,30 @@ fn struct_signature(
         let ty_text = ty_node
             .and_then(|t| t.utf8_text(src.as_bytes()).ok())
             .map(|s| s.trim().to_string());
-        if let Some(ty_node) = ty_node
-            && let Some(leaf) = extract_type_leaf(ty_node, src)
-            && !is_primitive_or_ignored(&leaf)
-        {
-            out.edges.push(Edge {
-                source: struct_id.to_string(),
-                target: format!("extern::{leaf}"),
-                relation: "has_field".into(),
-                confidence: "EXTRACTED",
-                attr: Some(EdgeAttr {
-                    name: Some(name.clone()),
-                    index: None,
-                }),
-            });
-            out.nodes.push(Node {
-                id: format!("extern::{leaf}"),
-                label: leaf.clone(),
-                source_file: Some(file.to_string()),
-                source_location: Some(line_loc(field)),
-                kind: Some("type".into()),
-                signature: None,
-            });
+        if let Some(ty_node) = ty_node {
+            for leaf in type_leaves(ty_node, src) {
+                if is_primitive_or_ignored(&leaf) {
+                    continue;
+                }
+                out.edges.push(Edge {
+                    source: struct_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_field".into(),
+                    confidence: "EXTRACTED",
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: None,
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(field)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
         }
         sig.fields.push(FieldSig { name, ty: ty_text });
     }
@@ -486,6 +524,32 @@ mod tests {
     fn extract(src: &str) -> Value {
         let bytes = extract_to_json("s.rs", src).unwrap();
         serde_json::from_slice(&bytes).unwrap()
+    }
+
+    #[test]
+    fn emits_edges_to_generic_inner_types() {
+        let bytes = extract_to_json(
+            "s.rs",
+            "pub fn generic(items: Vec<Widget>, pair: Pair<Foo, Bar>) {}\n",
+        )
+        .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let edges = v["edges"].as_array().unwrap();
+
+        let items: Vec<_> = edges
+            .iter()
+            .filter(|e| e["relation"] == "has_param" && e["attr"]["name"] == "items")
+            .collect();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["target"], "extern::Widget");
+
+        let pair_targets: std::collections::HashSet<_> = edges
+            .iter()
+            .filter(|e| e["relation"] == "has_param" && e["attr"]["name"] == "pair")
+            .map(|e| e["target"].as_str().unwrap())
+            .collect();
+        assert!(pair_targets.contains("extern::Foo"));
+        assert!(pair_targets.contains("extern::Bar"));
     }
 
     #[test]
