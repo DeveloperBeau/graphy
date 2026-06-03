@@ -455,6 +455,54 @@ fn loader_dispatches_cpp_plugin_typed_signature_layer() {
 }
 
 #[test]
+fn loader_cpp_generic_param_resolves_to_inner_type() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-c-family"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let cpp = src_dir.path().join("a.cpp");
+    // Class method removes type-vs-compare parse ambiguity for `<...>`.
+    fs::write(
+        &cpp,
+        "struct Widget { int x; };\n\
+         class Svc { public: void collect(std::vector<Widget> items) {} };\n",
+    )
+    .unwrap();
+    let out = reg.extract(&cpp).unwrap().unwrap();
+
+    // The std::vector container is suppressed; the has_param edge resolves to
+    // the inner Widget. Survives the FFI + loader round-trip.
+    let hp: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "has_param")
+        .collect();
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::vector")
+    );
+
+    // Signature payload keeps the full textual type.
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "collect")
+        .expect("collect node");
+    assert_eq!(
+        collect
+            .signature
+            .as_ref()
+            .and_then(|s| s.params.first())
+            .and_then(|p| p.ty.as_deref()),
+        Some("std::vector<Widget>")
+    );
+}
+
+#[test]
 fn loader_dispatches_java_plugin_typed_signature_layer() {
     let dir = tempdir().unwrap();
     stage(dir.path(), &["graphy-plugin-java"]);
