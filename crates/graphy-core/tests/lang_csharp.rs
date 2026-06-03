@@ -147,6 +147,133 @@ fn non_utf8_bytes_with_cs_suffix_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Typed signature layer ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_emits_has_param_returns_and_payload() {
+    // Widget w at index 0; int n at index 1 is primitive -> no edge
+    let out = extract_file(&fp("Signatures.cs"));
+    let hp = has_param_edges(&out, "::Build");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("w"));
+    assert_eq!(attr.index, Some(0));
+
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::Build")
+        && e.target == "extern::Widget"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Build"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("Widget"));
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "w");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.params[1].name, "n");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("int")); // payload present even for primitive
+}
+
+#[test]
+fn order_param_index_counts_all_params() {
+    // n (int, primitive) is index 0; w (Widget) is index 1 -> must assert index == 1
+    let out = extract_file(&fp("Signatures.cs"));
+    let hp = has_param_edges(&out, "::Order");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(1));
+}
+
+#[test]
+fn process_emits_has_param() {
+    // Requirement 2: method inside Svc class
+    let out = extract_file(&fp("Signatures.cs"));
+    let hp = has_param_edges(&out, "::Process");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(hp[0].attr.as_ref().unwrap().name.as_deref(), Some("input"));
+}
+
+#[test]
+fn primitive_param_emits_no_type_edge() {
+    // int n in Build/Order must not produce a has_param edge
+    let out = extract_file(&fp("Signatures.cs"));
+    let int_edges: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.target == "extern::int")
+        .collect();
+    assert!(
+        int_edges.is_empty(),
+        "unexpected has_param to extern::int: {int_edges:#?}"
+    );
+}
+
+#[test]
+fn class_fields_emit_has_field_and_skip_primitives() {
+    let out = extract_file(&fp("Signatures.cs"));
+
+    // non-primitive property -> has_field
+    let inner = out.edges.iter().find(|e| {
+        e.relation == "has_field"
+            && e.source.ends_with("::Widget")
+            && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("Inner")
+    });
+    assert!(
+        inner.is_some(),
+        "Widget.Inner has_field edge missing; edges = {:#?}",
+        out.edges
+    );
+
+    // primitive property -> no has_field
+    assert!(!out.edges.iter().any(|e| e.relation == "has_field"
+        && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("Label")));
+
+    // non-primitive field_declaration -> has_field
+    let owner = out.edges.iter().find(|e| {
+        e.relation == "has_field"
+            && e.source.ends_with("::Widget")
+            && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("Owner")
+    });
+    assert!(
+        owner.is_some(),
+        "Widget.Owner has_field edge missing; edges = {:#?}",
+        out.edges
+    );
+
+    // extern::Widget type node must exist
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::Widget")
+    );
+
+    // Widget def node has a non-empty fields signature
+    let widget = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Widget") && !n.id.starts_with("extern::"))
+        .unwrap();
+    let sig = widget.signature.as_ref().expect("Widget struct signature");
+    let names: Vec<_> = sig.fields.iter().map(|f| f.name.as_str()).collect();
+    assert!(names.contains(&"Inner"), "fields = {names:?}");
+    assert!(names.contains(&"Label"), "fields = {names:?}");
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
