@@ -29,6 +29,7 @@ no type for that position.
 | TypeScript | full | full | full | static types |
 | Swift | full | full | full | static types |
 | C++ | full | full | full | static types |
+| Java | full | full | full | static types, class fields |
 
 Columns are `full` / `partial` / `none`. Rows are added as each grammar's
 extractor lands. Statically typed languages (Go, Java, C#, TypeScript, C++,
