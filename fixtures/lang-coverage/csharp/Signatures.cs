@@ -39,4 +39,10 @@ public static class Factory
     public static void Collect(List<Widget> items, Pair<Foo, Bar> pair)
     {
     }
+
+    // Primitive (string) and container (Dictionary) inside generic args must both
+    // be suppressed; only the inner Widget gets an edge.
+    public static void Lookup(Dictionary<string, Widget> map)
+    {
+    }
 }

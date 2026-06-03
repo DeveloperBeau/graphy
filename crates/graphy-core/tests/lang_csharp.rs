@@ -319,6 +319,37 @@ fn collect_emits_generic_inner_type_edges() {
     assert_eq!(sig.params[1].ty.as_deref(), Some("Pair<Foo, Bar>"));
 }
 
+#[test]
+fn lookup_suppresses_primitive_and_container_generic_args() {
+    // Dictionary<string, Widget>: container Dictionary and primitive string both
+    // suppressed; only the inner Widget gets a has_param edge.
+    let out = extract_file(&fp("Signatures.cs"));
+    let hp = has_param_edges(&out, "::Lookup");
+    let targets: Vec<&str> = hp.iter().map(|e| e.target.as_str()).collect();
+
+    assert!(targets.contains(&"extern::Widget"), "targets = {targets:?}");
+    assert!(
+        !targets.contains(&"extern::string"),
+        "string primitive leaked an edge: {targets:?}"
+    );
+    assert!(
+        !targets.contains(&"extern::Dictionary"),
+        "Dictionary container leaked an edge: {targets:?}"
+    );
+
+    // Payload keeps the full textual type.
+    let lookup = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Lookup"))
+        .unwrap();
+    let sig = lookup.signature.as_ref().expect("signature");
+    assert_eq!(
+        sig.params[0].ty.as_deref(),
+        Some("Dictionary<string, Widget>")
+    );
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
