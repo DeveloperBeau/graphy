@@ -258,6 +258,51 @@ fn class_emits_has_field_and_skips_primitive() {
 }
 
 #[test]
+fn collect_generic_param_resolves_to_inner_types() {
+    let out = extract_file(&fp("src/com/example/Signatures.java"));
+
+    // List<Widget>: container suppressed, edge to inner Widget at index 0.
+    let widget: Vec<_> = has_param_edges(&out, "::collect")
+        .into_iter()
+        .filter(|e| e.target == "extern::Widget")
+        .collect();
+    assert_eq!(widget.len(), 1, "edges = {:#?}", out.edges);
+    let attr = widget[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("items"));
+    assert_eq!(attr.index, Some(0));
+
+    // No edge to the List container itself.
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::List"),
+        "unexpected has_param edge to extern::List"
+    );
+
+    // Pair<Foo, Bar>: Pair is a user type (also gets an edge); Foo and Bar are
+    // inner args. All three share the single per-parameter index 1.
+    for ty in ["extern::Pair", "extern::Foo", "extern::Bar"] {
+        let e = has_param_edges(&out, "::collect")
+            .into_iter()
+            .find(|e| e.target == ty)
+            .unwrap_or_else(|| panic!("missing has_param edge to {ty}; edges = {:#?}", out.edges));
+        let attr = e.attr.as_ref().expect("attr");
+        assert_eq!(attr.name.as_deref(), Some("p"));
+        assert_eq!(attr.index, Some(1), "{ty} index");
+    }
+
+    // Signature payload keeps the full textual type.
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::collect"))
+        .unwrap();
+    let sig = collect.signature.as_ref().expect("signature");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("List<Widget>"));
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Pair<Foo, Bar>"));
+}
+
+#[test]
 fn type_node_with_kind_type_is_emitted() {
     let out = extract_file(&fp("src/com/example/Signatures.java"));
     assert!(

@@ -23,3 +23,11 @@ public class Builder {
         return w;
     }
 }
+
+// (6) Generic inner types: container is suppressed, inner types get edges
+public class Collector {
+    // List<Widget> -> has_param to Widget only (List suppressed), index 0
+    // Pair<Foo, Bar> -> Pair (user type), Foo, Bar all share index 1
+    public void collect(List<Widget> items, Pair<Foo, Bar> p) {
+    }
+}

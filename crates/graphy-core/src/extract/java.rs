@@ -11,33 +11,85 @@ use crate::schema::{
     Confidence, Edge, EdgeAttr, ExtractionOutput, FieldSig, Node, ParamSig, Signature,
 };
 
-/// Extract the leaf type name from a Java type node.
-fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+/// Recursively collect leaf type names from a Java type node. A `generic_type`
+/// pushes its BASE name then recurses into each type argument:
+/// `Map<String, Pair<Foo, Bar>>` -> `[Map, String, Pair, Foo, Bar]`. Container
+/// suppression happens at the emit site via `is_primitive_or_ignored`, not here,
+/// so user generics like `Pair` keep their own edge. Java primitives are distinct
+/// node kinds (integral_type / floating_point_type / boolean_type / void_type)
+/// and push nothing.
+fn extract_type_leaves(node: TsNode, src: &str, out: &mut Vec<String>) {
     match node.kind() {
-        "type_identifier" => node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
-        "scoped_type_identifier" => node
-            .utf8_text(src.as_bytes())
-            .ok()
-            .and_then(|s| s.rsplit('.').next().map(|x| x.to_string())),
+        "type_identifier" => {
+            if let Ok(s) = node.utf8_text(src.as_bytes()) {
+                out.push(s.to_string());
+            }
+        }
+        "scoped_type_identifier" => {
+            if let Ok(s) = node.utf8_text(src.as_bytes())
+                && let Some(last) = s.rsplit('.').next()
+            {
+                out.push(last.to_string());
+            }
+        }
         "generic_type" => {
             let mut c = node.walk();
-            node.children(&mut c)
-                .find_map(|ch| extract_type_leaf(ch, src))
+            for ch in node.children(&mut c) {
+                if ch.kind() == "type_arguments" {
+                    let mut cc = ch.walk();
+                    for arg in ch.children(&mut cc).filter(|a| a.is_named()) {
+                        extract_type_leaves(arg, src, out);
+                    }
+                } else {
+                    extract_type_leaves(ch, src, out);
+                }
+            }
         }
-        "array_type" => node
-            .child_by_field_name("element")
-            .and_then(|e| extract_type_leaf(e, src)),
-        // integral_type / floating_point_type / boolean_type / void_type fall here.
-        _ => None,
+        "array_type" => {
+            if let Some(e) = node.child_by_field_name("element") {
+                extract_type_leaves(e, src, out);
+            }
+        }
+        _ => {}
     }
 }
 
-/// Java primitives are distinct tree-sitter node kinds (integral_type,
-/// floating_point_type, boolean_type, void_type) and return `None` from
-/// `extract_type_leaf` before this is ever consulted. Kept as a parity stub
-/// with the other extractors.
-fn is_primitive_or_ignored(_name: &str) -> bool {
-    false
+/// Collect type leaves, de-duped order-preservingly (`Pair<Foo, Foo>` -> one
+/// `Foo`).
+fn type_leaves(node: TsNode, src: &str) -> Vec<String> {
+    let mut raw = Vec::new();
+    extract_type_leaves(node, src, &mut raw);
+    let mut out = Vec::new();
+    for s in raw {
+        if !out.contains(&s) {
+            out.push(s);
+        }
+    }
+    out
+}
+
+/// Java stdlib generic containers that should not produce typed edges so only
+/// their inner meaningful type arguments get edges. Java primitives never reach
+/// here (they are distinct node kinds that push no leaf).
+fn is_primitive_or_ignored(name: &str) -> bool {
+    matches!(
+        name,
+        "List"
+            | "ArrayList"
+            | "LinkedList"
+            | "Map"
+            | "HashMap"
+            | "TreeMap"
+            | "Set"
+            | "HashSet"
+            | "TreeSet"
+            | "Collection"
+            | "Iterable"
+            | "Optional"
+            | "Future"
+            | "Stream"
+            | "Comparable"
+    )
 }
 
 /// Build a method/constructor `Signature` and emit `has_param` / `returns`
@@ -61,33 +113,35 @@ fn java_signature(
             let ty_text = ty_node
                 .and_then(|t| t.utf8_text(src.as_bytes()).ok())
                 .map(|s| s.trim().to_string());
-            let leaf = ty_node
-                .and_then(|t| extract_type_leaf(t, src))
-                .filter(|l| !is_primitive_or_ignored(l));
             let name = p
                 .child_by_field_name("name")
                 .and_then(|n| n.utf8_text(src.as_bytes()).ok())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| "_".to_string());
-            if let Some(ref leaf) = leaf {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: Confidence::Extracted,
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                out.nodes.push(Node {
-                    id: format!("extern::{leaf}"),
-                    label: leaf.clone(),
-                    source_file: Some(file.to_string()),
-                    source_location: Some(line_loc(p)),
-                    kind: Some("type".into()),
-                    signature: None,
-                });
+            if let Some(t) = ty_node {
+                for leaf in type_leaves(t, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: Confidence::Extracted,
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    out.nodes.push(Node {
+                        id: format!("extern::{leaf}"),
+                        label: leaf.clone(),
+                        source_file: Some(file.to_string()),
+                        source_location: Some(line_loc(p)),
+                        kind: Some("type".into()),
+                        signature: None,
+                    });
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -98,7 +152,10 @@ fn java_signature(
         if let Ok(text) = ret.utf8_text(src.as_bytes()) {
             sig.returns = Some(text.trim().to_string());
         }
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -144,9 +201,6 @@ fn java_class_signature(
         let ty_text = ty_node
             .and_then(|t| t.utf8_text(src.as_bytes()).ok())
             .map(|s| s.trim().to_string());
-        let leaf = ty_node
-            .and_then(|t| extract_type_leaf(t, src))
-            .filter(|l| !is_primitive_or_ignored(l));
         let Some(name) = field
             .child_by_field_name("declarator")
             .and_then(|d| d.child_by_field_name("name"))
@@ -155,25 +209,30 @@ fn java_class_signature(
         else {
             continue;
         };
-        if let Some(leaf) = &leaf {
-            out.edges.push(Edge {
-                source: type_id.to_string(),
-                target: format!("extern::{leaf}"),
-                relation: "has_field".into(),
-                confidence: Confidence::Extracted,
-                attr: Some(EdgeAttr {
-                    name: Some(name.clone()),
-                    index: None,
-                }),
-            });
-            out.nodes.push(Node {
-                id: format!("extern::{leaf}"),
-                label: leaf.clone(),
-                source_file: Some(file.to_string()),
-                source_location: Some(line_loc(field)),
-                kind: Some("type".into()),
-                signature: None,
-            });
+        if let Some(t) = ty_node {
+            for leaf in type_leaves(t, src) {
+                if is_primitive_or_ignored(&leaf) {
+                    continue;
+                }
+                out.edges.push(Edge {
+                    source: type_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_field".into(),
+                    confidence: Confidence::Extracted,
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: None,
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(field)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
         }
         sig.fields.push(FieldSig { name, ty: ty_text });
     }
