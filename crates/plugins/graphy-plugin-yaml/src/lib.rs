@@ -40,6 +40,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
                     source_file: Some(file.to_string()),
                     source_location: Some(line_loc(key.start_position().row)),
                     kind: Some("yaml_key".into()),
+                    signature: None,
                 });
             }
         }

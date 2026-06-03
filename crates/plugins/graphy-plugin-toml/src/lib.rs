@@ -45,6 +45,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
                     source_file: Some(file.to_string()),
                     source_location: Some(line_loc(child.start_position().row)),
                     kind: Some(kind.to_string()),
+                    signature: None,
                 });
             }
         }

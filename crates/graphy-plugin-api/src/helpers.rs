@@ -27,6 +27,8 @@ pub struct Node {
     pub source_location: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signature: Option<Signature>,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -35,6 +37,40 @@ pub struct Edge {
     pub target: String,
     pub relation: String,
     pub confidence: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attr: Option<EdgeAttr>,
+}
+
+#[derive(Serialize, Default, Debug, Clone)]
+pub struct Signature {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub params: Vec<ParamSig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub returns: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<FieldSig>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ParamSig {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ty: Option<String>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct FieldSig {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ty: Option<String>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct EdgeAttr {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index: Option<u32>,
 }
 
 pub const EXTRACTED: &str = "EXTRACTED";
@@ -63,6 +99,7 @@ pub fn emit_def(
         source_file: Some(file.to_string()),
         source_location: Some(line_loc(start_row)),
         kind: Some(kind.to_string()),
+        signature: None,
     });
 }
 
@@ -79,12 +116,14 @@ pub fn emit_import(out: &mut Output, file: &str, target: &str, start_row: usize)
         source_file: Some(file.to_string()),
         source_location: Some(line_loc(start_row)),
         kind: Some("import".into()),
+        signature: None,
     });
     out.edges.push(Edge {
         source: file.to_string(),
         target: import_id,
         relation: "imports".into(),
         confidence: EXTRACTED,
+        attr: None,
     });
 }
 
@@ -107,6 +146,14 @@ pub fn emit_call(
             target: target_id.clone(),
             relation: "calls".into(),
             confidence: INFERRED,
+            attr: None,
         });
+    }
+}
+
+/// Set a computed signature on the node most recently pushed to `out`.
+pub fn attach_signature(out: &mut Output, sig: Signature) {
+    if let Some(n) = out.nodes.last_mut() {
+        n.signature = Some(sig);
     }
 }

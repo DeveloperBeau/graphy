@@ -40,6 +40,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
                             source_file: Some(file.to_string()),
                             source_location: Some(format!("L{}", child.start_position().row + 1)),
                             kind: Some("selector".into()),
+                            signature: None,
                         });
                     }
                 }
@@ -60,6 +61,7 @@ fn walk(node: TsNode, src: &str, file: &str, out: &mut Output) {
                             target: format!("css::{target}"),
                             relation: "imports".into(),
                             confidence: EXTRACTED,
+                            attr: None,
                         });
                     }
                 }
