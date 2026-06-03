@@ -487,3 +487,45 @@ fn loader_dispatches_java_plugin_typed_signature_layer() {
         Some("Widget")
     );
 }
+
+#[test]
+fn loader_dispatches_ruby_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-ruby"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let rb = src_dir.path().join("a.rb");
+    fs::write(
+        &rb,
+        "module Mailer\n  def self.deliver(recipient, subject)\n    recipient\n  end\nend\n\n\
+         class Inbox\n  def archive(message)\n    message\n  end\nend\n",
+    )
+    .unwrap();
+    let out = reg.extract(&rb).unwrap().unwrap();
+
+    // NAME-ONLY: the signature payload carries parameter names with no type,
+    // and the round-trip preserves it onto the schema node.
+    let deliver = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "deliver")
+        .expect("deliver node");
+    let sig = deliver.signature.as_ref().expect("deliver signature");
+    let names: Vec<&str> = sig.params.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(names, vec!["recipient", "subject"]);
+    assert!(sig.params.iter().all(|p| p.ty.is_none()));
+    assert!(sig.returns.is_none());
+
+    // NAME-ONLY: no typed edges and no kind:"type" nodes survive the round-trip.
+    for rel in ["has_param", "returns", "has_field"] {
+        assert!(
+            !out.edges.iter().any(|e| e.relation == rel),
+            "unexpected {rel} edge in NAME-ONLY round-trip"
+        );
+    }
+    assert!(
+        !out.nodes.iter().any(|n| n.kind.as_deref() == Some("type")),
+        "unexpected kind:type node in NAME-ONLY round-trip"
+    );
+}
