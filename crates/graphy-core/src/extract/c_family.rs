@@ -6,13 +6,209 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Language, Node as TsNode, Parser};
 
-use super::common::{emit_call, emit_def, emit_import, name_of};
-use crate::schema::ExtractionOutput;
+use super::common::{attach_signature, emit_call, emit_def, emit_import, line_loc, name_of};
+use crate::schema::{
+    Confidence, Edge, EdgeAttr, ExtractionOutput, FieldSig, Node, ParamSig, Signature,
+};
 
 #[derive(Copy, Clone)]
 pub enum Flavor {
     C,
     Cpp,
+}
+
+/// Extract the leaf type name from a C++ type node. Returns `None` for
+/// primitives (kind `primitive_type`) and anything that is not a named type.
+fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+    match node.kind() {
+        "type_identifier" => node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
+        _ => None,
+    }
+}
+
+/// C++ primitive / builtin types that should not produce typed edges. Secondary
+/// safety net for typedef-style primitives (`size_t`, `uint32_t`, …) that parse
+/// as `type_identifier` and so slip past the `primitive_type` kind gate.
+fn is_primitive_or_ignored(name: &str) -> bool {
+    matches!(
+        name,
+        "void"
+            | "bool"
+            | "int"
+            | "unsigned"
+            | "long"
+            | "short"
+            | "char"
+            | "float"
+            | "double"
+            | "auto"
+            | "size_t"
+            | "uint8_t"
+            | "uint16_t"
+            | "uint32_t"
+            | "uint64_t"
+            | "int8_t"
+            | "int16_t"
+            | "int32_t"
+            | "int64_t"
+    )
+}
+
+/// Build a function/method `Signature` and emit `has_param` / `returns` edges
+/// for a C++ `function_definition`. Pure Option handling throughout so
+/// constructors / destructors (no `type` field) never panic.
+fn cpp_signature(
+    fn_def: TsNode,
+    src: &str,
+    file: &str,
+    fn_id: &str,
+    out: &mut ExtractionOutput,
+) -> Signature {
+    let mut sig = Signature::default();
+    let params = fn_def
+        .child_by_field_name("declarator")
+        .filter(|d| d.kind() == "function_declarator")
+        .and_then(|d| d.child_by_field_name("parameters"));
+    if let Some(params) = params {
+        let mut cursor = params.walk();
+        let mut index: u32 = 0;
+        for p in params.children(&mut cursor) {
+            if p.kind() != "parameter_declaration" {
+                continue;
+            }
+            let ty_node = p.child_by_field_name("type");
+            let ty_text = ty_node
+                .and_then(|t| t.utf8_text(src.as_bytes()).ok())
+                .map(|s| s.trim().to_string());
+            let leaf = ty_node
+                .and_then(|t| extract_type_leaf(t, src))
+                .filter(|l| !is_primitive_or_ignored(l));
+            let name = p
+                .child_by_field_name("declarator")
+                .and_then(|d| d.utf8_text(src.as_bytes()).ok())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "_".to_string());
+            if let Some(ref leaf) = leaf {
+                out.edges.push(Edge {
+                    source: fn_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_param".into(),
+                    confidence: Confidence::Extracted,
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: Some(index),
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(p)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
+            sig.params.push(ParamSig { name, ty: ty_text });
+            index += 1;
+        }
+    }
+    if let Some(ret) = fn_def.child_by_field_name("type") {
+        if let Ok(text) = ret.utf8_text(src.as_bytes()) {
+            sig.returns = Some(text.trim().to_string());
+        }
+        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+            out.edges.push(Edge {
+                source: fn_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "returns".into(),
+                confidence: Confidence::Extracted,
+                attr: None,
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(ret)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+    }
+    sig
+}
+
+/// Build a `Signature.fields` for a C++ `struct_specifier` / `class_specifier`
+/// and emit `has_field` edges. Skips method prototypes and embedded/anonymous
+/// fields. Pure Option handling throughout.
+fn cpp_field_signature(
+    specifier: TsNode,
+    src: &str,
+    file: &str,
+    type_id: &str,
+    out: &mut ExtractionOutput,
+) -> Signature {
+    let mut sig = Signature::default();
+    let Some(body) = specifier.child_by_field_name("body") else {
+        return sig;
+    };
+    let mut cursor = body.walk();
+    for field in body.children(&mut cursor) {
+        if field.kind() != "field_declaration" {
+            continue;
+        }
+        let Some(decl) = field.child_by_field_name("declarator") else {
+            continue;
+        };
+        // Skip method prototypes (declarator is a function_declarator).
+        if decl.kind() == "function_declarator" {
+            continue;
+        }
+        // Descend through pointer_declarator chains to the field_identifier.
+        let mut cur = decl;
+        let mut name: Option<String> = None;
+        for _ in 0..6 {
+            if cur.kind() == "field_identifier" {
+                name = cur.utf8_text(src.as_bytes()).ok().map(|s| s.to_string());
+                break;
+            }
+            match cur.child_by_field_name("declarator") {
+                Some(next) => cur = next,
+                None => break,
+            }
+        }
+        let Some(name) = name else {
+            continue;
+        };
+        let ty_node = field.child_by_field_name("type");
+        let ty_text = ty_node
+            .and_then(|t| t.utf8_text(src.as_bytes()).ok())
+            .map(|s| s.trim().to_string());
+        let leaf = ty_node
+            .and_then(|t| extract_type_leaf(t, src))
+            .filter(|l| !is_primitive_or_ignored(l));
+        if let Some(leaf) = &leaf {
+            out.edges.push(Edge {
+                source: type_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "has_field".into(),
+                confidence: Confidence::Extracted,
+                attr: Some(EdgeAttr {
+                    name: Some(name.clone()),
+                    index: None,
+                }),
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(field)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+        sig.fields.push(FieldSig { name, ty: ty_text });
+    }
+    sig
 }
 
 pub fn extract(path: &Path, flavor: Flavor) -> Result<ExtractionOutput> {
@@ -33,7 +229,8 @@ pub fn extract(path: &Path, flavor: Flavor) -> Result<ExtractionOutput> {
     let mut out = ExtractionOutput::default();
     let mut symbols: HashMap<String, String> = HashMap::new();
 
-    walk(tree.root_node(), &src, &file, &mut out, &mut symbols);
+    let cpp = matches!(flavor, Flavor::Cpp);
+    walk(tree.root_node(), &src, &file, &mut out, &mut symbols, cpp);
     walk_calls(tree.root_node(), &src, &file, &mut out, &symbols);
     Ok(out)
 }
@@ -61,13 +258,36 @@ fn walk(
     file: &str,
     out: &mut ExtractionOutput,
     symbols: &mut HashMap<String, String>,
+    cpp: bool,
 ) {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         match child.kind() {
             "function_definition" => {
                 if let Some(n) = declarator_name(child, src) {
-                    emit_def(out, symbols, file, "function", n, child);
+                    if cpp {
+                        let id = format!("{file}::{n}");
+                        let sig = cpp_signature(child, src, file, &id, out);
+                        emit_def(out, symbols, file, "function", n, child);
+                        attach_signature(out, sig);
+                    } else {
+                        emit_def(out, symbols, file, "function", n, child);
+                    }
+                }
+            }
+            "struct_specifier" | "class_specifier" if cpp => {
+                if let Some(n) = name_of(child, src) {
+                    let id = format!("{file}::{n}");
+                    let sig = cpp_field_signature(child, src, file, &id, out);
+                    emit_def(
+                        out,
+                        symbols,
+                        file,
+                        child.kind().trim_end_matches("_specifier"),
+                        n,
+                        child,
+                    );
+                    attach_signature(out, sig);
                 }
             }
             "struct_specifier" | "class_specifier" | "union_specifier" | "enum_specifier" => {
@@ -114,7 +334,7 @@ fn walk(
             }
             _ => {}
         }
-        walk(child, src, file, out, symbols);
+        walk(child, src, file, out, symbols, cpp);
     }
 }
 

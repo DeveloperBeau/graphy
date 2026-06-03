@@ -419,3 +419,37 @@ fn loader_dispatches_swift_plugin_typed_signature_layer() {
         Some("Widget")
     );
 }
+
+#[test]
+fn loader_dispatches_cpp_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-c-family"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    // struct before function to remove any type-vs-identifier parse ambiguity.
+    let cpp = src_dir.path().join("a.cpp");
+    fs::write(
+        &cpp,
+        "struct Widget { int x; };\nWidget build(Widget w, int n) { return w; }\n",
+    )
+    .unwrap();
+    let out = reg.extract(&cpp).unwrap().unwrap();
+
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "build")
+        .expect("build node");
+    assert_eq!(
+        build.signature.as_ref().and_then(|s| s.returns.as_deref()),
+        Some("Widget")
+    );
+}
