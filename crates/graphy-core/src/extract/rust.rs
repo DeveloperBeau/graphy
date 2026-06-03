@@ -208,7 +208,6 @@ fn function_signature(
     fn_id: &str,
     out: &mut ExtractionOutput,
 ) -> Signature {
-    let _ = file; // kept for API symmetry with struct_signature
     let mut sig = Signature::default();
     if let Some(params) = fn_node.child_by_field_name("parameters") {
         let mut cursor = params.walk();
@@ -241,6 +240,14 @@ fn function_signature(
                         index: Some(index),
                     }),
                 });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(param)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -260,6 +267,14 @@ fn function_signature(
                 confidence: Confidence::Extracted,
                 attr: None,
             });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(ret)),
+                kind: Some("type".into()),
+                signature: None,
+            });
         }
     }
     sig
@@ -274,7 +289,6 @@ fn struct_signature(
     struct_id: &str,
     out: &mut ExtractionOutput,
 ) -> Signature {
-    let _ = file; // kept for API symmetry with function_signature
     let mut sig = Signature::default();
     let Some(body) = struct_node.child_by_field_name("body") else {
         return sig;
@@ -306,6 +320,14 @@ fn struct_signature(
                     name: Some(name.clone()),
                     index: None,
                 }),
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(field)),
+                kind: Some("type".into()),
+                signature: None,
             });
         }
         sig.fields.push(FieldSig { name, ty: ty_text });

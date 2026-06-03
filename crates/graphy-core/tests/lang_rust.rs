@@ -450,3 +450,23 @@ fn holder_emits_has_field_and_field_payload() {
     assert_eq!(sig.fields[1].name, "count");
     assert_eq!(sig.fields[1].ty.as_deref(), Some("u32"));
 }
+
+#[test]
+fn has_param_collapses_onto_local_widget_after_pipeline() {
+    let (kg, _tmp) = run_pipeline(&fixture_dir("rust"));
+    let json = kg.to_json_value();
+    let edges = json["edges"].as_array().unwrap();
+
+    // After dedup, the build -> Widget has_param edge targets the local
+    // struct definition, not `extern::Widget`.
+    let hit = edges.iter().any(|e| {
+        e["relation"] == "has_param"
+            && e["source"]
+                .as_str()
+                .is_some_and(|s| s.ends_with("src/signatures.rs::build"))
+            && e["target"]
+                .as_str()
+                .is_some_and(|t| t.ends_with("src/signatures.rs::Widget"))
+    });
+    assert!(hit, "no collapsed has_param edge; edges = {:#?}", edges);
+}
