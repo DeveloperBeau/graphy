@@ -470,3 +470,33 @@ fn has_param_collapses_onto_local_widget_after_pipeline() {
     });
     assert!(hit, "no collapsed has_param edge; edges = {:#?}", edges);
 }
+
+#[test]
+fn order_param_index_counts_primitive_params() {
+    let out = extract_file(&fp("src/signatures.rs"));
+    let order_id_suffix = "src/signatures.rs::order";
+    let has_param: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| e.source.ends_with(order_id_suffix) && e.relation == "has_param")
+        .collect();
+    // `count: u32` is primitive (no edge); `widget: Widget` is the SECOND param.
+    assert_eq!(has_param.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(has_param[0].target, "extern::Widget");
+    let attr = has_param[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("widget"));
+    assert_eq!(attr.index, Some(1)); // index counts ALL params, so widget is index 1
+}
+
+#[test]
+fn unresolved_extern_type_keeps_type_kind_after_pipeline() {
+    use common::run_pipeline;
+    let (kg, _tmp) = run_pipeline(&fixture_dir("rust"));
+    let json = kg.to_json_value();
+    let nodes = json["nodes"].as_array().unwrap();
+    let pathbuf = nodes
+        .iter()
+        .find(|n| n["id"].as_str().is_some_and(|s| s == "extern::PathBuf"));
+    let pathbuf = pathbuf.expect("extern::PathBuf node should survive");
+    assert_eq!(pathbuf["kind"], "type");
+}

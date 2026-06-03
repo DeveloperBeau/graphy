@@ -371,8 +371,8 @@ fn extract_type_leaf<'a>(node: TsNode<'a>, src: &'a str) -> Option<String> {
     }
 }
 
-/// Returns true for types that should not produce `references` edges because
-/// they are either Rust primitives or well-known built-in names.
+/// Returns true for types that should not produce `has_param` / `returns` / `has_field` edges
+/// because they are either Rust primitives or well-known built-in names.
 fn is_primitive_or_ignored(name: &str) -> bool {
     matches!(
         name,

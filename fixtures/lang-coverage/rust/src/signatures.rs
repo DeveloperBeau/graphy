@@ -14,3 +14,12 @@ pub struct Holder {
     pub item: Widget,
     pub count: u32,
 }
+
+pub fn order(count: u32, widget: Widget) -> Widget {
+    let _ = count;
+    widget
+}
+
+pub fn external(p: std::path::PathBuf) -> Widget {
+    Widget { label: String::new(), size: 0 }
+}
