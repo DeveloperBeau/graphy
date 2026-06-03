@@ -382,3 +382,40 @@ fn loader_dispatches_typescript_plugin_typed_signature_layer() {
         Some("Widget")
     );
 }
+
+#[test]
+fn loader_dispatches_swift_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-swift"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let swift = src_dir.path().join("a.swift");
+    fs::write(
+        &swift,
+        "struct Widget { var w: Widget }\n\
+         func build(widget: Widget) -> Widget { return widget }\n",
+    )
+    .unwrap();
+    let out = reg.extract(&swift).unwrap().unwrap();
+
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(
+        hp.attr.as_ref().and_then(|a| a.name.as_deref()),
+        Some("widget")
+    );
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "build")
+        .expect("build node");
+    assert_eq!(
+        build.signature.as_ref().and_then(|s| s.returns.as_deref()),
+        Some("Widget")
+    );
+}
