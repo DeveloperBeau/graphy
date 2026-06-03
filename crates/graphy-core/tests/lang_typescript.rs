@@ -261,6 +261,87 @@ fn order_param_pet_index_is_zero() {
 }
 
 #[test]
+fn stdlib_generic_param_emits_only_inner_edge() {
+    // collect(items: Array<Widget>): the Array container is suppressed; only
+    // the inner Widget gets a has_param edge and node.
+    let out = extract_file(&fp("src/signatures.ts"));
+    let hp = has_param_edges(&out, "::collect");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert!(
+        !out.nodes.iter().any(|n| n.id == "extern::Array"),
+        "Array container should not produce a node"
+    );
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::Array"),
+        "Array container should not produce an edge"
+    );
+}
+
+#[test]
+fn user_generic_param_emits_edges_for_base_and_args_sharing_index() {
+    // pair(p: Pair<Foo, Bar>): the user generic Pair keeps its own edge, and
+    // Foo + Bar each get an edge. All three share the same parameter index.
+    let out = extract_file(&fp("src/signatures.ts"));
+    let hp = has_param_edges(&out, "::pair");
+    let targets: Vec<&str> = hp.iter().map(|e| e.target.as_str()).collect();
+    assert!(targets.contains(&"extern::Pair"), "got {targets:?}");
+    assert!(targets.contains(&"extern::Foo"), "got {targets:?}");
+    assert!(targets.contains(&"extern::Bar"), "got {targets:?}");
+    assert_eq!(hp.len(), 3, "edges = {:#?}", out.edges);
+    let idx = hp[0].attr.as_ref().and_then(|a| a.index);
+    assert!(idx.is_some());
+    assert!(
+        hp.iter()
+            .all(|e| e.attr.as_ref().and_then(|a| a.index) == idx),
+        "all leaves of one param share the same index"
+    );
+}
+
+#[test]
+fn generic_param_signature_payload_keeps_full_text() {
+    // The signature payload ty is the full textual type, unchanged.
+    let out = extract_file(&fp("src/signatures.ts"));
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::collect"))
+        .unwrap();
+    let sig = collect.signature.as_ref().expect("signature");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Array<Widget>"));
+}
+
+#[test]
+fn bare_custom_param_emits_exactly_one_edge() {
+    // single(w: Widget): regression — exactly one has_param edge.
+    let out = extract_file(&fp("src/signatures.ts"));
+    let hp = has_param_edges(&out, "::single");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::Widget");
+}
+
+#[test]
+fn union_param_emits_edges_for_both_members_sharing_index() {
+    // u(x: Foo | Bar): both union members get a has_param edge, sharing the
+    // same parameter index.
+    let out = extract_file(&fp("src/signatures.ts"));
+    let hp = has_param_edges(&out, "::u");
+    let targets: Vec<&str> = hp.iter().map(|e| e.target.as_str()).collect();
+    assert!(targets.contains(&"extern::Foo"), "got {targets:?}");
+    assert!(targets.contains(&"extern::Bar"), "got {targets:?}");
+    assert_eq!(hp.len(), 2, "edges = {:#?}", out.edges);
+    let idx = hp[0].attr.as_ref().and_then(|a| a.index);
+    assert!(idx.is_some());
+    assert!(
+        hp.iter()
+            .all(|e| e.attr.as_ref().and_then(|a| a.index) == idx),
+        "all members of one union param share the same index"
+    );
+}
+
+#[test]
 fn js_function_emits_no_typed_edges() {
     // JS has no type_annotation nodes, so the typed layer is a no-op: no
     // typed edges and the function node carries no signature.
