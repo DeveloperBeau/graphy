@@ -6,8 +6,195 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use super::common::{emit_call, emit_def, emit_import, emit_inherits, name_of};
-use crate::schema::ExtractionOutput;
+use super::common::{
+    attach_signature, emit_call, emit_def, emit_import, emit_inherits, line_loc, name_of,
+};
+use crate::schema::{
+    Confidence, Edge, EdgeAttr, ExtractionOutput, FieldSig, Node, ParamSig, Signature,
+};
+
+/// Extract the leaf type name from a Scala type node.
+fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+    match node.kind() {
+        "type_identifier" => node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
+        "stable_type_identifier" => node
+            .utf8_text(src.as_bytes())
+            .ok()
+            .and_then(|s| s.rsplit('.').next().map(|x| x.to_string())),
+        "generic_type" => {
+            let mut c = node.walk();
+            node.children(&mut c)
+                .find_map(|ch| extract_type_leaf(ch, src))
+        }
+        _ => {
+            let mut c = node.walk();
+            node.children(&mut c)
+                .find_map(|ch| extract_type_leaf(ch, src))
+        }
+    }
+}
+
+/// Scala primitive / builtin types that should not produce typed edges.
+fn is_primitive_or_ignored(name: &str) -> bool {
+    matches!(
+        name,
+        "Int"
+            | "Long"
+            | "Short"
+            | "Byte"
+            | "Double"
+            | "Float"
+            | "Boolean"
+            | "Char"
+            | "Unit"
+            | "Any"
+            | "AnyRef"
+            | "AnyVal"
+            | "Nothing"
+            | "Null"
+            | "String"
+    )
+}
+
+/// Build a function/method `Signature` and emit `has_param` / `returns` edges.
+///
+/// Only the first `parameters` node is processed; curried definitions
+/// (`def f(a: Int)(b: Widget)`) contribute only their first parameter list.
+fn scala_signature(
+    decl: TsNode,
+    src: &str,
+    file: &str,
+    fn_id: &str,
+    out: &mut ExtractionOutput,
+) -> Signature {
+    let mut sig = Signature::default();
+    if let Some(params) = decl
+        .child_by_field_name("parameters")
+        .filter(|p| p.kind() == "parameters")
+    {
+        let mut cursor = params.walk();
+        let mut index: u32 = 0;
+        for p in params.children(&mut cursor) {
+            if p.kind() != "parameter" {
+                continue;
+            }
+            let name = p
+                .child_by_field_name("name")
+                .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+                .unwrap_or("_")
+                .to_string();
+            let ty_node = p.child_by_field_name("type");
+            let ty_text = ty_node
+                .and_then(|t| t.utf8_text(src.as_bytes()).ok())
+                .map(|s| s.trim().to_string());
+            let leaf = ty_node
+                .and_then(|t| extract_type_leaf(t, src))
+                .filter(|l| !is_primitive_or_ignored(l));
+            if let Some(ref leaf) = leaf {
+                out.edges.push(Edge {
+                    source: fn_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_param".into(),
+                    confidence: Confidence::Extracted,
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: Some(index),
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(p)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
+            sig.params.push(ParamSig { name, ty: ty_text });
+            index += 1;
+        }
+    }
+    if let Some(ret) = decl.child_by_field_name("return_type") {
+        if let Ok(text) = ret.utf8_text(src.as_bytes()) {
+            sig.returns = Some(text.trim().to_string());
+        }
+        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+            out.edges.push(Edge {
+                source: fn_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "returns".into(),
+                confidence: Confidence::Extracted,
+                attr: None,
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(ret)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+    }
+    sig
+}
+
+/// Build a class `Signature.fields` from constructor `class_parameters` and
+/// emit `has_field` edges.
+fn scala_class_signature(
+    class_def: TsNode,
+    src: &str,
+    file: &str,
+    type_id: &str,
+    out: &mut ExtractionOutput,
+) -> Signature {
+    let mut sig = Signature::default();
+    let Some(params) = class_def.child_by_field_name("class_parameters") else {
+        return sig;
+    };
+    let mut cursor = params.walk();
+    for p in params.children(&mut cursor) {
+        if p.kind() != "class_parameter" {
+            continue;
+        }
+        let name = match p
+            .child_by_field_name("name")
+            .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+        {
+            Some(n) => n.to_string(),
+            None => continue,
+        };
+        let ty_node = p.child_by_field_name("type");
+        let ty_text = ty_node
+            .and_then(|t| t.utf8_text(src.as_bytes()).ok())
+            .map(|s| s.trim().to_string());
+        let leaf = ty_node
+            .and_then(|t| extract_type_leaf(t, src))
+            .filter(|l| !is_primitive_or_ignored(l));
+        if let Some(leaf) = &leaf {
+            out.edges.push(Edge {
+                source: type_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "has_field".into(),
+                confidence: Confidence::Extracted,
+                attr: Some(EdgeAttr {
+                    name: Some(name.clone()),
+                    index: None,
+                }),
+            });
+            out.nodes.push(Node {
+                id: format!("extern::{leaf}"),
+                label: leaf.clone(),
+                source_file: Some(file.to_string()),
+                source_location: Some(line_loc(p)),
+                kind: Some("type".into()),
+                signature: None,
+            });
+        }
+        sig.fields.push(FieldSig { name, ty: ty_text });
+    }
+    sig
+}
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
     let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
@@ -38,11 +225,21 @@ fn walk(
         match child.kind() {
             "function_definition" | "function_declaration" => {
                 if let Some(n) = name_of(child, src) {
+                    let id = format!("{file}::{n}");
+                    let sig = scala_signature(child, src, file, &id, out);
                     emit_def(out, symbols, file, "function", n, child);
+                    attach_signature(out, sig);
                 }
             }
             "class_definition" | "object_definition" | "trait_definition" => {
                 if let Some(n) = name_of(child, src) {
+                    let child_id = format!("{file}::{n}");
+                    // class_definition carries constructor params; objects/traits do not.
+                    let sig = if child.kind() == "class_definition" {
+                        Some(scala_class_signature(child, src, file, &child_id, out))
+                    } else {
+                        None
+                    };
                     emit_def(
                         out,
                         symbols,
@@ -51,8 +248,10 @@ fn walk(
                         n,
                         child,
                     );
-                    // Emit inherits edges for extends/with clause.
-                    let child_id = format!("{file}::{n}");
+                    if let Some(sig) = sig {
+                        attach_signature(out, sig);
+                    }
+                    // Emit inherits edges for extends/with clause (after attach_signature).
                     let mut ec = child.walk();
                     for grandchild in child.children(&mut ec) {
                         if grandchild.kind() == "extends_clause" {
