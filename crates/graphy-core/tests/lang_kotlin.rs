@@ -136,6 +136,118 @@ fn non_utf8_bytes_with_kt_suffix_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Typed signature layer ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_emits_has_param_returns_and_payload() {
+    let out = extract_file(&fp("src/Signatures.kt"));
+
+    let hp = has_param_edges(&out, "::build");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges); // n: Int is primitive
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("widget"));
+    assert_eq!(attr.index, Some(0));
+
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::build")
+        && e.target == "extern::Widget"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("Widget"));
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "widget");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.params[1].name, "n");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Int"));
+}
+
+#[test]
+fn order_param_index_counts_all_params() {
+    let out = extract_file(&fp("src/Signatures.kt"));
+    let hp = has_param_edges(&out, "::order");
+    assert_eq!(hp.len(), 1); // only widget: Widget
+    assert_eq!(hp[0].target, "extern::Widget");
+    // n is index 0 (primitive, no edge); widget is the SECOND param.
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(1));
+}
+
+#[test]
+fn process_method_emits_has_param() {
+    let out = extract_file(&fp("src/Signatures.kt"));
+    let hp = has_param_edges(&out, "::process");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(hp[0].attr.as_ref().unwrap().name.as_deref(), Some("widget"));
+}
+
+#[test]
+fn widget_emits_has_field_and_skips_primitive() {
+    let out = extract_file(&fp("src/Signatures.kt"));
+
+    // owner: Widget? -> has_field to extern::Widget
+    let owner = out
+        .edges
+        .iter()
+        .find(|e| {
+            e.relation == "has_field"
+                && e.source.ends_with("::Widget")
+                && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("owner")
+        })
+        .expect("Widget.owner has_field");
+    assert_eq!(owner.target, "extern::Widget");
+
+    // label: String is primitive -> no has_field for it
+    assert!(!out.edges.iter().any(|e| e.relation == "has_field"
+        && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("label")));
+
+    // Exclude extern:: nodes (those are type references, not the def node).
+    let widget = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Widget") && !n.id.starts_with("extern::"))
+        .unwrap();
+    let sig = widget.signature.as_ref().expect("class signature");
+    let names: Vec<_> = sig.fields.iter().map(|f| f.name.as_str()).collect();
+    assert_eq!(names, vec!["label", "owner"]);
+
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::Widget")
+    );
+}
+
+#[test]
+fn repo_store_emits_has_field() {
+    let out = extract_file(&fp("src/Signatures.kt"));
+    let store = out
+        .edges
+        .iter()
+        .find(|e| {
+            e.relation == "has_field"
+                && e.source.ends_with("::Repo")
+                && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("store")
+        })
+        .expect("Repo.store has_field");
+    assert_eq!(store.target, "extern::Widget");
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
