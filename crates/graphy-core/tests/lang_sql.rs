@@ -187,3 +187,60 @@ fn pipeline_node_count_floor() {
         g.node_count()
     );
 }
+
+// ---------- Typed signature layer (annotation-gated) ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_emits_has_param_returns_and_payload() {
+    let out = extract_file(&fp("signatures.sql"));
+
+    let hp = has_param_edges(&out, "::build");
+    // Only `w widget_type` is a non-primitive custom type.
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::widget_type");
+    let attr = hp[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("w"));
+    assert_eq!(attr.index, Some(0));
+
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::build")
+        && e.target == "extern::widget_type"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("widget_type"));
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "w");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("widget_type"));
+    assert_eq!(sig.params[1].name, "n");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("integer"));
+
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::widget_type")
+    );
+}
+
+#[test]
+fn reorder_param_index_counts_all_params() {
+    let out = extract_file(&fp("signatures.sql"));
+    let hp = has_param_edges(&out, "::reorder");
+    assert_eq!(hp.len(), 1); // only w: widget_type
+    // n is index 0 (primitive, no edge); w is the SECOND argument.
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(1));
+}

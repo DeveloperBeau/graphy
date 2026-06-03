@@ -645,3 +645,34 @@ fn loader_dispatches_lua_plugin_typed_signature_layer() {
     );
     assert!(!out.nodes.iter().any(|n| n.kind.as_deref() == Some("type")));
 }
+
+#[test]
+fn loader_dispatches_sql_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-sql"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let sql = src_dir.path().join("a.sql");
+    fs::write(
+        &sql,
+        "CREATE FUNCTION build(w widget_type, n integer) RETURNS widget_type AS $$ SELECT w; $$ LANGUAGE sql;\n",
+    )
+    .unwrap();
+    let out = reg.extract(&sql).unwrap().unwrap();
+    let hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param")
+        .expect("has_param edge");
+    assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "build")
+        .expect("build node");
+    assert_eq!(
+        build.signature.as_ref().and_then(|s| s.returns.as_deref()),
+        Some("widget_type")
+    );
+}
