@@ -125,31 +125,55 @@ fn collect_calls(
     }
 }
 
-fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+fn extract_type_leaves(node: TsNode, src: &str, out: &mut Vec<String>) {
     match node.kind() {
-        "predefined_type" => None,
-        "identifier" => node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
-        "qualified_name" => node
-            .child_by_field_name("name")
-            .and_then(|n| n.utf8_text(src.as_bytes()).ok())
-            .map(|s| s.to_string()),
+        "predefined_type" => {}
+        "identifier" => {
+            if let Ok(s) = node.utf8_text(src.as_bytes()) {
+                out.push(s.to_string());
+            }
+        }
+        "qualified_name" => {
+            if let Some(s) = node
+                .child_by_field_name("name")
+                .and_then(|n| n.utf8_text(src.as_bytes()).ok())
+            {
+                out.push(s.to_string());
+            }
+        }
         "generic_name" => {
             let mut c = node.walk();
-            node.children(&mut c)
-                .find(|ch| ch.kind() == "identifier")
-                .and_then(|id| id.utf8_text(src.as_bytes()).ok())
-                .map(|s| s.to_string())
+            for ch in node.children(&mut c) {
+                if ch.kind() == "type_argument_list" {
+                    let mut cc = ch.walk();
+                    for arg in ch.children(&mut cc).filter(|a| a.is_named()) {
+                        extract_type_leaves(arg, src, out);
+                    }
+                } else {
+                    extract_type_leaves(ch, src, out);
+                }
+            }
         }
-        "nullable_type" => {
+        "nullable_type" | "array_type" => {
             let mut c = node.walk();
-            node.children(&mut c)
-                .find_map(|ch| extract_type_leaf(ch, src))
+            for ch in node.children(&mut c).filter(|ch| ch.is_named()) {
+                extract_type_leaves(ch, src, out);
+            }
         }
-        "array_type" => node
-            .child_by_field_name("type")
-            .and_then(|t| extract_type_leaf(t, src)),
-        _ => None,
+        _ => {}
     }
+}
+
+fn type_leaves(node: TsNode, src: &str) -> Vec<String> {
+    let mut raw = Vec::new();
+    extract_type_leaves(node, src, &mut raw);
+    let mut out = Vec::new();
+    for s in raw {
+        if !out.contains(&s) {
+            out.push(s);
+        }
+    }
+    out
 }
 
 fn is_primitive_or_ignored(name: &str) -> bool {
@@ -173,6 +197,20 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "Byte"
             | "SByte"
             | "Void"
+            // Stdlib generic containers.
+            | "List"
+            | "IList"
+            | "IEnumerable"
+            | "ICollection"
+            | "Dictionary"
+            | "IDictionary"
+            | "HashSet"
+            | "ISet"
+            | "Task"
+            | "ValueTask"
+            | "Nullable"
+            | "Span"
+            | "ReadOnlySpan"
     )
 }
 
@@ -200,28 +238,30 @@ fn csharp_signature(
                 .and_then(|n| n.utf8_text(src.as_bytes()).ok())
                 .unwrap_or("_")
                 .to_string();
-            let leaf = ty_node
-                .and_then(|t| extract_type_leaf(t, src))
-                .filter(|l| !is_primitive_or_ignored(l));
-            if let Some(ref leaf) = leaf {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: EXTRACTED,
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                out.nodes.push(Node {
-                    id: format!("extern::{leaf}"),
-                    label: leaf.clone(),
-                    source_file: Some(file.to_string()),
-                    source_location: Some(line_loc(p.start_position().row)),
-                    kind: Some("type".into()),
-                    signature: None,
-                });
+            if let Some(t) = ty_node {
+                for leaf in type_leaves(t, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: EXTRACTED,
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    out.nodes.push(Node {
+                        id: format!("extern::{leaf}"),
+                        label: leaf.clone(),
+                        source_file: Some(file.to_string()),
+                        source_location: Some(line_loc(p.start_position().row)),
+                        kind: Some("type".into()),
+                        signature: None,
+                    });
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -234,7 +274,10 @@ fn csharp_signature(
                 sig.returns = Some(trimmed.to_string());
             }
         }
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -328,8 +371,10 @@ fn emit_field(
         .utf8_text(src.as_bytes())
         .ok()
         .map(|s| s.trim().to_string());
-    let leaf = extract_type_leaf(ty_node, src).filter(|l| !is_primitive_or_ignored(l));
-    if let Some(leaf) = &leaf {
+    for leaf in type_leaves(ty_node, src) {
+        if is_primitive_or_ignored(&leaf) {
+            continue;
+        }
         out.edges.push(Edge {
             source: type_id.to_string(),
             target: format!("extern::{leaf}"),
@@ -399,5 +444,43 @@ mod tests {
         let order = nodes.iter().find(|n| n["id"] == "s.cs::Order").unwrap();
         assert_eq!(order["signature"]["returns"], "Widget");
         assert_eq!(order["signature"]["params"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn emits_generic_inner_type_edges() {
+        let v = extract("public class C { public void M(List<Widget> a, Pair<Foo, Bar> b) {} }\n");
+        let edges = v["edges"].as_array().unwrap();
+        let hp: Vec<&Value> = edges
+            .iter()
+            .filter(|e| e["relation"] == "has_param" && e["source"] == "s.cs::M")
+            .collect();
+        let targets: Vec<&str> = hp.iter().map(|e| e["target"].as_str().unwrap()).collect();
+
+        // List container suppressed; inner Widget kept.
+        assert!(targets.contains(&"extern::Widget"), "targets = {targets:?}");
+        assert!(!targets.contains(&"extern::List"), "targets = {targets:?}");
+        // Pair (user generic) plus both inner args.
+        assert!(targets.contains(&"extern::Pair"), "targets = {targets:?}");
+        assert!(targets.contains(&"extern::Foo"), "targets = {targets:?}");
+        assert!(targets.contains(&"extern::Bar"), "targets = {targets:?}");
+
+        // Widget shares index 0 (param a); Pair/Foo/Bar share index 1 (param b).
+        let widget = hp.iter().find(|e| e["target"] == "extern::Widget").unwrap();
+        assert_eq!(widget["attr"]["index"], 0);
+        for t in ["extern::Pair", "extern::Foo", "extern::Bar"] {
+            let e = hp.iter().find(|e| e["target"] == t).unwrap();
+            assert_eq!(e["attr"]["index"], 1, "edge {t}");
+        }
+
+        // Payload `ty` keeps the full textual generic type.
+        let m = v["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|n| n["id"] == "s.cs::M")
+            .unwrap();
+        let params = m["signature"]["params"].as_array().unwrap();
+        assert_eq!(params[0]["ty"], "List<Widget>");
+        assert_eq!(params[1]["ty"], "Pair<Foo, Bar>");
     }
 }
