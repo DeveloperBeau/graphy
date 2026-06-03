@@ -36,6 +36,13 @@ no type for that position.
 | Lua | names | none | none | no type info in grammar |
 | Bash | none | none | none | no parameters in grammar |
 | SQL | partial | partial | none | typed CREATE FUNCTION arguments and return |
+| HTML | none | none | none | markup, no functions or types |
+| CSS | none | none | none | stylesheet, no functions or types |
+| JSON | none | none | none | data, no functions or types |
+| YAML | none | none | none | data, no functions or types |
+| TOML | none | none | none | data, no functions or types |
+| Markdown | none | none | none | prose, no functions or types |
+| Svelte | none | none | none | component markup, no signatures |
 
 Columns are `full` / `partial` / `none`. Rows are added as each grammar's
 extractor lands. Statically typed languages (Go, Java, C#, TypeScript, C++,

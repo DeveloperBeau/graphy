@@ -225,3 +225,24 @@ fn pipeline_node_count_floor() {
         g.node_count()
     );
 }
+
+// ---------- Typed signature layer: none (structural format) ----------
+
+#[test]
+fn emits_no_typed_signature_layer() {
+    let out = extract_file(&fp("Cargo.toml"));
+    assert!(
+        out.nodes.iter().all(|n| n.signature.is_none()),
+        "no signatures expected"
+    );
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| matches!(e.relation.as_str(), "has_param" | "returns" | "has_field")),
+        "no typed edges expected"
+    );
+    assert!(
+        !out.nodes.iter().any(|n| n.kind.as_deref() == Some("type")),
+        "no type nodes expected"
+    );
+}
