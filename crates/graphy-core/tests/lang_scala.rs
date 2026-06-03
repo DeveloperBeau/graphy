@@ -175,6 +175,108 @@ fn non_utf8_bytes_with_scala_suffix_do_not_crash() {
     let _ = graphy_core::extract::extract(&p);
 }
 
+// ---------- Typed signature layer ----------
+
+fn has_param_edges<'a>(
+    out: &'a graphy_core::schema::ExtractionOutput,
+    fn_suffix: &str,
+) -> Vec<&'a graphy_core::schema::Edge> {
+    out.edges
+        .iter()
+        .filter(|e| e.relation == "has_param" && e.source.ends_with(fn_suffix))
+        .collect()
+}
+
+#[test]
+fn build_emits_has_param_returns_and_payload() {
+    let out = extract_file(&fp("src/Signatures.scala"));
+
+    let hp = has_param_edges(&out, "::build");
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges); // n: Int is primitive
+    assert_eq!(hp[0].target, "extern::Widget");
+    let attr = hp[0].attr.as_ref().expect("attr");
+    assert_eq!(attr.name.as_deref(), Some("w"));
+    assert_eq!(attr.index, Some(0));
+
+    assert!(out.edges.iter().any(|e| e.relation == "returns"
+        && e.source.ends_with("::build")
+        && e.target == "extern::Widget"));
+
+    let build = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::build"))
+        .unwrap();
+    let sig = build.signature.as_ref().expect("signature");
+    assert_eq!(sig.returns.as_deref(), Some("Widget"));
+    assert_eq!(sig.params.len(), 2);
+    assert_eq!(sig.params[0].name, "w");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Widget"));
+    assert_eq!(sig.params[1].name, "n");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Int")); // primitive: textual type in payload
+}
+
+#[test]
+fn order_param_index_counts_all_params() {
+    let out = extract_file(&fp("src/Signatures.scala"));
+    let hp = has_param_edges(&out, "::order");
+    assert_eq!(hp.len(), 1); // only w: Widget
+    assert_eq!(hp[0].target, "extern::Widget");
+    // n is index 0 (primitive, no edge); w is the SECOND param → index 1
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(1));
+}
+
+#[test]
+fn method_process_emits_has_param() {
+    let out = extract_file(&fp("src/Signatures.scala"));
+    let hp = has_param_edges(&out, "::process");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(hp[0].attr.as_ref().unwrap().name.as_deref(), Some("w"));
+}
+
+#[test]
+fn class_svc_emits_has_field_and_skips_primitive() {
+    let out = extract_file(&fp("src/Signatures.scala"));
+
+    // widget: Widget → has_field edge
+    let f = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_field" && e.source.ends_with("::Svc"))
+        .expect("Svc has_field");
+    assert_eq!(f.target, "extern::Widget");
+    assert_eq!(f.attr.as_ref().unwrap().name.as_deref(), Some("widget"));
+
+    // count: Int is primitive → no has_field for it
+    assert!(!out.edges.iter().any(|e| e.relation == "has_field"
+        && e.source.ends_with("::Svc")
+        && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("count")));
+
+    // signature payload includes both fields
+    let svc = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Svc") && !n.id.starts_with("extern::"))
+        .unwrap();
+    let sig = svc.signature.as_ref().expect("Svc signature");
+    let names: Vec<_> = sig.fields.iter().map(|f| f.name.as_str()).collect();
+    assert!(names.contains(&"widget"));
+    assert!(names.contains(&"count"));
+}
+
+#[test]
+fn type_node_kind_is_type() {
+    let out = extract_file(&fp("src/Signatures.scala"));
+    assert!(
+        out.nodes
+            .iter()
+            .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::Widget"),
+        "no kind=type extern::Widget node; nodes = {:#?}",
+        out.nodes
+    );
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 #[test]

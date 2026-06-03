@@ -239,6 +239,21 @@ fn loader_dispatches_go_plugin_typed_signature_layer() {
 }
 
 #[test]
+fn loader_dispatches_scala_plugin_typed_signature_layer() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-scala"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let scala = src_dir.path().join("a.scala");
+    fs::write(
+        &scala,
+        "package p\n\
+         class Widget(val inner: Widget)\n\
+         def build(w: Widget): Widget = w\n",
+    )
+    .unwrap();
+    let out = reg.extract(&scala).unwrap().unwrap();
 fn loader_dispatches_kotlin_plugin_typed_signature_layer() {
     let dir = tempdir().unwrap();
     stage(dir.path(), &["graphy-plugin-kotlin"]);
@@ -259,6 +274,7 @@ fn loader_dispatches_kotlin_plugin_typed_signature_layer() {
         .iter()
         .find(|e| e.relation == "has_param")
         .expect("has_param edge");
+    assert_eq!(hp.attr.as_ref().and_then(|a| a.name.as_deref()), Some("w"));
     assert_eq!(
         hp.attr.as_ref().and_then(|a| a.name.as_deref()),
         Some("widget")

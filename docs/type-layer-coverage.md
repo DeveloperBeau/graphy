@@ -23,6 +23,7 @@ no type for that position.
 |----------|--------|---------|--------|-------|
 | Rust | full | full | full | pilot extractor |
 | Go | full | full | full | static types |
+| Scala | full | full | full | static types |
 | Kotlin | full | full | full | static types |
 
 Columns are `full` / `partial` / `none`. Rows are added as each grammar's
