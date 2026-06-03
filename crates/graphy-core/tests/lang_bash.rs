@@ -84,6 +84,50 @@ fn empty_file_emits_zero_nodes() {
     );
 }
 
+// ---------- Typed signature layer ----------
+//
+// Bash has no parameter list in its grammar: `function_definition` exposes
+// only `name` and `body`; parameters are positional (`$1`). The typed layer
+// is therefore "none" — functions emit no signature payload and no typed
+// nodes/edges. See docs/type-layer-coverage.md.
+
+#[test]
+fn functions_emit_no_signature_payload() {
+    let out = extract_file(&fp("service.sh"));
+    for n in &out.nodes {
+        if n.kind.as_deref() == Some("function") {
+            assert!(
+                n.signature.is_none(),
+                "function {:?} unexpectedly carries a signature: {:#?}",
+                n.label,
+                n.signature
+            );
+        }
+    }
+}
+
+#[test]
+fn no_typed_edges_or_type_nodes() {
+    let out = extract_file(&fp("service.sh"));
+    let typed_edges = out
+        .edges
+        .iter()
+        .filter(|e| matches!(e.relation.as_str(), "has_param" | "returns" | "has_field"))
+        .count();
+    assert_eq!(typed_edges, 0, "unexpected typed edges: {:#?}", out.edges);
+
+    let type_nodes = out
+        .nodes
+        .iter()
+        .filter(|n| n.kind.as_deref() == Some("type"))
+        .count();
+    assert_eq!(
+        type_nodes, 0,
+        "unexpected kind:\"type\" nodes: {:#?}",
+        out.nodes
+    );
+}
+
 // ---------- Edge cases ----------
 
 #[test]

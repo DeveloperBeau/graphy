@@ -108,3 +108,41 @@ fn collect_calls(
         collect_calls(child, src, caller_id, out, symbols);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::Value;
+
+    // Bash has no parameter list in its grammar (positional `$1`), so the
+    // typed signature layer is "none": no signature payload, no typed edges,
+    // no kind:"type" nodes. This mirrors the built-in extractor.
+    #[test]
+    fn emits_no_typed_signature_layer() {
+        let src = "format_name() {\n  local name=\"$1\"\n  echo \"$name\"\n}\n";
+        let bytes = extract_to_json("a.sh", src).unwrap();
+        let v: Value = serde_json::from_slice(&bytes).unwrap();
+
+        let nodes = v["nodes"].as_array().unwrap();
+        assert!(
+            nodes
+                .iter()
+                .any(|n| n["label"] == "format_name" && n["kind"] == "function"),
+            "expected function node: {nodes:#?}"
+        );
+        for n in nodes {
+            assert!(
+                n.get("signature").is_none() || n["signature"].is_null(),
+                "node carries signature: {n}"
+            );
+            assert_ne!(n["kind"], "type", "unexpected kind:\"type\" node: {n}");
+        }
+        for e in v["edges"].as_array().unwrap() {
+            let rel = e["relation"].as_str().unwrap_or("");
+            assert!(
+                !matches!(rel, "has_param" | "returns" | "has_field"),
+                "unexpected typed edge: {e}"
+            );
+        }
+    }
+}
