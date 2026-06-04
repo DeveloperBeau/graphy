@@ -394,7 +394,8 @@ fn loader_dispatches_swift_plugin_typed_signature_layer() {
     fs::write(
         &swift,
         "struct Widget { var w: Widget }\n\
-         func build(widget: Widget) -> Widget { return widget }\n",
+         func build(widget: Widget) -> Widget { return widget }\n\
+         func collect(items: [Widget]) {}\n",
     )
     .unwrap();
     let out = reg.extract(&swift).unwrap().unwrap();
@@ -402,11 +403,23 @@ fn loader_dispatches_swift_plugin_typed_signature_layer() {
     let hp = out
         .edges
         .iter()
-        .find(|e| e.relation == "has_param")
+        .find(|e| e.relation == "has_param" && e.source.ends_with("::build"))
         .expect("has_param edge");
     assert_eq!(
         hp.attr.as_ref().and_then(|a| a.name.as_deref()),
         Some("widget")
+    );
+
+    // Generic inner: sugar array `[Widget]` emits an edge to the inner Widget.
+    let collect_hp = out
+        .edges
+        .iter()
+        .find(|e| e.relation == "has_param" && e.source.ends_with("::collect"))
+        .expect("collect has_param edge");
+    assert_eq!(collect_hp.target, "extern::Widget");
+    assert_eq!(
+        collect_hp.attr.as_ref().and_then(|a| a.name.as_deref()),
+        Some("items")
     );
 
     let build = out
