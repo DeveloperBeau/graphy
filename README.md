@@ -123,4 +123,4 @@ Detailed reference lives under [`docs/`](docs/):
 
 ## License
 
-MIT.
+GPL-3.0-only. See [LICENSE](LICENSE).

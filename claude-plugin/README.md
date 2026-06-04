@@ -66,4 +66,4 @@ Hooks read these environment variables when set:
 
 ## License
 
-MIT.
+GPL-3.0-only.
