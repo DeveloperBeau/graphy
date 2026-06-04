@@ -408,7 +408,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-cli"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -423,7 +423,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-core"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "ahash",
  "anyhow",
@@ -493,14 +493,14 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-api"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "graphy-plugin-bash"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -511,7 +511,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-c-family"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -523,7 +523,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-csharp"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -534,7 +534,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-css"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -545,7 +545,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-dart"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -556,7 +556,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-elixir"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -567,7 +567,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-erlang"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -578,7 +578,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-fortran"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -589,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-go"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -600,7 +600,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-groovy"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -611,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-haskell"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -622,7 +622,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-html"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -633,7 +633,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-java"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -644,7 +644,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-js-ts"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -656,7 +656,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-json"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -667,7 +667,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-julia"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -678,7 +678,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-kotlin"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -689,7 +689,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-lua"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -700,7 +700,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-markdown"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -711,7 +711,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-objc"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-ocaml"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -733,7 +733,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-pascal"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -744,7 +744,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-perl"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -755,7 +755,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-php"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -766,7 +766,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-powershell"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -777,7 +777,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-python"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -788,7 +788,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-r"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-ruby"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -810,7 +810,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-rust"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -821,7 +821,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-scala"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -832,7 +832,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-sql"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -843,7 +843,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-svelte"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -854,7 +854,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-swift"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -865,7 +865,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-toml"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -876,7 +876,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-verilog"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -887,7 +887,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-yaml"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
@@ -898,7 +898,7 @@ dependencies = [
 
 [[package]]
 name = "graphy-plugin-zig"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "graphy-plugin-api",
  "serde",
