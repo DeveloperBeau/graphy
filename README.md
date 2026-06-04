@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/graphy-logo.svg" alt="graphy" width="128" height="128">
+</p>
+
 # graphy
 
 Turn a folder of code into a queryable knowledge graph. Fast, plugin-driven, ships as a single binary.
@@ -76,9 +80,12 @@ Full setup, slash commands, and troubleshooting: [integrations/claude-code.md](i
 
 | Integration | Status | Doc |
 |-------------|--------|-----|
-| Claude Code | v1 (stable) | [integrations/claude-code.md](integrations/claude-code.md) |
+| Claude Code | stable | [integrations/claude-code.md](integrations/claude-code.md) |
+| Codex | planned — v0.4.0 | [integrations/codex.md](integrations/codex.md) |
+| Cursor | planned — v0.5.0 | [integrations/cursor.md](integrations/cursor.md) |
+| Copilot CLI | planned — v0.6.0 | [integrations/copilot-cli.md](integrations/copilot-cli.md) |
 
-See [`integrations/`](integrations/) for the contributor skeleton and future additions.
+The Codex, Cursor, and Copilot CLI plugins wrap the same `graphy serve` MCP server as the Claude Code plugin. They ship in sequence; each integration doc tracks its status. See [`integrations/`](integrations/) for the contributor skeleton.
 
 ## Headline numbers
 
