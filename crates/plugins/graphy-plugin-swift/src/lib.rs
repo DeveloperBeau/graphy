@@ -39,16 +39,33 @@ fn swift_name<'src>(node: TsNode, src: &'src str) -> Option<&'src str> {
     None
 }
 
-fn classify(kind: &str) -> Option<&'static str> {
-    match kind {
+/// The tree-sitter-swift grammar uses `class_declaration` for struct/enum/class/actor.
+/// The actual keyword child distinguishes them: `struct`, `enum`, `class`, `actor`.
+fn classify(node: TsNode, src: &str) -> Option<&'static str> {
+    match node.kind() {
         "function_declaration"
         | "init_declaration"
         | "deinit_declaration"
-        | "protocol_function_declaration" => Some("function"),
-        "class_declaration" => Some("class"),
-        "protocol_declaration" => Some("protocol"),
-        _ => None,
+        | "protocol_function_declaration" => return Some("function"),
+        "protocol_declaration" => return Some("protocol"),
+        "class_declaration" => {
+            // Distinguish struct / enum / class / actor by first unnamed keyword child.
+            let mut cursor = node.walk();
+            for c in node.children(&mut cursor) {
+                if !c.is_named() {
+                    match c.utf8_text(src.as_bytes()).unwrap_or("") {
+                        "struct" => return Some("struct"),
+                        "enum" => return Some("enum"),
+                        "actor" => return Some("class"),
+                        _ => return Some("class"),
+                    }
+                }
+            }
+            return Some("class");
+        }
+        _ => {}
     }
+    None
 }
 
 /// Recursively collect leaf type names (including primitives and stdlib
@@ -312,7 +329,7 @@ fn walk(
             _ => None,
         };
 
-        if let Some(kind) = classify(child.kind())
+        if let Some(kind) = classify(child, src)
             && let Some(n) = swift_name(child, src)
         {
             emit_def(out, symbols, file, kind, n, child.start_position().row);

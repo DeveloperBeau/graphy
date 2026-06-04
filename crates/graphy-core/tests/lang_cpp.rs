@@ -237,19 +237,21 @@ fn take_vec_resolves_to_inner_widget_container_suppressed() {
             .iter()
             .any(|e| e.relation == "has_param" && e.target == "extern::vector")
     );
-    // Payload keeps the full textual type.
+    // std::string is a scalar stdlib type, not a user type: no edge.
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::string")
+    );
+    // Payload keeps the full textual type for every param, edge or not.
     let m = out
         .nodes
         .iter()
         .find(|n| n.id.ends_with("::take_vec") && !n.id.starts_with("extern::"))
         .unwrap();
-    assert_eq!(
-        m.signature
-            .as_ref()
-            .and_then(|s| s.params.first())
-            .and_then(|p| p.ty.as_deref()),
-        Some("std::vector<Widget>")
-    );
+    let params = &m.signature.as_ref().unwrap().params;
+    assert_eq!(params[0].ty.as_deref(), Some("std::vector<Widget>"));
+    assert_eq!(params[1].ty.as_deref(), Some("std::string"));
 }
 
 #[test]
