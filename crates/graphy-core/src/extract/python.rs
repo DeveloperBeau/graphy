@@ -169,22 +169,42 @@ fn collect_calls(
     }
 }
 
-/// Extract the leaf type name from a Python `type` annotation node.
-fn extract_type_leaf(type_node: TsNode, src: &str) -> Option<String> {
-    let mut c = type_node.walk();
-    let inner = type_node.children(&mut c).find(|ch| ch.is_named())?;
-    match inner.kind() {
-        "identifier" => inner.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
-        "subscript" => inner
-            .child_by_field_name("value")
-            .and_then(|v| v.utf8_text(src.as_bytes()).ok())
-            .map(|s| s.rsplit('.').next().unwrap_or(s).to_string()),
-        "attribute" => inner
-            .utf8_text(src.as_bytes())
-            .ok()
-            .map(|s| s.rsplit('.').next().unwrap_or(s).to_string()),
-        _ => None,
+/// Collect the outer type name and every generic inner-argument name from a
+/// Python `type` annotation node, depth first. `List[Pair[Foo, Bar]]` ->
+/// ["List", "Pair", "Foo", "Bar"].
+fn extract_type_leaves<'a>(node: TsNode<'a>, src: &'a str, out: &mut Vec<String>) {
+    match node.kind() {
+        "identifier" => {
+            if let Ok(t) = node.utf8_text(src.as_bytes()) {
+                out.push(t.to_string());
+            }
+        }
+        "attribute" => {
+            // Dotted base like `typing.List` — keep the trailing name only.
+            if let Ok(t) = node.utf8_text(src.as_bytes()) {
+                out.push(t.rsplit('.').next().unwrap_or(t).to_string());
+            }
+        }
+        "type" | "generic_type" | "type_parameter" | "subscript" => {
+            let mut c = node.walk();
+            for child in node.children(&mut c) {
+                if child.is_named() {
+                    extract_type_leaves(child, src, out);
+                }
+            }
+        }
+        _ => {}
     }
+}
+
+/// `extract_type_leaves` plus order-preserving de-duplication, so one type
+/// produces at most one edge per position.
+fn type_leaves<'a>(node: TsNode<'a>, src: &'a str) -> Vec<String> {
+    let mut v = Vec::new();
+    extract_type_leaves(node, src, &mut v);
+    let mut seen = std::collections::HashSet::new();
+    v.retain(|x| seen.insert(x.clone()));
+    v
 }
 
 /// Python builtins / typing names that should not produce typed edges.
@@ -207,6 +227,17 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "tuple"
             | "frozenset"
             | "type"
+            | "List"
+            | "Dict"
+            | "Set"
+            | "Tuple"
+            | "FrozenSet"
+            | "Optional"
+            | "Union"
+            | "Sequence"
+            | "Iterable"
+            | "Mapping"
+            | "Awaitable"
     )
 }
 
@@ -255,28 +286,30 @@ fn python_signature(
             let ty_text = ty_node
                 .and_then(|t| t.utf8_text(src.as_bytes()).ok())
                 .map(|s| s.trim().to_string());
-            if let Some(ty_node) = ty_node
-                && let Some(leaf) = extract_type_leaf(ty_node, src)
-                && !is_primitive_or_ignored(&leaf)
-            {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: Confidence::Extracted,
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                out.nodes.push(Node {
-                    id: format!("extern::{leaf}"),
-                    label: leaf.clone(),
-                    source_file: Some(file.to_string()),
-                    source_location: Some(line_loc(p)),
-                    kind: Some("type".into()),
-                    signature: None,
-                });
+            if let Some(ty_node) = ty_node {
+                for leaf in type_leaves(ty_node, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: Confidence::Extracted,
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    out.nodes.push(Node {
+                        id: format!("extern::{leaf}"),
+                        label: leaf.clone(),
+                        source_file: Some(file.to_string()),
+                        source_location: Some(line_loc(p)),
+                        kind: Some("type".into()),
+                        signature: None,
+                    });
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -286,7 +319,10 @@ fn python_signature(
         if let Ok(text) = ret.utf8_text(src.as_bytes()) {
             sig.returns = Some(text.trim().to_string());
         }
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -343,8 +379,10 @@ fn python_class_signature(
             .utf8_text(src.as_bytes())
             .ok()
             .map(|s| s.trim().to_string());
-        if let Some(leaf) = extract_type_leaf(ty_node, src).filter(|l| !is_primitive_or_ignored(l))
-        {
+        for leaf in type_leaves(ty_node, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: class_id.to_string(),
                 target: format!("extern::{leaf}"),

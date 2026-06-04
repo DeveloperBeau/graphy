@@ -12,3 +12,7 @@ def build(w: Widget, n: int, untyped) -> Widget:
 
 def order(n: int, w: Widget) -> Widget:
     return w
+
+
+def generic(items: List[Widget], pair: Pair[Foo, Bar]) -> Widget:
+    return items[0]
