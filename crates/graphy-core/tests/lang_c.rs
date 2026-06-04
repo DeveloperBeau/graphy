@@ -107,6 +107,31 @@ fn empty_file_emits_zero_nodes() {
     );
 }
 
+// ---------- Typed-layer is C++-only (C unaffected) ----------
+
+#[test]
+fn c_emits_no_extern_type_edges() {
+    // The typed signature layer (has_param / returns / has_field edges to
+    // `extern::<Type>` nodes) is gated on the C++ flavor in the shared
+    // extractor. Plain C — even with non-primitive `struct Service` params —
+    // must emit none of it. Guards the generic-inner-type change from leaking
+    // into C.
+    let out = extract_file(&fp("src/service.c"));
+    let typed: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| {
+            matches!(e.relation.as_str(), "has_param" | "returns" | "has_field")
+                && e.target.starts_with("extern::")
+        })
+        .collect();
+    assert!(typed.is_empty(), "C emitted typed edges: {typed:#?}");
+    assert!(
+        !out.nodes.iter().any(|n| n.kind.as_deref() == Some("type")),
+        "C emitted a type node"
+    );
+}
+
 // ---------- Edge cases ----------
 
 #[test]

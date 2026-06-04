@@ -220,6 +220,79 @@ fn build_signature_includes_primitive_param() {
     assert_eq!(sig.params[1].ty.as_deref(), Some("int"));
 }
 
+// ---------- Generic inner types ----------
+
+#[test]
+fn take_vec_resolves_to_inner_widget_container_suppressed() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+    let hp = has_param_edges(&out, "::take_vec");
+    // The std::vector container is suppressed; only the inner Widget gets an edge.
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert_eq!(hp[0].attr.as_ref().unwrap().name.as_deref(), Some("items"));
+    assert_eq!(hp[0].attr.as_ref().unwrap().index, Some(0));
+    // Container itself must NOT produce an edge.
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::vector")
+    );
+    // Payload keeps the full textual type.
+    let m = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::take_vec") && !n.id.starts_with("extern::"))
+        .unwrap();
+    assert_eq!(
+        m.signature
+            .as_ref()
+            .and_then(|s| s.params.first())
+            .and_then(|p| p.ty.as_deref()),
+        Some("std::vector<Widget>")
+    );
+}
+
+#[test]
+fn take_pair_emits_edges_to_base_and_both_inner_types() {
+    let out = extract_file(&fp("src/signatures.cpp"));
+    let hp = has_param_edges(&out, "::take_pair");
+    // User generic Pair is NOT suppressed: Pair, Foo, Bar all get edges.
+    assert_eq!(hp.len(), 3, "edges = {:#?}", out.edges);
+    let targets: Vec<_> = hp.iter().map(|e| e.target.as_str()).collect();
+    assert!(targets.contains(&"extern::Pair"), "got {targets:?}");
+    assert!(targets.contains(&"extern::Foo"), "got {targets:?}");
+    assert!(targets.contains(&"extern::Bar"), "got {targets:?}");
+    // All three share the single param's index and name.
+    for e in &hp {
+        let attr = e.attr.as_ref().unwrap();
+        assert_eq!(attr.index, Some(0));
+        assert_eq!(attr.name.as_deref(), Some("p"));
+    }
+    // Payload keeps the full textual type.
+    let m = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::take_pair") && !n.id.starts_with("extern::"))
+        .unwrap();
+    assert_eq!(
+        m.signature
+            .as_ref()
+            .and_then(|s| s.params.first())
+            .and_then(|p| p.ty.as_deref()),
+        Some("Pair<Foo, Bar>")
+    );
+}
+
+#[test]
+fn bare_non_generic_param_still_one_edge() {
+    // Regression guard: a non-generic param keeps exactly one edge after the
+    // generic-inner change.
+    let out = extract_file(&fp("src/signatures.cpp"));
+    let hp = has_param_edges(&out, "::build");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
