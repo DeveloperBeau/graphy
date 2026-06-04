@@ -17,6 +17,28 @@ parameter names but no type nodes or edges.
 `ty` is the textual type as written; it is absent where the grammar carries
 no type for that position.
 
+## Generic inner types
+
+Edges target the inner type arguments of a generic, not the outer container.
+`fn f(x: Vec<Widget>)` emits `has_param x -> extern::Widget`, not
+`extern::Vec`, so a "who uses Widget" query finds container-wrapped uses.
+Stdlib containers (`Vec`, `List`, `Map`, `Optional`, `Promise`, `Array`, and
+their per-language equivalents) are suppressed; only the inner types get edges.
+
+A user-defined generic keeps its own edge plus its arguments': `Pair<Foo, Bar>`
+emits edges to `Pair`, `Foo`, and `Bar`, all sharing the parameter name and
+index. Nesting recurses: `Vec<Pair<Foo, Bar>>` emits `Pair`, `Foo`, and `Bar`
+(`Vec` suppressed). Identical leaves at one position dedupe, so `Pair<Foo, Foo>`
+yields a single `Foo` edge.
+
+The `signature` payload `ty` is unchanged: it keeps the full textual type
+(`Vec<Widget>`). Only the edge targets differ.
+
+This applies to the statically typed languages plus annotation-gated Python:
+Rust, Go, Java, C#, TypeScript, C++, Swift, Kotlin, Scala, Python. PHP type
+hints and SQL types have no generic syntax, so the behavior does not apply
+there.
+
 ## Per-language support
 
 | Language | params | returns | fields | Notes |
