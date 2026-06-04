@@ -13,25 +13,53 @@ use crate::schema::{
     Confidence, Edge, EdgeAttr, ExtractionOutput, FieldSig, Node, ParamSig, Signature,
 };
 
-/// Extract the leaf type name from a Scala type node.
-fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+/// Collect the outer type name and every generic type-argument name from a
+/// Scala type node, depth first. `List[Pair[Foo, Bar]]` -> ["List", "Pair",
+/// "Foo", "Bar"].
+fn extract_type_leaves(node: TsNode, src: &str, out: &mut Vec<String>) {
     match node.kind() {
-        "type_identifier" => node.utf8_text(src.as_bytes()).ok().map(|s| s.to_string()),
-        "stable_type_identifier" => node
-            .utf8_text(src.as_bytes())
-            .ok()
-            .and_then(|s| s.rsplit('.').next().map(|x| x.to_string())),
+        "type_identifier" => {
+            if let Ok(t) = node.utf8_text(src.as_bytes()) {
+                out.push(t.to_string());
+            }
+        }
+        "stable_type_identifier" => {
+            if let Ok(t) = node.utf8_text(src.as_bytes()) {
+                out.push(t.rsplit('.').next().unwrap_or(t).trim().to_string());
+            }
+        }
         "generic_type" => {
-            let mut c = node.walk();
-            node.children(&mut c)
-                .find_map(|ch| extract_type_leaf(ch, src))
+            if let Some(base) = node.child_by_field_name("type") {
+                extract_type_leaves(base, src, out);
+            }
+            if let Some(args) = node.child_by_field_name("type_arguments") {
+                let mut c = args.walk();
+                for arg in args.children(&mut c) {
+                    if arg.is_named() {
+                        extract_type_leaves(arg, src, out);
+                    }
+                }
+            }
         }
         _ => {
             let mut c = node.walk();
-            node.children(&mut c)
-                .find_map(|ch| extract_type_leaf(ch, src))
+            for ch in node.children(&mut c) {
+                if ch.is_named() {
+                    extract_type_leaves(ch, src, out);
+                }
+            }
         }
     }
+}
+
+/// `extract_type_leaves` plus order-preserving de-duplication, so one type
+/// produces at most one edge per position.
+fn type_leaves(node: TsNode, src: &str) -> Vec<String> {
+    let mut v = Vec::new();
+    extract_type_leaves(node, src, &mut v);
+    let mut seen = std::collections::HashSet::new();
+    v.retain(|x| seen.insert(x.clone()));
+    v
 }
 
 /// Scala primitive / builtin types that should not produce typed edges.
@@ -53,6 +81,16 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "Nothing"
             | "Null"
             | "String"
+            | "List"
+            | "Seq"
+            | "Vector"
+            | "Array"
+            | "Set"
+            | "Map"
+            | "Option"
+            | "Iterable"
+            | "Future"
+            | "Iterator"
     )
 }
 
@@ -87,28 +125,30 @@ fn scala_signature(
             let ty_text = ty_node
                 .and_then(|t| t.utf8_text(src.as_bytes()).ok())
                 .map(|s| s.trim().to_string());
-            let leaf = ty_node
-                .and_then(|t| extract_type_leaf(t, src))
-                .filter(|l| !is_primitive_or_ignored(l));
-            if let Some(ref leaf) = leaf {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: Confidence::Extracted,
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                out.nodes.push(Node {
-                    id: format!("extern::{leaf}"),
-                    label: leaf.clone(),
-                    source_file: Some(file.to_string()),
-                    source_location: Some(line_loc(p)),
-                    kind: Some("type".into()),
-                    signature: None,
-                });
+            if let Some(ty_node) = ty_node {
+                for leaf in type_leaves(ty_node, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: Confidence::Extracted,
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    out.nodes.push(Node {
+                        id: format!("extern::{leaf}"),
+                        label: leaf.clone(),
+                        source_file: Some(file.to_string()),
+                        source_location: Some(line_loc(p)),
+                        kind: Some("type".into()),
+                        signature: None,
+                    });
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -118,7 +158,10 @@ fn scala_signature(
         if let Ok(text) = ret.utf8_text(src.as_bytes()) {
             sig.returns = Some(text.trim().to_string());
         }
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -168,28 +211,30 @@ fn scala_class_signature(
         let ty_text = ty_node
             .and_then(|t| t.utf8_text(src.as_bytes()).ok())
             .map(|s| s.trim().to_string());
-        let leaf = ty_node
-            .and_then(|t| extract_type_leaf(t, src))
-            .filter(|l| !is_primitive_or_ignored(l));
-        if let Some(leaf) = &leaf {
-            out.edges.push(Edge {
-                source: type_id.to_string(),
-                target: format!("extern::{leaf}"),
-                relation: "has_field".into(),
-                confidence: Confidence::Extracted,
-                attr: Some(EdgeAttr {
-                    name: Some(name.clone()),
-                    index: None,
-                }),
-            });
-            out.nodes.push(Node {
-                id: format!("extern::{leaf}"),
-                label: leaf.clone(),
-                source_file: Some(file.to_string()),
-                source_location: Some(line_loc(p)),
-                kind: Some("type".into()),
-                signature: None,
-            });
+        if let Some(ty_node) = ty_node {
+            for leaf in type_leaves(ty_node, src) {
+                if is_primitive_or_ignored(&leaf) {
+                    continue;
+                }
+                out.edges.push(Edge {
+                    source: type_id.to_string(),
+                    target: format!("extern::{leaf}"),
+                    relation: "has_field".into(),
+                    confidence: Confidence::Extracted,
+                    attr: Some(EdgeAttr {
+                        name: Some(name.clone()),
+                        index: None,
+                    }),
+                });
+                out.nodes.push(Node {
+                    id: format!("extern::{leaf}"),
+                    label: leaf.clone(),
+                    source_file: Some(file.to_string()),
+                    source_location: Some(line_loc(p)),
+                    kind: Some("type".into()),
+                    signature: None,
+                });
+            }
         }
         sig.fields.push(FieldSig { name, ty: ty_text });
     }

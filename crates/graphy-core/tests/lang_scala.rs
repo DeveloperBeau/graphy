@@ -277,6 +277,66 @@ fn type_node_kind_is_type() {
     );
 }
 
+#[test]
+fn generic_param_emits_inner_type_and_suppresses_container() {
+    let out = extract_file(&fp("src/Signatures.scala"));
+    let hp = has_param_edges(&out, "::collect");
+    // List is suppressed; only the inner Widget produces an edge.
+    assert_eq!(hp.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(hp[0].target, "extern::Widget");
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::List"),
+        "List container should be suppressed; edges = {:#?}",
+        out.edges
+    );
+
+    // signature payload keeps the full textual type.
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::collect"))
+        .unwrap();
+    let sig = collect.signature.as_ref().expect("signature");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("List[Widget]"));
+}
+
+#[test]
+fn two_arg_generic_emits_inner_types_and_keeps_user_container() {
+    let out = extract_file(&fp("src/Signatures.scala"));
+    let hp = has_param_edges(&out, "::pairUp");
+    // Pair is a user type (kept) plus both inner args Foo and Bar => 3 edges.
+    assert_eq!(hp.len(), 3, "edges = {:#?}", out.edges);
+    let targets: Vec<_> = hp.iter().map(|e| e.target.as_str()).collect();
+    assert!(targets.contains(&"extern::Pair"));
+    assert!(targets.contains(&"extern::Foo"));
+    assert!(targets.contains(&"extern::Bar"));
+    // All three share the same param name and index.
+    for e in &hp {
+        let attr = e.attr.as_ref().expect("attr");
+        assert_eq!(attr.name.as_deref(), Some("p"));
+        assert_eq!(attr.index, Some(0));
+    }
+
+    let pair_up = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::pairUp"))
+        .unwrap();
+    let sig = pair_up.signature.as_ref().expect("signature");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("Pair[Foo, Bar]"));
+}
+
+#[test]
+fn bare_type_param_still_one_edge() {
+    let out = extract_file(&fp("src/Signatures.scala"));
+    // bare Widget param on build emits exactly one edge.
+    let hp = has_param_edges(&out, "::build");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+}
+
 // ---------- Tier 2: full pipeline ----------
 
 #[test]
