@@ -65,8 +65,11 @@ To steer Claude toward it, add this to your project's `CLAUDE.md`:
 ## Code navigation
 A graphy knowledge graph of this repo is available via MCP. Prefer it over grep/file-reading
 to locate symbols, callers, and dependencies: use `search_label` to find a symbol, `neighbors`
-to see callers/callees, `shortest_path` to trace connections, and `stats` for an overview.
-Read files only to confirm details once the graph has pointed you to the right place.
+to see callers, callees, and the types a function takes or returns, `query_node` to read a
+function's signature, `shortest_path` to trace connections, and `stats` for an overview.
+The graph carries type edges, so `neighbors` on a type lists every function that uses it,
+including container-wrapped uses like `Vec<Widget>`. Read files only to confirm details once
+the graph has pointed you to the right place.
 ```
 
 Full setup, slash commands, and troubleshooting: [integrations/claude-code.md](integrations/claude-code.md).
