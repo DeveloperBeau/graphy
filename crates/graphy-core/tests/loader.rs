@@ -1036,3 +1036,67 @@ fn loader_python_generic_param_resolves_to_inner_type() {
         Some("List[Widget]")
     );
 }
+
+#[test]
+fn loader_kotlin_generic_param_resolves_to_inner_type() {
+    let dir = tempdir().unwrap();
+    stage(dir.path(), &["graphy-plugin-kotlin"]);
+    let reg = PluginRegistry::load_from(&[dir.path().to_path_buf()]).unwrap();
+
+    let src_dir = tempdir().unwrap();
+    let kt = src_dir.path().join("a.kt");
+    fs::write(
+        &kt,
+        "data class Widget(val label: String)\n\
+         fun collect(items: List<Widget>, pair: Pair<Foo, Bar>) {}\n",
+    )
+    .unwrap();
+    let out = reg.extract(&kt).unwrap().unwrap();
+
+    // List container is suppressed; items resolves to the inner Widget.
+    let items: Vec<_> = out
+        .edges
+        .iter()
+        .filter(|e| {
+            e.relation == "has_param"
+                && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("items")
+        })
+        .collect();
+    assert_eq!(items.len(), 1, "edges = {:#?}", out.edges);
+    assert_eq!(items[0].target, "extern::Widget");
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::List")
+    );
+
+    // Pair is a user generic: emits its own edge plus the two inner types,
+    // all sharing the parameter index. Survives the FFI + loader round-trip.
+    let pair: std::collections::HashSet<_> = out
+        .edges
+        .iter()
+        .filter(|e| {
+            e.relation == "has_param"
+                && e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("pair")
+        })
+        .map(|e| e.target.as_str())
+        .collect();
+    assert!(pair.contains("extern::Pair"), "targets = {pair:?}");
+    assert!(pair.contains("extern::Foo"), "targets = {pair:?}");
+    assert!(pair.contains("extern::Bar"), "targets = {pair:?}");
+
+    // Signature payload keeps the full textual type.
+    let collect = out
+        .nodes
+        .iter()
+        .find(|n| n.label == "collect")
+        .expect("collect node");
+    assert_eq!(
+        collect
+            .signature
+            .as_ref()
+            .and_then(|s| s.params.first())
+            .and_then(|p| p.ty.as_deref()),
+        Some("List<Widget>")
+    );
+}

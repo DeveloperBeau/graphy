@@ -124,24 +124,58 @@ fn collect_calls(
     }
 }
 
-fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+fn extract_type_leaves(node: TsNode, src: &str, out: &mut Vec<String>) {
     match node.kind() {
         "user_type" => {
             let mut c = node.walk();
-            node.children(&mut c)
+            if let Some(name) = node
+                .children(&mut c)
                 .filter(|ch| ch.kind() == "identifier")
                 .last()
                 .and_then(|ch| ch.utf8_text(src.as_bytes()).ok())
-                .map(|s| s.to_string())
+            {
+                out.push(name.to_string());
+            }
+            let mut ac = node.walk();
+            if let Some(args) = node
+                .children(&mut ac)
+                .find(|ch| ch.kind() == "type_arguments")
+            {
+                let mut pc = args.walk();
+                for proj in args.children(&mut pc) {
+                    if proj.kind() == "type_projection" {
+                        extract_type_leaves(proj, src, out);
+                    }
+                }
+            }
+        }
+        "type_projection" => {
+            let mut c = node.walk();
+            for child in node.children(&mut c) {
+                if matches!(child.kind(), "user_type" | "nullable_type") {
+                    extract_type_leaves(child, src, out);
+                }
+            }
         }
         "nullable_type" => {
             let mut c = node.walk();
-            node.children(&mut c)
+            if let Some(inner) = node
+                .children(&mut c)
                 .find(|ch| matches!(ch.kind(), "user_type" | "nullable_type"))
-                .and_then(|ch| extract_type_leaf(ch, src))
+            {
+                extract_type_leaves(inner, src, out);
+            }
         }
-        _ => None,
+        _ => {}
     }
+}
+
+fn type_leaves(node: TsNode, src: &str) -> Vec<String> {
+    let mut v = Vec::new();
+    extract_type_leaves(node, src, &mut v);
+    let mut seen = std::collections::HashSet::new();
+    v.retain(|x| seen.insert(x.clone()));
+    v
 }
 
 fn is_primitive_or_ignored(name: &str) -> bool {
@@ -159,6 +193,19 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "Unit"
             | "Nothing"
             | "Any"
+            | "List"
+            | "MutableList"
+            | "ArrayList"
+            | "Collection"
+            | "Iterable"
+            | "Set"
+            | "MutableSet"
+            | "HashSet"
+            | "Map"
+            | "MutableMap"
+            | "HashMap"
+            | "Array"
+            | "Sequence"
     )
 }
 
@@ -217,21 +264,23 @@ fn kotlin_fn_signature(
             let ty_text = ty_node
                 .and_then(|t| t.utf8_text(src.as_bytes()).ok())
                 .map(|s| s.trim().to_string());
-            let leaf = ty_node
-                .and_then(|t| extract_type_leaf(t, src))
-                .filter(|l| !is_primitive_or_ignored(l));
-            if let Some(ref leaf) = leaf {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: EXTRACTED,
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                push_type_node(out, file, leaf, p.start_position().row);
+            if let Some(ty_node) = ty_node {
+                for leaf in type_leaves(ty_node, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: EXTRACTED,
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    push_type_node(out, file, &leaf, p.start_position().row);
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -254,7 +303,10 @@ fn kotlin_fn_signature(
         if let Ok(text) = ret.utf8_text(src.as_bytes()) {
             sig.returns = Some(text.trim().to_string());
         }
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -282,21 +334,23 @@ fn emit_field(
     let ty_text = ty_node
         .and_then(|t| t.utf8_text(src.as_bytes()).ok())
         .map(|s| s.trim().to_string());
-    let leaf = ty_node
-        .and_then(|t| extract_type_leaf(t, src))
-        .filter(|l| !is_primitive_or_ignored(l));
-    if let Some(leaf) = &leaf {
-        out.edges.push(Edge {
-            source: type_id.to_string(),
-            target: format!("extern::{leaf}"),
-            relation: "has_field".into(),
-            confidence: EXTRACTED,
-            attr: Some(EdgeAttr {
-                name: Some(name.clone()),
-                index: None,
-            }),
-        });
-        push_type_node(out, file, leaf, loc_row);
+    if let Some(ty_node) = ty_node {
+        for leaf in type_leaves(ty_node, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
+            out.edges.push(Edge {
+                source: type_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "has_field".into(),
+                confidence: EXTRACTED,
+                attr: Some(EdgeAttr {
+                    name: Some(name.clone()),
+                    index: None,
+                }),
+            });
+            push_type_node(out, file, &leaf, loc_row);
+        }
     }
     sig.fields.push(FieldSig { name, ty: ty_text });
 }
