@@ -10,7 +10,7 @@ Auto-builds a knowledge graph of any code Claude reads, then exposes the graph t
 | PreToolUse hook  | Before `Read` / `Glob` / `Grep`, build the graph in the background if it is missing or stale (default >10 min old) |
 | PostToolUse hook | After `Edit` / `Write` / `MultiEdit`, kick off an async rebuild (graphy's hash cache makes this cheap) |
 | SessionStart hook| Inject a one-line summary of the workspace's graph into Claude's context             |
-| Slash commands   | `/graphy`, `/graphy-stats`, `/graphy-search`, `/graphy-neighbors`, `/graphy-path`, `/graphy-report` |
+| Slash commands   | `/graphy`, `/graphy-stats`, `/graphy-search`, `/graphy-neighbors`, `/graphy-path`, `/graphy-report`, `/setup-graphy` |
 | Skill            | Teaches Claude when to query the graph instead of reading files                       |
 | Subagent         | `graphy-explorer` — autonomous code-archaeology agent                                 |
 
