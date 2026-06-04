@@ -312,3 +312,59 @@ fn class_emits_has_field_for_annotated_attrs() {
             .any(|n| n.kind.as_deref() == Some("type") && n.id == "extern::Widget")
     );
 }
+
+// ---------- Generic inner types ----------
+
+#[test]
+fn generic_param_emits_inner_type_and_suppresses_container() {
+    let out = extract_file(&fp("signatures.py"));
+    let hp = has_param_edges(&out, "::generic");
+
+    // items: List[Widget] -> exactly one edge, to Widget; List is suppressed.
+    let items: Vec<_> = hp
+        .iter()
+        .filter(|e| e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("items"))
+        .collect();
+    assert_eq!(items.len(), 1, "edges = {:#?}", hp);
+    assert_eq!(items[0].target, "extern::Widget");
+    assert_eq!(items[0].attr.as_ref().unwrap().index, Some(0));
+    assert!(!hp.iter().any(|e| e.target == "extern::List"));
+    assert!(!out.nodes.iter().any(|n| n.id == "extern::List"));
+
+    // pair: Pair[Foo, Bar] -> edges to Pair, Foo, Bar (Pair is a user generic),
+    // all sharing the parameter index 1.
+    let pair: Vec<_> = hp
+        .iter()
+        .filter(|e| e.attr.as_ref().and_then(|a| a.name.as_deref()) == Some("pair"))
+        .collect();
+    let targets: std::collections::HashSet<_> = pair.iter().map(|e| e.target.as_str()).collect();
+    assert!(targets.contains("extern::Foo"), "targets = {targets:?}");
+    assert!(targets.contains("extern::Bar"), "targets = {targets:?}");
+    assert!(targets.contains("extern::Pair"), "targets = {targets:?}");
+    assert!(
+        pair.iter()
+            .all(|e| e.attr.as_ref().unwrap().index == Some(1))
+    );
+
+    // Payload `ty` keeps the full generic text (only the EDGES resolve to inner types).
+    let g = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::generic"))
+        .unwrap();
+    let sig = g.signature.as_ref().expect("signature");
+    assert_eq!(sig.params[0].name, "items");
+    assert_eq!(sig.params[0].ty.as_deref(), Some("List[Widget]"));
+    assert_eq!(sig.params[1].name, "pair");
+    assert_eq!(sig.params[1].ty.as_deref(), Some("Pair[Foo, Bar]"));
+}
+
+#[test]
+fn bare_type_param_still_one_edge() {
+    // Regression: build(w: Widget, n: int, untyped) still emits exactly one
+    // has_param edge, and the unannotated param emits none (annotation-gating).
+    let out = extract_file(&fp("signatures.py"));
+    let hp = has_param_edges(&out, "::build");
+    assert_eq!(hp.len(), 1);
+    assert_eq!(hp[0].target, "extern::Widget");
+}
