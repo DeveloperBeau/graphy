@@ -1,6 +1,6 @@
 {
   "name": "graphy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Build and query knowledge graphs of any codebase. Auto-runs when Claude reads source files; exposes MCP tools (search, neighbors, shortest-path) so Claude can query the graph instead of grepping.",
   "author": {
     "name": "DeveloperBeau",
