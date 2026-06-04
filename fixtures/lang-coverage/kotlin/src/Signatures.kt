@@ -17,3 +17,11 @@ fun build(widget: Widget, n: Int): Widget {
 fun order(n: Int, widget: Widget): Widget {
     return widget
 }
+
+data class Foo(val a: Int)
+
+data class Bar(val b: Int)
+
+fun generic(items: List<Widget>, pair: Pair<Foo, Bar>) {
+    return
+}

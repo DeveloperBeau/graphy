@@ -45,31 +45,72 @@ fn kotlin_class_kind(node: tree_sitter::Node, src: &str) -> &'static str {
     "class"
 }
 
-/// Extract the leaf type name from a Kotlin type node.
-fn extract_type_leaf(node: TsNode, src: &str) -> Option<String> {
+/// Collect the outer type name and every generic type-argument name from a
+/// Kotlin type node, depth first. `List<Pair<Foo, Bar>>` ->
+/// ["List", "Pair", "Foo", "Bar"].
+fn extract_type_leaves(node: TsNode, src: &str, out: &mut Vec<String>) {
     match node.kind() {
         "user_type" => {
             // Direct `identifier` children, one per dotted segment. Use the
             // last so `java.util.Locale` yields `Locale`; for `Widget` the
-            // single child is also the last.
+            // single child is also the last. Then descend into the generic
+            // type arguments (each wrapped in a `type_projection`).
             let mut c = node.walk();
-            node.children(&mut c)
+            if let Some(name) = node
+                .children(&mut c)
                 .filter(|ch| ch.kind() == "identifier")
                 .last()
                 .and_then(|ch| ch.utf8_text(src.as_bytes()).ok())
-                .map(|s| s.to_string())
+            {
+                out.push(name.to_string());
+            }
+            let mut ac = node.walk();
+            if let Some(args) = node
+                .children(&mut ac)
+                .find(|ch| ch.kind() == "type_arguments")
+            {
+                let mut pc = args.walk();
+                for proj in args.children(&mut pc) {
+                    if proj.kind() == "type_projection" {
+                        extract_type_leaves(proj, src, out);
+                    }
+                }
+            }
+        }
+        "type_projection" => {
+            let mut c = node.walk();
+            for child in node.children(&mut c) {
+                if matches!(child.kind(), "user_type" | "nullable_type") {
+                    extract_type_leaves(child, src, out);
+                }
+            }
         }
         "nullable_type" => {
             let mut c = node.walk();
-            node.children(&mut c)
+            if let Some(inner) = node
+                .children(&mut c)
                 .find(|ch| matches!(ch.kind(), "user_type" | "nullable_type"))
-                .and_then(|ch| extract_type_leaf(ch, src))
+            {
+                extract_type_leaves(inner, src, out);
+            }
         }
-        _ => None,
+        _ => {}
     }
 }
 
-/// Kotlin primitive / builtin types that should not produce typed edges.
+/// `extract_type_leaves` plus order-preserving de-duplication, so one type
+/// produces at most one edge per position.
+fn type_leaves(node: TsNode, src: &str) -> Vec<String> {
+    let mut v = Vec::new();
+    extract_type_leaves(node, src, &mut v);
+    let mut seen = std::collections::HashSet::new();
+    v.retain(|x| seen.insert(x.clone()));
+    v
+}
+
+/// Kotlin primitive / builtin types and generic containers that should not
+/// produce typed edges (the container is suppressed in favour of its inner
+/// type arguments).
 fn is_primitive_or_ignored(name: &str) -> bool {
     matches!(
         name,
@@ -85,6 +126,19 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "Unit"
             | "Nothing"
             | "Any"
+            | "List"
+            | "MutableList"
+            | "ArrayList"
+            | "Collection"
+            | "Iterable"
+            | "Set"
+            | "MutableSet"
+            | "HashSet"
+            | "Map"
+            | "MutableMap"
+            | "HashMap"
+            | "Array"
+            | "Sequence"
     )
 }
 
@@ -147,21 +201,23 @@ fn kotlin_fn_signature(
             let ty_text = ty_node
                 .and_then(|t| t.utf8_text(src.as_bytes()).ok())
                 .map(|s| s.trim().to_string());
-            let leaf = ty_node
-                .and_then(|t| extract_type_leaf(t, src))
-                .filter(|l| !is_primitive_or_ignored(l));
-            if let Some(ref leaf) = leaf {
-                out.edges.push(Edge {
-                    source: fn_id.to_string(),
-                    target: format!("extern::{leaf}"),
-                    relation: "has_param".into(),
-                    confidence: Confidence::Extracted,
-                    attr: Some(EdgeAttr {
-                        name: Some(name.clone()),
-                        index: Some(index),
-                    }),
-                });
-                push_type_node(out, file, leaf, p);
+            if let Some(ty_node) = ty_node {
+                for leaf in type_leaves(ty_node, src) {
+                    if is_primitive_or_ignored(&leaf) {
+                        continue;
+                    }
+                    out.edges.push(Edge {
+                        source: fn_id.to_string(),
+                        target: format!("extern::{leaf}"),
+                        relation: "has_param".into(),
+                        confidence: Confidence::Extracted,
+                        attr: Some(EdgeAttr {
+                            name: Some(name.clone()),
+                            index: Some(index),
+                        }),
+                    });
+                    push_type_node(out, file, &leaf, p);
+                }
             }
             sig.params.push(ParamSig { name, ty: ty_text });
             index += 1;
@@ -186,7 +242,10 @@ fn kotlin_fn_signature(
         if let Ok(text) = ret.utf8_text(src.as_bytes()) {
             sig.returns = Some(text.trim().to_string());
         }
-        if let Some(leaf) = extract_type_leaf(ret, src).filter(|l| !is_primitive_or_ignored(l)) {
+        for leaf in type_leaves(ret, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
             out.edges.push(Edge {
                 source: fn_id.to_string(),
                 target: format!("extern::{leaf}"),
@@ -215,21 +274,23 @@ fn emit_field(
     let ty_text = ty_node
         .and_then(|t| t.utf8_text(src.as_bytes()).ok())
         .map(|s| s.trim().to_string());
-    let leaf = ty_node
-        .and_then(|t| extract_type_leaf(t, src))
-        .filter(|l| !is_primitive_or_ignored(l));
-    if let Some(leaf) = &leaf {
-        out.edges.push(Edge {
-            source: type_id.to_string(),
-            target: format!("extern::{leaf}"),
-            relation: "has_field".into(),
-            confidence: Confidence::Extracted,
-            attr: Some(EdgeAttr {
-                name: Some(name.clone()),
-                index: None,
-            }),
-        });
-        push_type_node(out, file, leaf, loc_node);
+    if let Some(ty_node) = ty_node {
+        for leaf in type_leaves(ty_node, src) {
+            if is_primitive_or_ignored(&leaf) {
+                continue;
+            }
+            out.edges.push(Edge {
+                source: type_id.to_string(),
+                target: format!("extern::{leaf}"),
+                relation: "has_field".into(),
+                confidence: Confidence::Extracted,
+                attr: Some(EdgeAttr {
+                    name: Some(name.clone()),
+                    index: None,
+                }),
+            });
+            push_type_node(out, file, &leaf, loc_node);
+        }
     }
     sig.fields.push(FieldSig { name, ty: ty_text });
 }
