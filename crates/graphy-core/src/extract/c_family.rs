@@ -95,6 +95,11 @@ fn is_primitive_or_ignored(name: &str) -> bool {
             | "int16_t"
             | "int32_t"
             | "int64_t"
+            // std string types reduce from `std::string` etc. and are scalars,
+            // not user types, so they should not produce typed edges.
+            | "string"
+            | "wstring"
+            | "string_view"
             // C++ stdlib generic containers (suppressed so only their inner
             // type arguments get edges). The `std::` qualified forms reduce to
             // these last segments via `qualified_identifier` recursion.

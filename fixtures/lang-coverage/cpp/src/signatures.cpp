@@ -37,7 +37,8 @@ struct Pair;
 class Generics {
 public:
     // std::vector container is suppressed; the edge resolves to inner Widget.
-    void take_vec(std::vector<Widget> items) {}
+    // std::string is a scalar stdlib type, so it emits no edge.
+    void take_vec(std::vector<Widget> items, std::string label) {}
 
     // User generic Pair is NOT suppressed: edges to Pair, Foo AND Bar, all
     // sharing the single param index.

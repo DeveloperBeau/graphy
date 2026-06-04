@@ -431,6 +431,15 @@ fn loader_dispatches_swift_plugin_typed_signature_layer() {
         build.signature.as_ref().and_then(|s| s.returns.as_deref()),
         Some("Widget")
     );
+
+    // The plugin classifies a `struct` as kind "struct", matching the built-in
+    // (the grammar spells struct/enum/class/actor all as `class_declaration`).
+    let widget = out
+        .nodes
+        .iter()
+        .find(|n| n.id.ends_with("::Widget") && !n.id.starts_with("extern::"))
+        .expect("Widget def node");
+    assert_eq!(widget.kind.as_deref(), Some("struct"));
 }
 
 #[test]
@@ -479,7 +488,7 @@ fn loader_cpp_generic_param_resolves_to_inner_type() {
     fs::write(
         &cpp,
         "struct Widget { int x; };\n\
-         class Svc { public: void collect(std::vector<Widget> items) {} };\n",
+         class Svc { public: void collect(std::vector<Widget> items, std::string label) {} };\n",
     )
     .unwrap();
     let out = reg.extract(&cpp).unwrap().unwrap();
@@ -497,6 +506,12 @@ fn loader_cpp_generic_param_resolves_to_inner_type() {
         !out.edges
             .iter()
             .any(|e| e.relation == "has_param" && e.target == "extern::vector")
+    );
+    // `std::string` is a scalar stdlib type, not a user type, so it emits no edge.
+    assert!(
+        !out.edges
+            .iter()
+            .any(|e| e.relation == "has_param" && e.target == "extern::string")
     );
 
     // Signature payload keeps the full textual type.
