@@ -1,15 +1,33 @@
 # graphy for Codex
 
-**Status: planned — target v0.4.0.**
+**Status: beta.**
 
 A Codex plugin that wraps the same `graphy serve` MCP server as the Claude Code
 plugin, so Codex can query the knowledge graph instead of grepping.
 
-Planned surface:
+## Install
 
-- MCP server exposing `search_label`, `neighbors`, `query_node`, `shortest_path`,
-  and `stats`.
-- A skill that teaches Codex when to query the graph.
-- Background-build hooks that keep the graph fresh as you read and edit files.
+Install the `graphy` binary first (see the [main README](../README.md#install)),
+then:
 
-Install steps land here when the plugin ships.
+```
+codex plugin marketplace add DeveloperBeau/graphy
+codex plugin install graphy
+```
+
+## Surface
+
+- **MCP server `graphy`** — tools `stats`, `search_label`, `neighbors`,
+  `query_node`, `shortest_path`.
+- **Skill** — teaches Codex when to query the graph instead of reading files.
+- **Hooks** — `SessionStart` builds the workspace graph in the background (or
+  rebuilds it when source changed); `PostToolUse` (apply_patch / Edit / Write)
+  rebuilds after edits.
+
+## Smoke test
+
+1. `codex plugin install ./codex-plugin` from a graphy checkout.
+2. Open a workspace and start a Codex session.
+3. After a moment, ask Codex to call the `graphy` `stats` tool; it should report
+   non-zero nodes once the background build finishes.
+4. `graphy-out/graph.json` should exist in the workspace.
