@@ -1,6 +1,6 @@
 {
   "name": "graphy",
-  "version": "0.4.0",
+  "version": "0.4.0-beta.2",
   "description": "Build and query a knowledge graph of any codebase. Auto-builds in the background and exposes MCP tools (search, neighbors, shortest-path) so Codex can query the graph instead of grepping.",
   "author": {
     "name": "DeveloperBeau",

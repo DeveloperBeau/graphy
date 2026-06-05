@@ -1,6 +1,14 @@
 {
-  "graphy": {
-    "command": "${PLUGIN_ROOT}/bin/graphy-mcp.sh",
-    "args": ["--graph", "graphy-out/graph.json"]
+  "mcpServers": {
+    "graphy": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "for c in \"$HOME/.graphy/bin/graphy\" \"$HOME/.cargo/bin/graphy\" \"$HOME/.graphy/bin/graphy.exe\" \"$HOME/.cargo/bin/graphy.exe\"; do [ -x \"$c\" ] && exec \"$c\" serve \"$@\"; done; exec graphy serve \"$@\"",
+        "graphy",
+        "--graph",
+        "graphy-out/graph.json"
+      ]
+    }
   }
 }

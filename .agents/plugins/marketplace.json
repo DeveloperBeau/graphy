@@ -1,15 +1,21 @@
 {
   "name": "graphy",
-  "owner": {
-    "name": "DeveloperBeau",
-    "url": "https://github.com/DeveloperBeau"
+  "interface": {
+    "displayName": "graphy"
   },
   "plugins": [
     {
       "name": "graphy",
       "description": "Build and query knowledge graphs of any codebase. Auto-builds on session start; exposes MCP tools so Codex can query the graph instead of grepping.",
-      "source": "./codex-plugin",
-      "category": "productivity"
+      "source": {
+        "source": "local",
+        "path": "./codex-plugin"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
     }
   ]
 }
