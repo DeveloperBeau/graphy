@@ -11,6 +11,8 @@ one ships an inconsistent release.
    the workspace crate versions.
 3. `claude-plugin/.claude-plugin/plugin.json` — the Claude Code plugin manifest
    `version`. This is separate from Cargo and is easy to forget.
+4. `codex-plugin/.codex-plugin/plugin.json` — the Codex plugin manifest
+   `version`. Bump for releases that ship Codex plugin changes.
 
 `.claude-plugin/marketplace.json` has no version field. `docs/plugins.md`
 contains an example dylib-manifest snippet with a `version` line; it is

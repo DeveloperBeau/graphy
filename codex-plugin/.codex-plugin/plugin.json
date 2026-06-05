@@ -1,0 +1,28 @@
+{
+  "name": "graphy",
+  "version": "0.4.0",
+  "description": "Build and query a knowledge graph of any codebase. Auto-builds in the background and exposes MCP tools (search, neighbors, shortest-path) so Codex can query the graph instead of grepping.",
+  "author": {
+    "name": "DeveloperBeau",
+    "url": "https://github.com/DeveloperBeau"
+  },
+  "homepage": "https://github.com/DeveloperBeau/graphy",
+  "repository": "https://github.com/DeveloperBeau/graphy",
+  "license": "GPL-3.0-only",
+  "keywords": ["knowledge-graph", "code-navigation", "mcp", "code-search"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "graphy",
+    "shortDescription": "Query a knowledge graph of your codebase instead of grepping.",
+    "longDescription": "graphy turns a workspace into a queryable knowledge graph and exposes it over MCP. It auto-builds in the background; query symbols, callers, dependencies, and shortest paths through the graphy tools.",
+    "developerName": "DeveloperBeau",
+    "category": "Productivity",
+    "capabilities": ["Read"],
+    "websiteURL": "https://github.com/DeveloperBeau/graphy",
+    "brandColor": "#6D28D9",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png"
+  }
+}

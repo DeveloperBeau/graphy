@@ -1,0 +1,15 @@
+{
+  "name": "graphy",
+  "owner": {
+    "name": "DeveloperBeau",
+    "url": "https://github.com/DeveloperBeau"
+  },
+  "plugins": [
+    {
+      "name": "graphy",
+      "description": "Build and query knowledge graphs of any codebase. Auto-builds on session start; exposes MCP tools so Codex can query the graph instead of grepping.",
+      "source": "./codex-plugin",
+      "category": "productivity"
+    }
+  ]
+}

@@ -76,16 +76,30 @@ container-wrapped like `Vec<Widget>`. Read files only to confirm once graph poin
 
 Full setup, slash commands, and troubleshooting: [integrations/claude-code.md](integrations/claude-code.md).
 
+## Use with Codex
+
+Install the `graphy` binary (above), then add the plugin:
+
+```
+codex plugin marketplace add DeveloperBeau/graphy
+codex plugin install graphy
+```
+
+The plugin builds the workspace graph in the background at session start and
+exposes the `graphy` MCP server (`stats`, `search_label`, `neighbors`,
+`query_node`, `shortest_path`) so Codex queries the graph instead of grepping.
+Full setup: [integrations/codex.md](integrations/codex.md).
+
 ## Other integrations
 
 | Integration | Status | Doc |
 |-------------|--------|-----|
 | Claude Code | stable | [integrations/claude-code.md](integrations/claude-code.md) |
-| Codex | planned — v0.4.0 | [integrations/codex.md](integrations/codex.md) |
+| Codex | beta | [integrations/codex.md](integrations/codex.md) |
 | Cursor | planned — v0.5.0 | [integrations/cursor.md](integrations/cursor.md) |
 | Copilot CLI | planned — v0.6.0 | [integrations/copilot-cli.md](integrations/copilot-cli.md) |
 
-The Codex, Cursor, and Copilot CLI plugins wrap the same `graphy serve` MCP server as the Claude Code plugin. They ship in sequence; each integration doc tracks its status. See [`integrations/`](integrations/) for the contributor skeleton.
+The Cursor and Copilot CLI plugins wrap the same `graphy serve` MCP server as the Claude Code and Codex plugins. They ship in sequence; each integration doc tracks its status. See [`integrations/`](integrations/) for the contributor skeleton.
 
 ## Headline numbers
 

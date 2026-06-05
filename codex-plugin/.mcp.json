@@ -1,0 +1,6 @@
+{
+  "graphy": {
+    "command": "${PLUGIN_ROOT}/bin/graphy-mcp.sh",
+    "args": ["--graph", "graphy-out/graph.json"]
+  }
+}
