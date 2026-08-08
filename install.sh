@@ -37,7 +37,7 @@ URL="$REPO/releases/download/v${VERSION}/${TARBALL}"
 echo "graphy install: downloading $URL"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-curl -fsSL "$URL" -o "$TMP/$TARBALL"
+curl -fSL --progress-bar "$URL" -o "$TMP/$TARBALL"
 curl -fsSL "$URL.sha256" -o "$TMP/$TARBALL.sha256" || true
 
 if [[ -f "$TMP/$TARBALL.sha256" ]]; then
