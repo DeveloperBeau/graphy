@@ -1,7 +1,7 @@
 //! Small / medium / large fixture runs for every supported language.
 //!
 //! Small runs the language's `fixtures/lang-coverage/<lang>/` tree as-is.
-//! Medium and large replicate that tree into a tempdir (5x and 20x copies
+//! Medium and large replicate that tree into a tempdir (50x and 200x copies
 //! under `copy_<i>/`), so scale grows without committing generated bulk to
 //! the repo. Every size runs the full pipeline and asserts:
 //!
@@ -133,12 +133,12 @@ fn small_all_languages() {
 
 #[test]
 fn medium_all_languages() {
-    run_size(5);
+    run_size(50);
 }
 
 #[test]
 fn large_all_languages() {
-    run_size(20);
+    run_size(200);
 }
 
 #[test]
@@ -149,19 +149,19 @@ fn node_counts_scale_monotonically() {
         .collect();
     for lang in LANGS.iter().filter(|l| checked.contains(**l)) {
         let (n1, e1, _) = run_at_scale(lang, 1);
-        let (n5, e5, _) = run_at_scale(lang, 5);
-        let (n20, e20, _) = run_at_scale(lang, 20);
+        let (n50, e50, _) = run_at_scale(lang, 50);
+        let (n200, e200, _) = run_at_scale(lang, 200);
         assert!(
-            n1 <= n5 && n5 <= n20,
-            "{lang}: node counts not monotonic: {n1} -> {n5} -> {n20}"
+            n1 <= n50 && n50 <= n200,
+            "{lang}: node counts not monotonic: {n1} -> {n50} -> {n200}"
         );
         assert!(
-            e1 <= e5 && e5 <= e20,
-            "{lang}: edge counts not monotonic: {e1} -> {e5} -> {e20}"
+            e1 <= e50 && e50 <= e200,
+            "{lang}: edge counts not monotonic: {e1} -> {e50} -> {e200}"
         );
         assert!(
-            n20 >= n1 * 10,
-            "{lang}: 20x tree produced fewer than 10x nodes ({n1} -> {n20}) — replicas are being dropped"
+            n200 >= n1 * 100,
+            "{lang}: 200x tree produced fewer than 100x nodes ({n1} -> {n200}) — replicas are being dropped"
         );
     }
 }

@@ -18,10 +18,10 @@ Shared helpers live in `crates/graphy-core/tests/lang_coverage/common.rs` (`fixt
 
 ## Scale harness (small / medium / large per language)
 
-`crates/graphy-core/tests/fixture_scale.rs` runs every supported language at three sizes. Small is the language's `fixtures/lang-coverage/<lang>/` tree as-is; medium and large replicate that tree into a tempdir 5x and 20x (under `copy_<i>/`), so scale grows without committing generated bulk. Every language x size runs the full pipeline and asserts:
+`crates/graphy-core/tests/fixture_scale.rs` runs every supported language at three sizes. Small is the language's `fixtures/lang-coverage/<lang>/` tree as-is; medium and large replicate that tree into a tempdir 50x and 200x (under `copy_<i>/`), so scale grows without committing generated bulk. Every language x size runs the full pipeline and asserts:
 
 - the pipeline succeeds and the graph is non-empty,
 - **no node is isolated** — the connectivity invariant holds for every language, including data/markup formats (sections, keys, and headings anchor to their file via `contains`),
-- node/edge counts scale monotonically with tree size (sampled languages), and a 20x tree must produce at least 10x the nodes — catching silently dropped replicas.
+- node/edge counts scale monotonically with tree size (sampled languages), and a 200x tree must produce at least 100x the nodes — catching silently dropped replicas.
 
 Per-language capability audits with feature checklists, supported-vs-deferred tables, and commit references for closed gaps are tracked outside this repo.
