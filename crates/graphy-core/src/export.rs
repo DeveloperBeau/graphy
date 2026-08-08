@@ -107,6 +107,14 @@ pub(crate) fn render_html(g: &KnowledgeGraph, a: &Analysis) -> String {
   aside #selected .hide-btn {{ margin-top: 8px; display: inline-block; padding: 3px 8px;
     border: 1px solid var(--line); border-radius: 4px; cursor: pointer; color: var(--muted); }}
   aside #selected .hide-btn:hover {{ color: var(--fg); border-color: var(--accent); }}
+  #tooltip {{ position: absolute; display: none; pointer-events: none; z-index: 10;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 10px; max-width: 400px; font-size: 11px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5); }}
+  #tooltip .tid {{ color: var(--accent); font-weight: 600; word-break: break-all;
+    margin-bottom: 2px; }}
+  #tooltip .muted {{ color: var(--muted); }}
+  #tooltip div {{ padding: 1px 0; }}
   aside .legend span {{ display: inline-block; width: 10px; height: 10px;
     margin-right: 5px; vertical-align: -1px; border-radius: 50%; }}
   aside #selected {{ font-size: 12px; }}
@@ -119,7 +127,7 @@ pub(crate) fn render_html(g: &KnowledgeGraph, a: &Analysis) -> String {
 </head>
 <body>
 <div id="app">
-  <div id="canvas-wrap"><svg id="svg"></svg></div>
+  <div id="canvas-wrap"><svg id="svg"></svg><div id="tooltip"></div></div>
   <aside>
     <h1>graphy</h1>
     <div class="kv"><span>nodes</span><strong id="node-count">{nodes}</strong></div>
@@ -164,9 +172,12 @@ const DATA = {data};
     .filter(e => byId[e.source] && byId[e.target])
     .map(e => ({{...e}}));
   const adj = Object.fromEntries(nodes.map(n => [n.id, new Set()]));
+  const nodeEdges = Object.fromEntries(nodes.map(n => [n.id, []]));
   for (const e of edges) {{
     adj[e.source].add(e.target);
     adj[e.target].add(e.source);
+    nodeEdges[e.source].push({{ rel: e.relation, dir: "out", other: e.target }});
+    nodeEdges[e.target].push({{ rel: e.relation, dir: "in", other: e.source }});
   }}
 
   // Visibility: a per-kind filter plus a manual hidden set. Member-level kinds
@@ -349,6 +360,36 @@ const DATA = {data};
     return String(s).replace(/[&<>"']/g, c => ({{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}})[c]);
   }}
 
+  // Hover tooltip: full node id plus every relation in both directions.
+  const tooltip = document.getElementById("tooltip");
+  const PASSIVE = {{ calls: "called by", imports: "imported by", contains: "contained by",
+    references: "referenced by", inherits: "inherited by", implements: "implemented by" }};
+  function tooltipHtml(n) {{
+    const rows = (nodeEdges[n.id] || []).map(x => {{
+      const m = byId[x.other];
+      const lbl = m ? m.label : x.other;
+      return x.dir === "out"
+        ? `<div>${{escape(x.rel)}} → ${{escape(lbl)}}</div>`
+        : `<div>← ${{escape(PASSIVE[x.rel] || x.rel + " by")}} ${{escape(lbl)}}</div>`;
+    }});
+    const extra = rows.length > 12
+      ? `<div class="muted">+${{rows.length - 12}} more</div>` : "";
+    return `<div class="tid">${{escape(n.id)}}</div>
+      <div class="muted">kind: ${{escape(n.kind || "—")}}</div>
+      ${{rows.slice(0, 12).join("")}}${{extra}}`;
+  }}
+  svg.addEventListener("mousemove", e => {{
+    const gEl = e.target.closest(".node");
+    const n = gEl ? byId[gEl.getAttribute("data-id")] : null;
+    if (!n) {{ tooltip.style.display = "none"; return; }}
+    tooltip.innerHTML = tooltipHtml(n);
+    tooltip.style.display = "block";
+    const rect = wrap.getBoundingClientRect();
+    tooltip.style.left = `${{e.clientX - rect.left + 14}}px`;
+    tooltip.style.top = `${{e.clientY - rect.top + 14}}px`;
+  }});
+  svg.addEventListener("mouseleave", () => {{ tooltip.style.display = "none"; }});
+
   // Search panel.
   const qInput = document.getElementById("q");
   const results = document.getElementById("results");
@@ -448,5 +489,7 @@ mod tests {
         assert!(html.contains(r#"<div class="hidden-list" id="hidden-list">"#));
         assert!(html.contains("DEFAULT_HIDDEN_KINDS"));
         assert!(html.contains(r#""method""#));
+        assert!(html.contains(r#"<div id="tooltip"></div>"#));
+        assert!(html.contains("tooltipHtml"));
     }
 }
