@@ -86,5 +86,10 @@ echo "graphy ${VERSION} installed."
 echo "  binary:  $INSTALL_ROOT/bin/graphy"
 echo "  plugins: $INSTALL_ROOT/plugins"
 echo
-echo "Run: $INSTALL_ROOT/bin/graphy doctor"
-echo "     $INSTALL_ROOT/bin/graphy plugins list"
+if [[ -n "$PROFILE" ]]; then
+  echo "PATH updates apply to new shells only. Activate now with:"
+  echo "  source $PROFILE"
+  echo
+fi
+echo "Then run: graphy doctor"
+echo "          graphy plugins list"
