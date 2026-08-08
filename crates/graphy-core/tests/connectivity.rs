@@ -20,7 +20,7 @@ fn fixture(name: &str) -> PathBuf {
 #[test]
 fn python_fixture_has_no_isolated_nodes() {
     let out = tempfile::tempdir().unwrap();
-    let mut cfg = PipelineConfig::new(&fixture("python-mini-cli"));
+    let mut cfg = PipelineConfig::new(fixture("python-mini-cli"));
     cfg.out_root = out.path().to_path_buf();
     let result = Pipeline::new(cfg).run().unwrap();
 
@@ -42,7 +42,7 @@ fn python_fixture_has_no_isolated_nodes() {
 #[test]
 fn python_cross_file_calls_resolve_to_definitions() {
     let out = tempfile::tempdir().unwrap();
-    let mut cfg = PipelineConfig::new(&fixture("python-mini-cli"));
+    let mut cfg = PipelineConfig::new(fixture("python-mini-cli"));
     cfg.out_root = out.path().to_path_buf();
     let result = Pipeline::new(cfg).run().unwrap();
 
