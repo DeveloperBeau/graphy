@@ -37,7 +37,7 @@ URL="$REPO/releases/download/v${VERSION}/${TARBALL}"
 echo "graphy install: downloading $URL"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-curl -fsSL "$URL" -o "$TMP/$TARBALL"
+curl -fSL --progress-bar "$URL" -o "$TMP/$TARBALL"
 curl -fsSL "$URL.sha256" -o "$TMP/$TARBALL.sha256" || true
 
 if [[ -f "$TMP/$TARBALL.sha256" ]]; then
@@ -55,20 +55,30 @@ if [[ -f "$INSTALL_ROOT/graphy" ]]; then
   chmod +x "$INSTALL_ROOT/bin/graphy"
 fi
 
-# Add to PATH for common shells (idempotent).
+# Add to PATH for common shells (idempotent). Fish needs its own syntax —
+# `export` is not a fish statement.
 PROFILE=""
+PATH_LINE="export PATH=\"$INSTALL_ROOT/bin:\$PATH\""
 case "$SHELL" in
   */zsh)  PROFILE="$HOME/.zshrc" ;;
   */bash) PROFILE="$HOME/.bashrc" ;;
-  */fish) PROFILE="$HOME/.config/fish/config.fish" ;;
+  */fish) PROFILE="$HOME/.config/fish/config.fish"
+          PATH_LINE="fish_add_path -g \"$INSTALL_ROOT/bin\"" ;;
 esac
-if [[ -n "$PROFILE" && -f "$PROFILE" ]]; then
-  if ! grep -q ".graphy/bin" "$PROFILE" 2>/dev/null; then
-    echo "" >> "$PROFILE"
-    echo "# graphy installer" >> "$PROFILE"
-    echo "export PATH=\"$INSTALL_ROOT/bin:\$PATH\"" >> "$PROFILE"
-    echo "graphy install: added $INSTALL_ROOT/bin to PATH in $PROFILE"
+if [[ -n "$PROFILE" ]]; then
+  mkdir -p "$(dirname "$PROFILE")"
+  touch "$PROFILE"
+  if ! grep -Fq "$INSTALL_ROOT/bin" "$PROFILE" 2>/dev/null; then
+    {
+      echo ""
+      echo "# graphy installer"
+      echo "$PATH_LINE"
+    } >> "$PROFILE"
+    echo "graphy install: added $INSTALL_ROOT/bin to PATH in $PROFILE (restart your shell to pick it up)"
   fi
+else
+  echo "graphy install: unrecognized shell ($SHELL) — add this to your shell config yourself:"
+  echo "  export PATH=\"$INSTALL_ROOT/bin:\$PATH\""
 fi
 
 echo
@@ -76,5 +86,10 @@ echo "graphy ${VERSION} installed."
 echo "  binary:  $INSTALL_ROOT/bin/graphy"
 echo "  plugins: $INSTALL_ROOT/plugins"
 echo
-echo "Run: $INSTALL_ROOT/bin/graphy doctor"
-echo "     $INSTALL_ROOT/bin/graphy plugins list"
+if [[ -n "$PROFILE" ]]; then
+  echo "PATH updates apply to new shells only. Activate now with:"
+  echo "  source $PROFILE"
+  echo
+fi
+echo "Then run: graphy doctor"
+echo "          graphy plugins list"

@@ -3,10 +3,11 @@
 ## From a release tarball
 
 ```bash
-curl -fsSL <release-url>/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.sh | sh   # macOS / Linux
+irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/install.ps1 | iex        # Windows
 ```
 
-The installer drops the `graphy` binary and bundled plugins under `~/.local/share/graphy/` (Linux) or `~/Library/Application Support/graphy/` (macOS), then prints a `PATH` hint.
+The installer downloads the latest release for your platform, extracts the `graphy` binary and bundled plugins under `~/.graphy/` (override with `GRAPHY_HOME`), and adds `~/.graphy/bin` to your shell profile's `PATH`. Pin a version with `GRAPHY_VERSION=0.3.2 curl -fsSL ... | sh`.
 
 Release archives also live on the [releases page](https://github.com/DeveloperBeau/graphy/releases) (`graphy-<version>-<arch>-<os>.tar.gz`).
 
@@ -53,3 +54,16 @@ graphy doctor && graphy plugins list
 ```
 
 `doctor` prints the version and target architecture. `plugins list` should show 30+ language plugins; if it prints `no plugins registered`, your plugin dir is empty or not on the discovery path. See [plugins.md](plugins.md) for discovery order.
+
+## Uninstall
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall.sh | sh   # macOS / Linux
+irm https://raw.githubusercontent.com/DeveloperBeau/graphy/main/uninstall.ps1 | iex         # Windows
+```
+
+Removes the `~/.graphy/` tree (honors `GRAPHY_HOME`) and strips the `PATH` line the installer added to your shell profile (a `.graphy-bak` backup of the profile is kept). Not removed automatically:
+
+- `cargo install` builds — `cargo uninstall graphy-cli`
+- the Claude Code plugin — `/plugin uninstall graphy@graphy`
+- per-project output dirs — `find . -type d -name graphy-out -prune -exec rm -rf {} +`
