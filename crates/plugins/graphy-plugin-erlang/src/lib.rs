@@ -73,7 +73,7 @@ fn walk(
                         .trim_start_matches("include")
                         .trim_start_matches("_lib")
                         .trim_matches(|c: char| matches!(c, '(' | ')' | '.' | ' ' | '"'));
-                    emit_import(out, file, trimmed, child.start_position().row);
+                    emit_import(out, symbols, file, trimmed, child.start_position().row);
                 }
             }
             _ => {}

@@ -88,7 +88,7 @@ fn walk(
                     && let Ok(text) = path_node.utf8_text(src.as_bytes())
                 {
                     let trimmed = text.trim_matches(|c| matches!(c, '"' | '<' | '>'));
-                    emit_import(out, file, trimmed, child.start_position().row);
+                    emit_import(out, symbols, file, trimmed, child.start_position().row);
                 }
             }
             _ => {}
