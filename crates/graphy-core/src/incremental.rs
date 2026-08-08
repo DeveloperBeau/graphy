@@ -188,6 +188,12 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         splice(&mut graph, &out);
     }
 
+    // Re-anchor definitions whose `contains` edge is not carried by any
+    // extraction output (extractors that push nodes directly). The full
+    // build does this in `build_graph`; the edge-drop + re-splice above
+    // discards those synthesized edges, so restore them here.
+    crate::build::anchor_orphan_definitions(&mut graph);
+
     info!(
         files = files.len(),
         cached = cached_count,
