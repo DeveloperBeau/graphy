@@ -51,3 +51,5 @@ graphy-out/
 ```
 
 `graph.html` is a self-contained interactive viewer: pan, zoom, click a node to highlight neighbors, label search, community-colored. Pure inline JS + SVG — no external CDN, opens offline.
+
+The viewer filters what it draws, never what was extracted — `graph.json` always carries the full graph. A per-kind Filters panel toggles node kinds on and off; member-level kinds (`method`, `field`, `property`, `var`, `variant`, `constant`) start hidden to keep the default view readable at type/function level. Individual nodes can be hidden from the Selected panel and restored from the Hidden list (or all at once with "show all"). Search matches hidden nodes too and reveals them on click.
