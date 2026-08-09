@@ -75,13 +75,13 @@ Five edge relations are emitted, per-language as applicable:
 | Relation     | Meaning                                                              |
 |--------------|----------------------------------------------------------------------|
 | `imports`    | `use` / `import` / `require` / `#include` / `@import`                |
-| `calls`      | Direct invocations resolving to a local symbol (`Confidence::Inferred`) |
+| `calls`      | Invocations. Bare names resolve against local + imported symbols; qualified callees (`hello.run`, `mod::helper`) whose head is a known symbol route through an extern node (`Confidence::Inferred`) |
 | `inherits`   | `class A: B` / `extends` / `: BaseClass` / Haskell `class ... where` |
 | `implements` | `impl Trait for Type` / `implements I` / `: IFoo` (C#) / ObjC `<P>`  |
-| `contains`   | Parent-child structural (mod → fn, impl → method, class → method)    |
+| `contains`   | Structural anchoring: every definition gets a `file → definition` edge, plus parent-child forms (mod → fn, impl → method, class → method) |
 | `references` | Type usage in function signatures (parameters + return types)        |
 
-After deduplication the pipeline collapses `extern::<Name>` stubs onto canonical local definitions, so cross-file `imports` / `implements` / `references` resolve to the real target node.
+After deduplication the pipeline collapses `extern::<Name>` stubs onto canonical local definitions, so cross-file `imports` / `calls` / `implements` / `references` resolve to the real target node. Extern labels are matched on both `::` and `.` separators, so dotted module paths (`app.util.say`, `com.example.Service`) resolve the same as Rust-style paths. Calls to genuinely external symbols (`fmt.Println`, `Console.WriteLine`) keep their extern target rather than disappearing — no node in the graph is left without at least one edge.
 
 ## Imports
 

@@ -366,7 +366,7 @@ fn walk(
                     .trim_start_matches("using")
                     .trim_end_matches(';')
                     .trim();
-                emit_import(out, file, target, child);
+                emit_import(out, symbols, file, target, child);
             }
             _ => {}
         }

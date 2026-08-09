@@ -56,7 +56,7 @@ fn walk(
             // The first `atom` child is the module being imported from.
             "import_attribute" => {
                 if let Some(n) = first_id(child, src) {
-                    emit_import(out, file, n, child);
+                    emit_import(out, symbols, file, n, child);
                 }
             }
             // -include("file.hrl") / -include_lib("lib/file.hrl") appear as wild_attribute.
@@ -68,7 +68,7 @@ fn walk(
                         .trim_start_matches("include")
                         .trim_start_matches("_lib")
                         .trim_matches(|c: char| matches!(c, '(' | ')' | '.' | ' ' | '"'));
-                    emit_import(out, file, trimmed, child);
+                    emit_import(out, symbols, file, trimmed, child);
                 }
             }
             _ => {}

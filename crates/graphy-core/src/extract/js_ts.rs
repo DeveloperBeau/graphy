@@ -108,10 +108,10 @@ fn walk_defs(
                 if names.is_empty() {
                     // Side-effect-only import: `import "./mod"` — keep the module
                     // alone as the extern.
-                    emit_import(out, file, module, child);
+                    emit_import(out, symbols, file, module, child);
                 } else {
                     for n in names {
-                        emit_import(out, file, &n, child);
+                        emit_import(out, symbols, file, &n, child);
                     }
                 }
             }

@@ -101,7 +101,13 @@ fn walk(
             }
             "import_declaration" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_import(out, file, text.trim_start_matches("import").trim(), child);
+                emit_import(
+                    out,
+                    symbols,
+                    file,
+                    text.trim_start_matches("import").trim(),
+                    child,
+                );
             }
             _ => {}
         }

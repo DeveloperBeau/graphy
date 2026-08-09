@@ -121,7 +121,7 @@ fn walk_defs(
                     } else {
                         leaf
                     };
-                    emit_import(out, file, &label, child);
+                    emit_import(out, symbols, file, &label, child);
                 }
             }
             _ => {}

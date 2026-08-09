@@ -79,7 +79,7 @@ fn walk(
                     if c.kind() == "builtin_function"
                         && let Some(target) = builtin_import_arg(c, src)
                     {
-                        emit_import(out, file, target, child);
+                        emit_import(out, symbols, file, target, child);
                         found_import = true;
                     }
                 }

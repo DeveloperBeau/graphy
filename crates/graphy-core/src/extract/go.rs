@@ -323,7 +323,7 @@ fn walk_defs(
                     .expect("import_spec has path field");
                 let text = path_node.utf8_text(src.as_bytes()).expect("utf8 source");
                 let trimmed = text.trim_matches('"');
-                emit_import(out, file, trimmed, child);
+                emit_import(out, symbols, file, trimmed, child);
             }
             _ => {}
         }

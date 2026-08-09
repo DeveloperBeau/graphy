@@ -61,7 +61,7 @@ fn walk(
             }
             "using_statement" | "import_module_command" => {
                 if let Ok(text) = child.utf8_text(src.as_bytes()) {
-                    emit_import(out, file, text.trim(), child.start_position().row);
+                    emit_import(out, symbols, file, text.trim(), child.start_position().row);
                 }
             }
             _ => {}

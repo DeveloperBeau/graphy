@@ -422,7 +422,7 @@ fn walk(
                     .trim_start_matches("import")
                     .trim()
                     .trim_end_matches(';');
-                emit_import(out, file, target, child);
+                emit_import(out, symbols, file, target, child);
             }
             _ => {}
         }

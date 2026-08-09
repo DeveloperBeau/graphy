@@ -88,7 +88,7 @@ fn walk(
                     .trim_start_matches("import")
                     .trim_start_matches("using")
                     .trim();
-                emit_import(out, file, target, child);
+                emit_import(out, symbols, file, target, child);
             }
             _ => {}
         }

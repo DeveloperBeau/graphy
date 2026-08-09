@@ -29,6 +29,15 @@ pub fn emit_def(
 ) {
     let id = make_id(file, name);
     symbols.insert(name.to_string(), id.clone());
+    // Anchor every definition to its file so no node floats disconnected
+    // even when nothing calls or imports it.
+    out.edges.push(Edge {
+        source: file.to_string(),
+        target: id.clone(),
+        relation: "contains".into(),
+        confidence: Confidence::Extracted,
+        attr: None,
+    });
     out.nodes.push(Node {
         id,
         label: name.to_string(),
@@ -39,12 +48,30 @@ pub fn emit_def(
     });
 }
 
-pub fn emit_import(out: &mut ExtractionOutput, file: &str, target: &str, node: TsNode) {
+pub fn emit_import(
+    out: &mut ExtractionOutput,
+    symbols: &mut HashMap<String, String>,
+    file: &str,
+    target: &str,
+    node: TsNode,
+) {
     let target = target.trim();
     if target.is_empty() {
         return;
     }
     let import_id = format!("extern::{target}");
+    // Register the imported leaf name so bare calls to it resolve to the
+    // extern node (dedup later redirects the extern to the real definition).
+    // Local definitions overwrite this entry — `emit_def` inserts
+    // unconditionally, imports only fill vacant slots.
+    if let Some(leaf) = target.rsplit(['.', ':', '/']).next()
+        && !leaf.is_empty()
+        && !crate::extract::common::is_glob(leaf)
+    {
+        symbols
+            .entry(leaf.to_string())
+            .or_insert_with(|| import_id.clone());
+    }
     out.nodes.push(Node {
         id: import_id.clone(),
         label: target.to_string(),
@@ -116,6 +143,37 @@ pub fn emit_call(
         out.edges.push(Edge {
             source: caller_id.to_string(),
             target: target_id.clone(),
+            relation: "calls".into(),
+            confidence: Confidence::Inferred,
+            attr: None,
+        });
+        return;
+    }
+    // Qualified callee that resolved to nothing local (`hello.run`,
+    // `mod::helper`): route the call through an extern node so dedup can
+    // redirect it to the defining file's symbol. Receiver-relative calls
+    // (`self.x`, `this.x`) and non-path texts are skipped — they'd mint
+    // meaningless externs.
+    if let Some(head) = callee_text.split(['.', ':']).next()
+        && !matches!(head, "self" | "this" | "cls" | "super")
+        && symbols.contains_key(head)
+        && callee_text.contains(['.', ':'])
+        && callee_text
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '.' | ':' | '_'))
+    {
+        let target_id = format!("extern::{callee_text}");
+        out.nodes.push(Node {
+            id: target_id.clone(),
+            label: callee_text.to_string(),
+            source_file: None,
+            source_location: None,
+            kind: Some("extern".into()),
+            signature: None,
+        });
+        out.edges.push(Edge {
+            source: caller_id.to_string(),
+            target: target_id,
             relation: "calls".into(),
             confidence: Confidence::Inferred,
             attr: None,
