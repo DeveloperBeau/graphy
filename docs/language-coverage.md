@@ -120,3 +120,23 @@ Every edge carries a confidence label:
 - `EXTRACTED` — explicitly stated in the source (an `import`, `#include`, `@import`, …).
 - `INFERRED` — second-pass call-graph match (the callee's leaf name matches a defined symbol in the workspace).
 - `AMBIGUOUS` — flagged for human review (e.g. two `helper` functions in different modules).
+
+## Languages with no tree-sitter grammar (v1 future feature)
+
+Every language above rides an existing tree-sitter grammar. A handful of
+notable languages have no usable tree-sitter grammar at all as of the
+2026-08 survey, meaning graphy can't add them the normal way (bind to an
+existing grammar crate, write an extractor). Supporting these would require
+a hand-written parsing framework of graphy's own — out of scope for now,
+tracked here as a future feature rather than a near-term plugin:
+
+| Language | Why it's notable | Status checked |
+|----------|-------------------|-----------------|
+| F*       | Verification-oriented ML dialect used in formally-verified systems (e.g. parts of HACL*, Project Everest) | Only an old TextMate grammar found; no tree-sitter grammar published anywhere |
+| Grain    | Small but real WASM-targeting functional language | No `tree-sitter-grain` repo found in any registry searched |
+| Vale     | Memory-safety-focused systems language with an active if small community | No `tree-sitter-vale` repo found anywhere searched |
+| Carbon   | Google's experimental C++ successor language | Grammar tooling exists only inside Carbon's own build (`utils/tree_sitter/`); nothing published as a standalone, reusable grammar |
+
+If graphy adds support for any of these, it'll need its own parser (hand-rolled
+recursive-descent or similar) rather than the plugin pattern documented
+above, since there's no upstream grammar to bind to.
