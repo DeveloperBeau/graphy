@@ -1,0 +1,11 @@
+/* component: palette */
+.function-palette {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+.palette-group-title {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}

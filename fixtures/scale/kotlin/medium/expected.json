@@ -1,0 +1,25 @@
+{
+  "min_nodes": 175,
+  "nodes": [
+    { "label": "Lexer", "kind": "class" },
+    { "label": "Parser", "kind": "class" },
+    { "label": "Expr", "kind": "interface" },
+    { "label": "FunctionRegistry", "kind": "class" },
+    { "label": "Evaluator", "kind": "class" },
+    { "label": "CalcException", "kind": "class" },
+    { "label": "tokenize", "kind": "function" },
+    { "label": "evaluate", "kind": "function" },
+    { "label": "applyOperator", "kind": "function" },
+    { "label": "trimTrailingZeros", "kind": "function" }
+  ],
+  "edges": [
+    { "source_ends": "app/Calculator.kt", "relation": "imports", "target_ends": "Lexer.kt::Lexer" },
+    { "source_ends": "repl/Session.kt", "relation": "imports", "target_ends": "FunctionRegistry.kt::FunctionRegistry" },
+    { "source_ends": "Installer.kt::installBuiltins", "relation": "calls", "target_ends": "Trig.kt::registerTrig" },
+    { "source_ends": "Session.kt::bootstrap", "relation": "calls", "target_ends": "Installer.kt::installBuiltins" },
+    { "source_ends": "OutputFormatter.kt::format", "relation": "calls", "target_ends": "NumberFormat.kt::trimTrailingZeros" },
+    { "source_ends": "OperatorTable.kt::applyOperator", "relation": "calls", "target_ends": "DoubleCompare.kt::nearlyZero" },
+    { "source_ends": "CommandHandler.kt::handle", "relation": "calls", "target_ends": "HistoryFormatter.kt::formatHistory" },
+    { "source_ends": "lexer/Lexer.kt", "relation": "contains", "target_ends": "Lexer.kt::tokenize" }
+  ]
+}

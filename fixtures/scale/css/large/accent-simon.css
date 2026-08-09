@@ -1,0 +1,11 @@
+/* accent simon */
+.accent-simon {
+  --cipher-accent: hsl(250, 55%, 48%);
+}
+.accent-simon .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-simon .legend-swatch {
+  background: var(--cipher-accent);
+}

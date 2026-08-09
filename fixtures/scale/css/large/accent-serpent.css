@@ -1,0 +1,11 @@
+/* accent serpent */
+.accent-serpent {
+  --cipher-accent: hsl(29, 55%, 48%);
+}
+.accent-serpent .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-serpent .legend-swatch {
+  background: var(--cipher-accent);
+}

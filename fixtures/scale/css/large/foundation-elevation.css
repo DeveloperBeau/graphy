@@ -1,0 +1,12 @@
+/* foundation elevation */
+.foundation-elevation {
+  display: block;
+  --tone: hsl(26, 18%, 40%);
+}
+.foundation-elevation > * + * {
+  margin-top: 0.35rem;
+}
+.foundation-elevation[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

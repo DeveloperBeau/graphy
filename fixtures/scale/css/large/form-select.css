@@ -1,0 +1,12 @@
+/* form select */
+.form-select {
+  display: block;
+  --tone: hsl(248, 18%, 40%);
+}
+.form-select > * + * {
+  margin-top: 0.35rem;
+}
+.form-select[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

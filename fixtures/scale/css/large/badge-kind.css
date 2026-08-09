@@ -1,0 +1,12 @@
+/* badge kind */
+.badge-kind {
+  display: block;
+  --tone: hsl(282, 18%, 40%);
+}
+.badge-kind > * + * {
+  margin-top: 0.35rem;
+}
+.badge-kind[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

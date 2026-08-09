@@ -1,0 +1,69 @@
+{
+  "min_nodes": 160,
+  "nodes": [
+    {
+      "label": "calc_sin",
+      "kind": "function"
+    },
+    {
+      "label": "calc_gcd",
+      "kind": "function"
+    },
+    {
+      "label": "parse_expression",
+      "kind": "function"
+    },
+    {
+      "label": "eval_expr",
+      "kind": "function"
+    },
+    {
+      "label": "mem_store",
+      "kind": "subroutine"
+    },
+    {
+      "label": "scan_tokens",
+      "kind": "subroutine"
+    },
+    {
+      "label": "calc_parser",
+      "kind": "module"
+    },
+    {
+      "label": "token_make",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "src/calc_eval.f90",
+      "relation": "imports",
+      "target_ends": "src/calc_parser.f90::calc_parser"
+    },
+    {
+      "source_ends": "src/calc_parser.f90",
+      "relation": "imports",
+      "target_ends": "src/calc_ops.f90::calc_ops"
+    },
+    {
+      "source_ends": "src/calc_funcs_trig.f90",
+      "relation": "imports",
+      "target_ends": "src/functions/fn_sin.f90::fn_sin"
+    },
+    {
+      "source_ends": "main.f90",
+      "relation": "imports",
+      "target_ends": "src/calc_repl.f90::calc_repl"
+    },
+    {
+      "source_ends": "src/calc_eval.f90",
+      "relation": "contains",
+      "target_ends": "src/calc_eval.f90::eval_expr"
+    },
+    {
+      "source_ends": "main.f90",
+      "relation": "contains",
+      "target_ends": "main.f90::calc"
+    }
+  ]
+}

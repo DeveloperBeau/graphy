@@ -1,0 +1,65 @@
+{
+  "min_nodes": 30,
+  "nodes": [
+    {
+      "label": "toUpper",
+      "kind": "method"
+    },
+    {
+      "label": "makeBanner",
+      "kind": "method"
+    },
+    {
+      "label": "wrapText",
+      "kind": "method"
+    },
+    {
+      "label": "renderPage",
+      "kind": "method"
+    },
+    {
+      "label": "top",
+      "kind": "method"
+    },
+    {
+      "label": "printReport",
+      "kind": "method"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "banner.ts::makeBanner",
+      "relation": "calls",
+      "target_ends": "format.ts::underline"
+    },
+    {
+      "source_ends": "layout.ts::renderPage",
+      "relation": "calls",
+      "target_ends": "wrap.ts::wrapText"
+    },
+    {
+      "source_ends": "layout.ts::renderPage",
+      "relation": "calls",
+      "target_ends": "border.ts::top"
+    },
+    {
+      "source_ends": "border.ts::top",
+      "relation": "calls",
+      "target_ends": "theme.ts::chars"
+    },
+    {
+      "source_ends": "printer.ts::printPage",
+      "relation": "calls",
+      "target_ends": "layout.ts::renderPage"
+    },
+    {
+      "source_ends": "main.ts::main",
+      "relation": "calls",
+      "target_ends": "printer.ts::printReport"
+    }
+  ]
+}

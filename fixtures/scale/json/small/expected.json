@@ -1,0 +1,64 @@
+{
+  "min_nodes": 128,
+  "nodes": [
+    {
+      "label": "default_theme",
+      "kind": "json_key"
+    },
+    {
+      "label": "fallback_width",
+      "kind": "json_key"
+    },
+    {
+      "label": "ansi_index",
+      "kind": "json_key"
+    },
+    {
+      "label": "hex_value",
+      "kind": "json_key"
+    },
+    {
+      "label": "glyph_set",
+      "kind": "json_key"
+    },
+    {
+      "label": "wrap_mode",
+      "kind": "json_key"
+    },
+    {
+      "label": "tab_stop",
+      "kind": "json_key"
+    },
+    {
+      "label": "line_ending",
+      "kind": "json_key"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "printer-config.schema.json::$ref",
+      "relation": "references",
+      "target_ends": "theme.schema.json"
+    },
+    {
+      "source_ends": "printer-config.schema.json::$ref",
+      "relation": "references",
+      "target_ends": "layout.schema.json"
+    },
+    {
+      "source_ends": "theme.schema.json::$ref",
+      "relation": "references",
+      "target_ends": "color.schema.json"
+    },
+    {
+      "source_ends": "border.schema.json::$ref",
+      "relation": "references",
+      "target_ends": "color.schema.json"
+    },
+    {
+      "source_ends": "printer-config.schema.json",
+      "relation": "contains",
+      "target_ends": "printer-config.schema.json::default_theme"
+    }
+  ]
+}

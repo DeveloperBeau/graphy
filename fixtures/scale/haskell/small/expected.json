@@ -1,0 +1,60 @@
+{
+  "min_nodes": 77,
+  "nodes": [
+    {
+      "label": "Cell",
+      "kind": "data_type"
+    },
+    {
+      "label": "Document",
+      "kind": "data_type"
+    },
+    {
+      "label": "Align",
+      "kind": "data_type"
+    },
+    {
+      "label": "draw",
+      "kind": "function"
+    },
+    {
+      "label": "render",
+      "kind": "function"
+    },
+    {
+      "label": "parse",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Render/Box.hs",
+      "relation": "imports",
+      "target_ends": "Render.Line (framed, rule)"
+    },
+    {
+      "source_ends": "Output/Writer.hs",
+      "relation": "imports",
+      "target_ends": "Render.Box (draw)"
+    },
+    {
+      "source_ends": "Main.hs",
+      "relation": "imports",
+      "target_ends": "Output.Writer (emit, render)"
+    },
+    {
+      "source_ends": "Render/Box.hs",
+      "relation": "contains",
+      "target_ends": "Render/Box.hs::draw"
+    },
+    {
+      "source_ends": "Main.hs",
+      "relation": "contains",
+      "target_ends": "Main.hs::main"
+    }
+  ]
+}

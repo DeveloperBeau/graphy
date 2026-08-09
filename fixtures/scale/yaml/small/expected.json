@@ -1,0 +1,64 @@
+{
+  "min_nodes": 144,
+  "nodes": [
+    {
+      "label": "compile_cli",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "render_manpages",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "sign_tarball",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "deb_package",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "brew_bottle",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "glyph_coverage",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "wrap_bench",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "mirror_sync",
+      "kind": "yaml_key"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "build.yaml::compile_cli",
+      "relation": "references",
+      "target_ends": "build.yaml::build_defaults"
+    },
+    {
+      "source_ends": "docs.yaml::render_manpages",
+      "relation": "references",
+      "target_ends": "docs.yaml::docs_defaults"
+    },
+    {
+      "source_ends": "perf-profile.yaml::wrap_bench",
+      "relation": "references",
+      "target_ends": "perf-profile.yaml::perf_defaults"
+    },
+    {
+      "source_ends": "packaging-deb.yaml::deb_package",
+      "relation": "references",
+      "target_ends": "packaging-deb.yaml::deb_defaults"
+    },
+    {
+      "source_ends": "release.yaml",
+      "relation": "contains",
+      "target_ends": "release.yaml::sign_tarball"
+    }
+  ]
+}

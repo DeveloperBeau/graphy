@@ -1,0 +1,61 @@
+{
+  "min_nodes": 45,
+  "nodes": [
+    {
+      "label": "MakeCell",
+      "kind": "function"
+    },
+    {
+      "label": "AlignText",
+      "kind": "function"
+    },
+    {
+      "label": "DrawBox",
+      "kind": "function"
+    },
+    {
+      "label": "RenderDocument",
+      "kind": "function"
+    },
+    {
+      "label": "ParseArgs",
+      "kind": "function"
+    },
+    {
+      "label": "Framed",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "UBox.pas",
+      "relation": "imports",
+      "target_ends": "extern::UCell, UDocument, ULine, UAlign, UBorder"
+    },
+    {
+      "source_ends": "UWriter.pas",
+      "relation": "imports",
+      "target_ends": "extern::UDocument, UBox, UBorder, UPalette"
+    },
+    {
+      "source_ends": "UDocument.pas",
+      "relation": "imports",
+      "target_ends": "extern::UCell"
+    },
+    {
+      "source_ends": "Printer.pas",
+      "relation": "imports",
+      "target_ends": "extern::UArgs, UDocument, UReader, UWriter, UPalette"
+    },
+    {
+      "source_ends": "UBox.pas",
+      "relation": "contains",
+      "target_ends": "UBox.pas::DrawBox"
+    },
+    {
+      "source_ends": "ULine.pas",
+      "relation": "contains",
+      "target_ends": "ULine.pas::Framed"
+    }
+  ]
+}

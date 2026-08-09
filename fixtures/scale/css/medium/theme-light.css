@@ -1,0 +1,10 @@
+/* theme: light */
+[data-theme='light'] {
+  --bg: hsl(0, 15%, 8%);
+  --panel: hsl(0, 14%, 14%);
+  --accent: hsl(140, 45%, 52%);
+  --key: hsl(0, 12%, 20%);
+}
+[data-theme='light'] .display-expression {
+  opacity: 0.55;
+}

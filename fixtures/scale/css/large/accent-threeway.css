@@ -1,0 +1,11 @@
+/* accent threeway */
+.accent-threeway {
+  --cipher-accent: hsl(297, 55%, 48%);
+}
+.accent-threeway .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-threeway .legend-swatch {
+  background: var(--cipher-accent);
+}

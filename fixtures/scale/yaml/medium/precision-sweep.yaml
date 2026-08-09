@@ -1,0 +1,19 @@
+sweep_defaults: &sweep_defaults
+  runner: linux-metal
+  timeout_minutes: 45
+  sample_count: 1000000
+
+sweep_decimal128:
+  <<: *sweep_defaults
+  script: calc sweep --mode decimal128
+  max_ulp: 1
+
+sweep_float64:
+  <<: *sweep_defaults
+  script: calc sweep --mode float64
+  max_ulp: 2
+
+sweep_float32:
+  <<: *sweep_defaults
+  script: calc sweep --mode float32
+  max_ulp: 4

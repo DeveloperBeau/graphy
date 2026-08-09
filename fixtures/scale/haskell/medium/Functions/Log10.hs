@@ -1,0 +1,13 @@
+module Functions.Log10 (apply, arity, symbol) where
+
+import Model.Number (Number)
+
+apply :: [Number] -> Number
+apply (x : _) = logBase 10 x
+apply [] = 0
+
+arity :: Int
+arity = 1
+
+symbol :: String
+symbol = "log10"

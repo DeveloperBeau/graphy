@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Usage - inkroll</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<nav id="usage-nav">
+  <a href="index.html">Home</a>
+  <a href="flags.html">Flags</a>
+</nav>
+<main id="usage-main">
+<h1>Everyday usage</h1>
+<p>The common case is piping a noisy command through inkroll with a preset.</p>
+<section id="usage-piping">
+<h2>Piping</h2>
+<p>tail -f build.log | inkroll --preset build keeps a scrolling log readable.</p>
+</section>
+<section id="usage-stacking">
+<h2>Stacking presets</h2>
+<p>Presets stack left to right; see the <a href="presets.html">preset list</a> for what each one does.</p>
+</section>
+<section id="usage-exit">
+<h2>Exit codes</h2>
+<p>Zero on success, two for an unknown preset; the <a href="faq.html">FAQ</a> covers the rest.</p>
+</section>
+</main>
+</body>
+</html>

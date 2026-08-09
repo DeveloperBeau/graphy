@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "lcm",
+  "arity": 2,
+  "category": "combinatoric",
+  "domain": "real",
+  "precedence": 6,
+  "associativity": "left",
+  "example": "6 lcm 3"
+}

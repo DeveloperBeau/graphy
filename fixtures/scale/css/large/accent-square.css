@@ -1,0 +1,11 @@
+/* accent square */
+.accent-square {
+  --cipher-accent: hsl(245, 55%, 48%);
+}
+.accent-square .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-square .legend-swatch {
+  background: var(--cipher-accent);
+}

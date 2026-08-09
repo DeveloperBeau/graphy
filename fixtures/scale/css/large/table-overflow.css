@@ -1,0 +1,12 @@
+/* table overflow */
+.table-overflow {
+  display: block;
+  --tone: hsl(328, 18%, 40%);
+}
+.table-overflow > * + * {
+  margin-top: 0.35rem;
+}
+.table-overflow[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

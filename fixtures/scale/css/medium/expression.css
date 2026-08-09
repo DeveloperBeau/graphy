@@ -1,0 +1,10 @@
+/* component: expression */
+.expression-cursor {
+  border-right: 2px solid var(--accent);
+}
+.expression-error-span {
+  text-decoration: underline wavy #c25b4e;
+}
+.expression-cursor.is-hidden {
+  display: none;
+}

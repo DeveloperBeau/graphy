@@ -1,0 +1,56 @@
+{
+  "min_nodes": 35,
+  "nodes": [
+    {
+      "label": "Options",
+      "kind": "class"
+    },
+    {
+      "label": "ArgParser",
+      "kind": "class"
+    },
+    {
+      "label": "Renderer",
+      "kind": "class"
+    },
+    {
+      "label": "Theme",
+      "kind": "class"
+    },
+    {
+      "label": "Border",
+      "kind": "class"
+    },
+    {
+      "label": "defaults",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "src/Cli/Options.php",
+      "relation": "contains",
+      "target_ends": "Options.php::Options"
+    },
+    {
+      "source_ends": "src/Render/Renderer.php",
+      "relation": "imports",
+      "target_ends": "extern::TextPrint\\Style\\Theme"
+    },
+    {
+      "source_ends": "src/Style/Theme.php",
+      "relation": "contains",
+      "target_ends": "Theme.php::named"
+    },
+    {
+      "source_ends": "index.php",
+      "relation": "imports",
+      "target_ends": "extern::TextPrint\\Render\\Renderer"
+    },
+    {
+      "source_ends": "src/Render/Renderer.php",
+      "relation": "imports",
+      "target_ends": "extern::TextPrint\\Cli\\Options"
+    }
+  ]
+}

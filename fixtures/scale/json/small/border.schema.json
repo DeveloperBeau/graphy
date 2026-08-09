@@ -1,0 +1,23 @@
+{
+  "$id": "border.schema.json",
+  "title": "BorderStyle",
+  "type": "object",
+  "properties": {
+    "glyph_set": {
+      "type": "string",
+      "enum": [
+        "ascii",
+        "single",
+        "double",
+        "rounded",
+        "heavy"
+      ]
+    },
+    "corner_style": {
+      "type": "string"
+    },
+    "edge_color": {
+      "$ref": "color.schema.json"
+    }
+  }
+}

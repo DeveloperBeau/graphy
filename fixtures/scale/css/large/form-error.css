@@ -1,0 +1,12 @@
+/* form error */
+.form-error {
+  display: block;
+  --tone: hsl(326, 18%, 40%);
+}
+.form-error > * + * {
+  margin-top: 0.35rem;
+}
+.form-error[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

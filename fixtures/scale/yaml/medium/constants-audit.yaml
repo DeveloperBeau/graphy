@@ -1,0 +1,12 @@
+const_defaults: &const_defaults
+  runner: linux-small
+  timeout_minutes: 5
+  reference_impl: mpfr
+
+digits_check:
+  <<: *const_defaults
+  script: calc audit constants --digits 34
+
+round_trip:
+  <<: *const_defaults
+  script: calc audit constants --round-trip

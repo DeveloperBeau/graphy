@@ -1,0 +1,10 @@
+{
+  "name": "highcontrast",
+  "foreground": "#ffffff",
+  "background": "#000000",
+  "accent": "#ffff00",
+  "border": "heavy",
+  "dim_headers": false,
+  "corner_style": "heavy",
+  "supports_truecolor": true
+}

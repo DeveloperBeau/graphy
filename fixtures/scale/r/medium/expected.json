@@ -1,0 +1,69 @@
+{
+  "min_nodes": 140,
+  "nodes": [
+    {
+      "label": "calc_sin",
+      "kind": "function"
+    },
+    {
+      "label": "calc_gcd",
+      "kind": "function"
+    },
+    {
+      "label": "parse_expr",
+      "kind": "function"
+    },
+    {
+      "label": "eval_expr",
+      "kind": "function"
+    },
+    {
+      "label": "mem_store",
+      "kind": "function"
+    },
+    {
+      "label": "scan_tokens",
+      "kind": "function"
+    },
+    {
+      "label": "registry_add",
+      "kind": "function"
+    },
+    {
+      "label": "fmt_result",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "funcs/index.r",
+      "relation": "imports",
+      "target_ends": "funcs/fn_gcd.r"
+    },
+    {
+      "source_ends": "calc.r",
+      "relation": "imports",
+      "target_ends": "funcs/index.r"
+    },
+    {
+      "source_ends": "calc.r",
+      "relation": "imports",
+      "target_ends": "lexer/scan.r"
+    },
+    {
+      "source_ends": "eval.r",
+      "relation": "contains",
+      "target_ends": "eval.r::eval_expr"
+    },
+    {
+      "source_ends": "repl.r",
+      "relation": "contains",
+      "target_ends": "repl.r::repl_loop"
+    },
+    {
+      "source_ends": "lexer/tokens.r",
+      "relation": "contains",
+      "target_ends": "lexer/tokens.r::token_stream"
+    }
+  ]
+}

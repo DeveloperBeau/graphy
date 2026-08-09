@@ -1,0 +1,11 @@
+/* accent seed */
+.accent-seed {
+  --cipher-accent: hsl(154, 55%, 48%);
+}
+.accent-seed .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-seed .legend-swatch {
+  background: var(--cipher-accent);
+}

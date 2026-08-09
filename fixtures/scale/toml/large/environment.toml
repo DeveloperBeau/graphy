@@ -1,0 +1,15 @@
+hostname = "bench-metal-01"
+
+[host]
+cpu_model = "Ryzen 9 7950X"
+memory_gb = 64
+isolated_cores = [2, 3]
+
+[kernel]
+version = "6.9.4"
+cmdline = "isolcpus=2,3 nohz_full=2,3"
+
+[mitigations]
+turbo_disabled = true
+smt_disabled = true
+aslr_kept = true

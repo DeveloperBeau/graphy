@@ -1,0 +1,17 @@
+calc_release_defaults: &calc_release_defaults
+  channel: stable
+  require_approvals: 1
+
+changelog_render:
+  <<: *calc_release_defaults
+  script: git cliff -o CHANGELOG.md
+
+crate_publish:
+  <<: *calc_release_defaults
+  script: cargo publish -p calc-core
+
+binary_upload:
+  <<: *calc_release_defaults
+  script: gh release upload
+  needs:
+    - crate_publish

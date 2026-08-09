@@ -1,0 +1,74 @@
+{
+  "min_nodes": 650,
+  "nodes": [
+    {
+      "label": "caesar_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "vigenere_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "fnv1a_digest",
+      "kind": "function"
+    },
+    {
+      "label": "railfence_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "store_append",
+      "kind": "subroutine"
+    },
+    {
+      "label": "progress_tick",
+      "kind": "subroutine"
+    },
+    {
+      "label": "bench_run",
+      "kind": "module"
+    },
+    {
+      "label": "caesar_run_bench",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "src/ciphers/caesar_runner.f90",
+      "relation": "imports",
+      "target_ends": "src/ciphers/caesar_cipher.f90::caesar_cipher"
+    },
+    {
+      "source_ends": "src/ciphers/drivers_shift.f90",
+      "relation": "imports",
+      "target_ends": "src/ciphers/caesar_runner.f90::caesar_runner"
+    },
+    {
+      "source_ends": "src/core/bench_run.f90",
+      "relation": "imports",
+      "target_ends": "src/ciphers/drivers_shift.f90::drivers_shift"
+    },
+    {
+      "source_ends": "main.f90",
+      "relation": "imports",
+      "target_ends": "src/core/bench_run.f90::bench_run"
+    },
+    {
+      "source_ends": "src/ciphers/beaufort_check.f90",
+      "relation": "imports",
+      "target_ends": "src/ciphers/beaufort_cipher.f90::beaufort_cipher"
+    },
+    {
+      "source_ends": "src/core/bench_run.f90",
+      "relation": "contains",
+      "target_ends": "src/core/bench_run.f90::bench_all"
+    },
+    {
+      "source_ends": "main.f90",
+      "relation": "contains",
+      "target_ends": "main.f90::ciphbench"
+    }
+  ]
+}

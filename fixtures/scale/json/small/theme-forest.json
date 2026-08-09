@@ -1,0 +1,10 @@
+{
+  "name": "forest",
+  "foreground": "#a9b665",
+  "background": "#282828",
+  "accent": "#d8a657",
+  "border": "single",
+  "dim_headers": false,
+  "corner_style": "square",
+  "supports_truecolor": true
+}

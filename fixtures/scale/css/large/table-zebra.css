@@ -1,0 +1,12 @@
+/* table zebra */
+.table-zebra {
+  display: block;
+  --tone: hsl(172, 18%, 40%);
+}
+.table-zebra > * + * {
+  margin-top: 0.35rem;
+}
+.table-zebra[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

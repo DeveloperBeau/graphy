@@ -1,0 +1,11 @@
+/* accent xtea */
+.accent-xtea {
+  --cipher-accent: hsl(76, 55%, 48%);
+}
+.accent-xtea .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-xtea .legend-swatch {
+  background: var(--cipher-accent);
+}

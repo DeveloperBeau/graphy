@@ -1,0 +1,19 @@
+{
+  "$id": "precision.schema.json",
+  "title": "PrecisionMode",
+  "type": "object",
+  "properties": {
+    "mantissa_bits": {
+      "type": "integer"
+    },
+    "exponent_bits": {
+      "type": "integer"
+    },
+    "rounding_rule": {
+      "type": "string"
+    },
+    "subnormals": {
+      "type": "boolean"
+    }
+  }
+}

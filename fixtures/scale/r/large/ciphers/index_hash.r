@@ -1,0 +1,32 @@
+# Load and register the hash cipher family.
+
+source("ciphers/fnv1a/runner.r")
+source("ciphers/fnv1a/check.r")
+source("ciphers/djb2/runner.r")
+source("ciphers/djb2/check.r")
+source("ciphers/sdbm/runner.r")
+source("ciphers/sdbm/check.r")
+source("ciphers/adler/runner.r")
+source("ciphers/adler/check.r")
+source("ciphers/sum32/runner.r")
+source("ciphers/sum32/check.r")
+source("ciphers/xordigest/runner.r")
+source("ciphers/xordigest/check.r")
+source("ciphers/crclite/runner.r")
+source("ciphers/crclite/check.r")
+source("ciphers/rothash/runner.r")
+source("ciphers/rothash/check.r")
+source("ciphers/prodhash/runner.r")
+source("ciphers/prodhash/check.r")
+
+hash_register_all <- function() {
+  register_cipher("fnv1a")
+  register_cipher("djb2")
+  register_cipher("sdbm")
+  register_cipher("adler")
+  register_cipher("sum32")
+  register_cipher("xordigest")
+  register_cipher("crclite")
+  register_cipher("rothash")
+  register_cipher("prodhash")
+}

@@ -1,0 +1,74 @@
+{
+  "min_nodes": 150,
+  "nodes": [
+    {
+      "label": "calc_gcd",
+      "kind": "function"
+    },
+    {
+      "label": "calc_modexp",
+      "kind": "function"
+    },
+    {
+      "label": "parse_expr",
+      "kind": "function"
+    },
+    {
+      "label": "eval_expr",
+      "kind": "function"
+    },
+    {
+      "label": "mem_store",
+      "kind": "function"
+    },
+    {
+      "label": "scan_expr",
+      "kind": "function"
+    },
+    {
+      "label": "registry_add",
+      "kind": "function"
+    },
+    {
+      "label": "fmt_result",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "funcs/index.sh",
+      "relation": "imports",
+      "target_ends": "extern::./funcs/fn_gcd.sh"
+    },
+    {
+      "source_ends": "calc.sh",
+      "relation": "imports",
+      "target_ends": "extern::./funcs/index.sh"
+    },
+    {
+      "source_ends": "core/format.sh::fmt_result",
+      "relation": "calls",
+      "target_ends": "core/format.sh::fmt_number"
+    },
+    {
+      "source_ends": "repl.sh::repl_loop",
+      "relation": "calls",
+      "target_ends": "repl.sh::repl_prompt"
+    },
+    {
+      "source_ends": "funcs/fn_isprime.sh::calc_isprime",
+      "relation": "calls",
+      "target_ends": "funcs/fn_isprime.sh::isprime_trial"
+    },
+    {
+      "source_ends": "calc.sh",
+      "relation": "contains",
+      "target_ends": "calc.sh::main"
+    },
+    {
+      "source_ends": "lexer/scan.sh::scan_expr",
+      "relation": "calls",
+      "target_ends": "lexer/scan.sh::scan_op"
+    }
+  ]
+}

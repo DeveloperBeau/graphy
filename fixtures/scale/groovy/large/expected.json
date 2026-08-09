@@ -1,0 +1,23 @@
+{
+  "min_nodes": 750,
+  "nodes": [
+    { "label": "Cipher", "kind": "interface" },
+    { "label": "CipherSuite", "kind": "interface" },
+    { "label": "HashFunction", "kind": "interface" },
+    { "label": "BenchmarkRunner", "kind": "class" },
+    { "label": "ProgressReporter", "kind": "class" },
+    { "label": "FeistelNetwork", "kind": "class" },
+    { "label": "PlayfairCipher", "kind": "class" },
+    { "label": "Rc4Cipher", "kind": "class" },
+    { "label": "runAll", "kind": "method" }
+  ],
+  "edges": [
+    { "source_ends": "bench/BenchmarkRunner.groovy", "relation": "imports", "target_ends": "ResultStore.groovy::ResultStore" },
+    { "source_ends": "adfgvx/AdfgvxCipher.groovy", "relation": "imports", "target_ends": "ColumnarCipher.groovy::ColumnarCipher" },
+    { "source_ends": "cbc/CbcModeCipher.groovy", "relation": "imports", "target_ends": "FeistelNetwork.groovy::FeistelNetwork" },
+    { "source_ends": "caesar/CaesarSuite.groovy", "relation": "imports", "target_ends": "CipherSuite.groovy::CipherSuite" },
+    { "source_ends": "Main.groovy", "relation": "imports", "target_ends": "SuiteCatalog.groovy::SuiteCatalog" },
+    { "source_ends": "bench/BenchmarkRunner.groovy", "relation": "imports", "target_ends": "ProgressReporter.groovy::ProgressReporter" },
+    { "source_ends": "bench/BenchmarkRunner.groovy", "relation": "contains", "target_ends": "BenchmarkRunner.groovy::runAll" }
+  ]
+}

@@ -1,0 +1,12 @@
+/* panel meta */
+.panel-meta {
+  display: block;
+  --tone: hsl(167, 18%, 40%);
+}
+.panel-meta > * + * {
+  margin-top: 0.35rem;
+}
+.panel-meta[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

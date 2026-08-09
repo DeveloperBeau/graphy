@@ -1,0 +1,64 @@
+{
+  "min_nodes": 378,
+  "nodes": [
+    {
+      "label": "crypto_chip_top",
+      "kind": "module"
+    },
+    {
+      "label": "aes_top",
+      "kind": "module"
+    },
+    {
+      "label": "aes_sbox",
+      "kind": "module"
+    },
+    {
+      "label": "keccak_round_7",
+      "kind": "module"
+    },
+    {
+      "label": "des_feistel",
+      "kind": "module"
+    },
+    {
+      "label": "chacha_qround",
+      "kind": "module"
+    },
+    {
+      "label": "sha256_stage_3",
+      "kind": "module"
+    },
+    {
+      "label": "mont_mul",
+      "kind": "module"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "crypto_chip_top.v",
+      "relation": "contains",
+      "target_ends": "crypto_chip_top.v::crypto_chip_top"
+    },
+    {
+      "source_ends": "aes_top.v",
+      "relation": "contains",
+      "target_ends": "aes_top.v::aes_top"
+    },
+    {
+      "source_ends": "keccak_round_7.v",
+      "relation": "contains",
+      "target_ends": "keccak_round_7.v::keccak_round_7"
+    },
+    {
+      "source_ends": "des_feistel.v",
+      "relation": "contains",
+      "target_ends": "des_feistel.v::des_feistel"
+    },
+    {
+      "source_ends": "mont_mul.v",
+      "relation": "contains",
+      "target_ends": "mont_mul.v::mont_mul"
+    }
+  ]
+}

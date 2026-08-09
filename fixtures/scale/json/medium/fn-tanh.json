@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "tanh",
+  "arity": 1,
+  "category": "hyperbolic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "tanh(0.5)"
+}

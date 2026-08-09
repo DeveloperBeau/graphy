@@ -1,0 +1,11 @@
+/* accent mars */
+.accent-mars {
+  --cipher-accent: hsl(120, 55%, 48%);
+}
+.accent-mars .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-mars .legend-swatch {
+  background: var(--cipher-accent);
+}

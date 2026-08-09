@@ -1,0 +1,15 @@
+calc_docs_defaults: &calc_docs_defaults
+  runner: linux-small
+  timeout_minutes: 8
+
+api_docs:
+  <<: *calc_docs_defaults
+  script: cargo doc --no-deps
+
+grammar_railroad:
+  <<: *calc_docs_defaults
+  script: ./scripts/railroad.sh
+
+keypad_reference:
+  <<: *calc_docs_defaults
+  script: ./scripts/keypad-svg.sh

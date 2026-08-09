@@ -1,0 +1,74 @@
+{
+  "min_nodes": 1058,
+  "nodes": [
+    {
+      "label": "TestResult",
+      "kind": "data_type"
+    },
+    {
+      "label": "Config",
+      "kind": "data_type"
+    },
+    {
+      "label": "Vector",
+      "kind": "data_type"
+    },
+    {
+      "label": "save",
+      "kind": "function"
+    },
+    {
+      "label": "summary",
+      "kind": "function"
+    },
+    {
+      "label": "catalog",
+      "kind": "function"
+    },
+    {
+      "label": "sample",
+      "kind": "function"
+    },
+    {
+      "label": "describe",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Ciphers/Aes128/Impl.hs",
+      "relation": "imports",
+      "target_ends": "Ciphers.Aes128.Model (keyBits, rounds)"
+    },
+    {
+      "source_ends": "Ciphers/Aes128/Runner.hs",
+      "relation": "imports",
+      "target_ends": "Support.Result (TestResult, fail, pass)"
+    },
+    {
+      "source_ends": "Core/Store.hs",
+      "relation": "imports",
+      "target_ends": "Core.Config (Config(..))"
+    },
+    {
+      "source_ends": "Core/Benchmark.hs",
+      "relation": "imports",
+      "target_ends": "Support.Timer (Span, measure)"
+    },
+    {
+      "source_ends": "Main.hs",
+      "relation": "imports",
+      "target_ends": "Core.Store (save)"
+    },
+    {
+      "source_ends": "Ciphers/Aes128/Impl.hs",
+      "relation": "contains",
+      "target_ends": "Ciphers/Aes128/Impl.hs::encrypt"
+    },
+    {
+      "source_ends": "Support/Result.hs",
+      "relation": "contains",
+      "target_ends": "Support/Result.hs::pass"
+    }
+  ]
+}

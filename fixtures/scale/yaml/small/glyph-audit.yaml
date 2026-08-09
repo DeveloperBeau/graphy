@@ -1,0 +1,18 @@
+glyph_defaults: &glyph_defaults
+  runner: linux-small
+  timeout_minutes: 8
+  unicode_version: "15.1"
+
+glyph_coverage:
+  <<: *glyph_defaults
+  script: textprint --list-glyphs
+  min_percent: 98
+
+fallback_matrix:
+  <<: *glyph_defaults
+  script: ./scripts/fallback-matrix.sh
+
+width_tables:
+  <<: *glyph_defaults
+  script: ./scripts/east-asian-width.sh
+  regen: false

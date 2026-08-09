@@ -1,0 +1,14 @@
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #101418;
+  color: #e8edf2;
+}
+nav {
+  background: #1b222a;
+  padding: 0.6rem 1rem;
+}
+nav a {
+  color: #9fd8c2;
+  margin-right: 0.8rem;
+}

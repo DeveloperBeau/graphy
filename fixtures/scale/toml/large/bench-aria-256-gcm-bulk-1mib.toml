@@ -1,0 +1,20 @@
+schema_rev = 3
+suite = "cipher-matrix"
+
+[run.aria_256_gcm_bulk_1mib]
+primitive = "aria-256-gcm"
+kind_of_primitive = "cipher"
+workload = "bulk-1mib"
+payload_bytes = 1048576
+iterations = 2000
+warmup_iterations = 20
+
+[keying]
+key_bits = 256
+rotate_interval = 10000
+zeroize_after = true
+
+[recording]
+database = "results/crypto.db"
+table_name = "runs"
+flush_every = 500

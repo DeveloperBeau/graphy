@@ -1,0 +1,18 @@
+[decimal128]
+mantissa_bits = 113
+exponent_bits = 14
+rounding_rule = "half-even"
+
+[float64]
+mantissa_bits = 53
+exponent_bits = 11
+rounding_rule = "half-even"
+
+[float32]
+mantissa_bits = 24
+exponent_bits = 8
+rounding_rule = "half-even"
+
+[bigint]
+limb_bits = 64
+rounding_rule = "exact"

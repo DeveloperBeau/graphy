@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "lb",
+  "arity": 1,
+  "category": "logarithmic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "lb(0.5)"
+}

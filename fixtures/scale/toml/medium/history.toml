@@ -1,0 +1,10 @@
+max_entries = 500
+dedupe = true
+
+[export]
+default_format = "csv"
+include_timestamps = true
+
+[search]
+fuzzy = true
+max_results = 20

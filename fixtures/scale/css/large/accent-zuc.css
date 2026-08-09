@@ -1,0 +1,11 @@
+/* accent zuc */
+.accent-zuc {
+  --cipher-accent: hsl(188, 55%, 48%);
+}
+.accent-zuc .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-zuc .legend-swatch {
+  background: var(--cipher-accent);
+}

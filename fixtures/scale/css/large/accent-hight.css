@@ -1,0 +1,11 @@
+/* accent hight */
+.accent-hight {
+  --cipher-accent: hsl(276, 55%, 48%);
+}
+.accent-hight .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-hight .legend-swatch {
+  background: var(--cipher-accent);
+}

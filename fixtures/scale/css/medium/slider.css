@@ -1,0 +1,11 @@
+/* component: slider */
+.precision-slider {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.precision-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  opacity: 0.6;
+}

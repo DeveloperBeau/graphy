@@ -1,0 +1,11 @@
+/* accent anubis */
+.accent-anubis {
+  --cipher-accent: hsl(232, 55%, 48%);
+}
+.accent-anubis .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-anubis .legend-swatch {
+  background: var(--cipher-accent);
+}

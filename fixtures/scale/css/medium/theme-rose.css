@@ -1,0 +1,10 @@
+/* theme: rose */
+[data-theme='rose'] {
+  --bg: hsl(270, 15%, 17%);
+  --panel: hsl(270, 14%, 23%);
+  --accent: hsl(50, 45%, 52%);
+  --key: hsl(270, 12%, 29%);
+}
+[data-theme='rose'] .display-expression {
+  opacity: 0.64;
+}

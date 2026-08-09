@@ -1,0 +1,10 @@
+/* theme: ocean */
+[data-theme='ocean'] {
+  --bg: hsl(210, 15%, 15%);
+  --panel: hsl(210, 14%, 21%);
+  --accent: hsl(350, 45%, 52%);
+  --key: hsl(210, 12%, 27%);
+}
+[data-theme='ocean'] .display-expression {
+  opacity: 0.62;
+}

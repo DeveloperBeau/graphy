@@ -1,0 +1,12 @@
+/* table pager */
+.table-pager {
+  display: block;
+  --tone: hsl(263, 18%, 40%);
+}
+.table-pager > * + * {
+  margin-top: 0.35rem;
+}
+.table-pager[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

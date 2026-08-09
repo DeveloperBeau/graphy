@@ -1,0 +1,23 @@
+{
+  "min_nodes": 50,
+  "nodes": [
+    {"label": "main", "kind": "function"},
+    {"label": "cli_run", "kind": "function"},
+    {"label": "cli_list", "kind": "function"},
+    {"label": "queue_push", "kind": "function"},
+    {"label": "queue_find", "kind": "function"},
+    {"label": "task_create", "kind": "function"},
+    {"label": "priority_from_string", "kind": "function"},
+    {"label": "store_save", "kind": "function"},
+    {"label": "util_trim", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "src/cli.c::cli_run", "relation": "calls", "target_ends": "src/cli.c::cli_list"},
+    {"source_ends": "src/main.c", "relation": "imports", "target_ends": "extern::cli.h"},
+    {"source_ends": "src/main.c", "relation": "imports", "target_ends": "extern::store.h"},
+    {"source_ends": "src/cli.c", "relation": "imports", "target_ends": "extern::task.h"},
+    {"source_ends": "src/store.c", "relation": "imports", "target_ends": "extern::util.h"},
+    {"source_ends": "src/queue.c", "relation": "contains", "target_ends": "src/queue.c::queue_push"},
+    {"source_ends": "src/task.c", "relation": "contains", "target_ends": "src/task.c::task_create"}
+  ]
+}

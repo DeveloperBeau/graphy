@@ -1,0 +1,56 @@
+{
+  "min_nodes": 55,
+  "nodes": [
+    {
+      "label": ".site-header",
+      "kind": "selector"
+    },
+    {
+      "label": ".flag-table",
+      "kind": "selector"
+    },
+    {
+      "label": ":root",
+      "kind": "selector"
+    },
+    {
+      "label": ".preset-badge",
+      "kind": "selector"
+    },
+    {
+      "label": ".callout",
+      "kind": "selector"
+    },
+    {
+      "label": ".shell-prompt::before",
+      "kind": "selector"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "main.css",
+      "relation": "imports",
+      "target_ends": "css::tokens.css"
+    },
+    {
+      "source_ends": "main.css",
+      "relation": "imports",
+      "target_ends": "css::header.css"
+    },
+    {
+      "source_ends": "main.css",
+      "relation": "imports",
+      "target_ends": "css::print.css"
+    },
+    {
+      "source_ends": "main.css",
+      "relation": "contains",
+      "target_ends": "main.css::.skip-link"
+    },
+    {
+      "source_ends": "code.css",
+      "relation": "contains",
+      "target_ends": "code.css::pre"
+    }
+  ]
+}

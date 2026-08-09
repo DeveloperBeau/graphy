@@ -1,0 +1,14 @@
+host_defaults: &host_defaults
+  kernel_cmdline: isolcpus=2,3 nohz_full=2,3
+  turbo: disabled
+  smt: off
+
+bench_host_a:
+  <<: *host_defaults
+  cpu_model: Ryzen 9 7950X
+  isolated_core: 2
+
+bench_host_b:
+  <<: *host_defaults
+  cpu_model: Xeon Gold 6438Y
+  isolated_core: 4

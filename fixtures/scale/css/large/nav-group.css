@@ -1,0 +1,12 @@
+/* nav group */
+.nav-group {
+  display: block;
+  --tone: hsl(214, 18%, 40%);
+}
+.nav-group > * + * {
+  margin-top: 0.35rem;
+}
+.nav-group[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

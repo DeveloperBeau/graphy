@@ -1,0 +1,12 @@
+/* table footnote */
+.table-footnote {
+  display: block;
+  --tone: hsl(224, 18%, 40%);
+}
+.table-footnote > * + * {
+  margin-top: 0.35rem;
+}
+.table-footnote[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

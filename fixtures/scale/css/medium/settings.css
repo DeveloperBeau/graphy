@@ -1,0 +1,10 @@
+/* component: settings */
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #232c36;
+}
+.settings-row label {
+  font-size: 0.9rem;
+}

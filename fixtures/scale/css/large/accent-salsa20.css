@@ -1,0 +1,11 @@
+/* accent salsa20 */
+.accent-salsa20 {
+  --cipher-accent: hsl(136, 55%, 48%);
+}
+.accent-salsa20 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-salsa20 .legend-swatch {
+  background: var(--cipher-accent);
+}

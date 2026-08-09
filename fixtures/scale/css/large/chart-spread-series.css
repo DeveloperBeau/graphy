@@ -1,0 +1,11 @@
+/* chart spread series */
+.chart-spread-series {
+  font-size: 0.75rem;
+  --chart-tone: hsl(333, 30%, 60%);
+}
+.chart-spread-series .tick {
+  stroke: #2a3441;
+}
+.chart-spread-series text {
+  fill: #9aa7b4;
+}

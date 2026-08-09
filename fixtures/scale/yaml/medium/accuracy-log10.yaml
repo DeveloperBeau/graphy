@@ -1,0 +1,16 @@
+job_defaults: &job_defaults
+  runner: linux-amd64
+  timeout_minutes: 10
+  precision: decimal128
+
+log10_accuracy:
+  <<: *job_defaults
+  command: calc bench accuracy log10 0.5
+  samples: 100000
+  max_ulp_error: 2
+
+log10_latency:
+  <<: *job_defaults
+  command: calc bench latency log10 0.5
+  samples: 500000
+  budget_ns: 900

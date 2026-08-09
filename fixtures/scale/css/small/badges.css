@@ -1,0 +1,12 @@
+/* preset name badges */
+.preset-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.75rem;
+}
+.preset-badge--build {
+  background: var(--amber);
+}

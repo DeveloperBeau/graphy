@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 1000
+  cool_down_secs: 2
+
+sha512-bulk-4kib:
+  setup:
+    <<: *defaults
+    cipher: sha512
+    key_bits: 512
+    payload_bytes: 4096
+  execute:
+    <<: *defaults
+    iterations: 100000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: sha512-bulk-4kib

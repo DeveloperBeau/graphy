@@ -1,0 +1,10 @@
+slots = 10
+persist_path = "~/.calc/memory.dat"
+
+[recall]
+shortcut = "MR"
+cycle_slots = true
+
+[store]
+shortcut = "MS"
+overwrite_warning = false

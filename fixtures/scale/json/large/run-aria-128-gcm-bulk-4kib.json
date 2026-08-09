@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "aria-128-gcm-bulk-4kib",
+  "cipher": "aria-128-gcm",
+  "kind_of_primitive": "cipher",
+  "keysize": 128,
+  "workload": "bulk-4kib",
+  "payload_bytes": 4096,
+  "iterations": 100000,
+  "warmup": 1000,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

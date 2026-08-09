@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 5000
+  cool_down_secs: 2
+
+cast5-cbc-stream-64b:
+  setup:
+    <<: *defaults
+    cipher: cast5-cbc
+    key_bits: 256
+    payload_bytes: 64
+  execute:
+    <<: *defaults
+    iterations: 500000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: cast5-cbc-stream-64b

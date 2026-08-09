@@ -1,0 +1,20 @@
+schema_rev = 3
+suite = "cipher-matrix"
+
+[run.serpent_cbc_stream_64b]
+primitive = "serpent-cbc"
+kind_of_primitive = "cipher"
+workload = "stream-64b"
+payload_bytes = 64
+iterations = 500000
+warmup_iterations = 5000
+
+[keying]
+key_bits = 256
+rotate_interval = 10000
+zeroize_after = true
+
+[recording]
+database = "results/crypto.db"
+table_name = "runs"
+flush_every = 500

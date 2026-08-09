@@ -1,0 +1,11 @@
+[radians]
+full_turn = 6.28318530717959
+suffix = "rad"
+
+[degrees]
+full_turn = 360.0
+suffix = "deg"
+
+[gradians]
+full_turn = 400.0
+suffix = "gon"

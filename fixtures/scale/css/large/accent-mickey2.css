@@ -1,0 +1,11 @@
+/* accent mickey2 */
+.accent-mickey2 {
+  --cipher-accent: hsl(253, 55%, 48%);
+}
+.accent-mickey2 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-mickey2 .legend-swatch {
+  background: var(--cipher-accent);
+}

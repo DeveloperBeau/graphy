@@ -1,0 +1,17 @@
+/* bundle: panels */
+@import "panel-frame.css";
+@import "panel-title.css";
+@import "panel-meta.css";
+@import "panel-body.css";
+@import "panel-footer.css";
+@import "panel-grid.css";
+@import "panel-collapse.css";
+@import "panel-drag.css";
+@import "panel-alert.css";
+@import "panel-skeleton.css";
+@import "panel-toolbar.css";
+@import "panel-divider.css";
+@import "panel-scroll.css";
+@import "panel-resize.css";
+@import "panel-badge.css";
+@import "panel-kpi.css";

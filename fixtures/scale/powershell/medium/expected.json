@@ -1,0 +1,69 @@
+{
+  "min_nodes": 140,
+  "nodes": [
+    {
+      "label": "Get-CalcSin",
+      "kind": "function"
+    },
+    {
+      "label": "Get-CalcGcd",
+      "kind": "function"
+    },
+    {
+      "label": "Invoke-ParseExpression",
+      "kind": "function"
+    },
+    {
+      "label": "Invoke-CalcEvaluate",
+      "kind": "function"
+    },
+    {
+      "label": "Set-CalcMemory",
+      "kind": "function"
+    },
+    {
+      "label": "ConvertTo-TokenStream",
+      "kind": "function"
+    },
+    {
+      "label": "Register-CalcFunction",
+      "kind": "function"
+    },
+    {
+      "label": "CalcToken",
+      "kind": "class"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Functions/Index.ps1",
+      "relation": "imports",
+      "target_ends": "Functions/Gcd.ps1"
+    },
+    {
+      "source_ends": "Calc.ps1",
+      "relation": "imports",
+      "target_ends": "Functions/Index.ps1"
+    },
+    {
+      "source_ends": "Calc.ps1",
+      "relation": "imports",
+      "target_ends": "Lexer/Scanner.ps1"
+    },
+    {
+      "source_ends": "Lexer/Tokens.ps1",
+      "relation": "contains",
+      "target_ends": "Lexer/Tokens.ps1::CalcToken"
+    },
+    {
+      "source_ends": "Evaluator.ps1",
+      "relation": "contains",
+      "target_ends": "Evaluator.ps1::Invoke-CalcEvaluate"
+    },
+    {
+      "source_ends": "Repl.ps1",
+      "relation": "contains",
+      "target_ends": "Repl.ps1::Start-CalcRepl"
+    }
+  ]
+}

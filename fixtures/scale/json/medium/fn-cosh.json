@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "cosh",
+  "arity": 1,
+  "category": "hyperbolic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "cosh(0.5)"
+}

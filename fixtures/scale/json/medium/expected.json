@@ -1,0 +1,64 @@
+{
+  "min_nodes": 457,
+  "nodes": [
+    {
+      "label": "pi",
+      "kind": "json_key"
+    },
+    {
+      "label": "tau",
+      "kind": "json_key"
+    },
+    {
+      "label": "euler_gamma",
+      "kind": "json_key"
+    },
+    {
+      "label": "decimal128",
+      "kind": "json_key"
+    },
+    {
+      "label": "gradians",
+      "kind": "json_key"
+    },
+    {
+      "label": "thousands_separator",
+      "kind": "json_key"
+    },
+    {
+      "label": "scientific_threshold",
+      "kind": "json_key"
+    },
+    {
+      "label": "max_entries",
+      "kind": "json_key"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "fn-add.json::$ref",
+      "relation": "references",
+      "target_ends": "function.schema.json"
+    },
+    {
+      "source_ends": "fn-sin.json::$ref",
+      "relation": "references",
+      "target_ends": "function.schema.json"
+    },
+    {
+      "source_ends": "precision-modes.json::$ref",
+      "relation": "references",
+      "target_ends": "precision.schema.json"
+    },
+    {
+      "source_ends": "angle-modes.json::$ref",
+      "relation": "references",
+      "target_ends": "angle.schema.json"
+    },
+    {
+      "source_ends": "constants.json",
+      "relation": "contains",
+      "target_ends": "constants.json::pi"
+    }
+  ]
+}

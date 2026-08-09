@@ -1,0 +1,12 @@
+/* print charts */
+.print-charts {
+  display: block;
+  --tone: hsl(342, 18%, 40%);
+}
+.print-charts > * + * {
+  margin-top: 0.35rem;
+}
+.print-charts[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

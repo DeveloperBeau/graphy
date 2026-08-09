@@ -1,0 +1,70 @@
+{
+  "min_nodes": 30,
+  "nodes": [
+    {
+      "label": "uppercase",
+      "kind": "function"
+    },
+    {
+      "label": "make_banner",
+      "kind": "function"
+    },
+    {
+      "label": "wrap_text",
+      "kind": "function"
+    },
+    {
+      "label": "render_page",
+      "kind": "function"
+    },
+    {
+      "label": "border_top",
+      "kind": "function"
+    },
+    {
+      "label": "print_report",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "banner.py::make_banner",
+      "relation": "calls",
+      "target_ends": "formatting.py::underline"
+    },
+    {
+      "source_ends": "layout.py::render_page",
+      "relation": "calls",
+      "target_ends": "wrap.py::wrap_text"
+    },
+    {
+      "source_ends": "layout.py::render_page",
+      "relation": "calls",
+      "target_ends": "border.py::border_top"
+    },
+    {
+      "source_ends": "border.py::border_top",
+      "relation": "calls",
+      "target_ends": "theme.py::theme_chars"
+    },
+    {
+      "source_ends": "printer.py::print_page",
+      "relation": "calls",
+      "target_ends": "layout.py::render_page"
+    },
+    {
+      "source_ends": "main.py::main",
+      "relation": "calls",
+      "target_ends": "printer.py::print_report"
+    },
+    {
+      "source_ends": "main.py",
+      "relation": "imports",
+      "target_ends": "casing.py::title_case"
+    }
+  ]
+}

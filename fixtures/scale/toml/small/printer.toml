@@ -1,0 +1,12 @@
+default_theme = "midnight"
+locale = "en_US"
+
+[output]
+destination = "stdout"
+buffer_lines = 256
+flush_on_newline = true
+
+[banner]
+show_banner = false
+banner_font = "standard"
+max_width = 60

@@ -1,0 +1,11 @@
+/* accent shacal2 */
+.accent-shacal2 {
+  --cipher-accent: hsl(206, 55%, 48%);
+}
+.accent-shacal2 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-shacal2 .legend-swatch {
+  background: var(--cipher-accent);
+}

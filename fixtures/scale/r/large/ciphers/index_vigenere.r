@@ -1,0 +1,32 @@
+# Load and register the vigenere cipher family.
+
+source("ciphers/vigenere/runner.r")
+source("ciphers/vigenere/check.r")
+source("ciphers/beaufort/runner.r")
+source("ciphers/beaufort/check.r")
+source("ciphers/autokey/runner.r")
+source("ciphers/autokey/check.r")
+source("ciphers/gronsfeld/runner.r")
+source("ciphers/gronsfeld/check.r")
+source("ciphers/porta/runner.r")
+source("ciphers/porta/check.r")
+source("ciphers/runkey/runner.r")
+source("ciphers/runkey/check.r")
+source("ciphers/keymix/runner.r")
+source("ciphers/keymix/check.r")
+source("ciphers/trithemius/runner.r")
+source("ciphers/trithemius/check.r")
+source("ciphers/quagmire/runner.r")
+source("ciphers/quagmire/check.r")
+
+vigenere_register_all <- function() {
+  register_cipher("vigenere")
+  register_cipher("beaufort")
+  register_cipher("autokey")
+  register_cipher("gronsfeld")
+  register_cipher("porta")
+  register_cipher("runkey")
+  register_cipher("keymix")
+  register_cipher("trithemius")
+  register_cipher("quagmire")
+}

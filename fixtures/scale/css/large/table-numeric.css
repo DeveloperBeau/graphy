@@ -1,0 +1,12 @@
+/* table numeric */
+.table-numeric {
+  display: block;
+  --tone: hsl(198, 18%, 40%);
+}
+.table-numeric > * + * {
+  margin-top: 0.35rem;
+}
+.table-numeric[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

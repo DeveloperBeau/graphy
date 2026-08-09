@@ -1,0 +1,20 @@
+schema_rev = 3
+suite = "cipher-matrix"
+
+[run.aes_256_gcm_stream_1kib]
+primitive = "aes-256-gcm"
+kind_of_primitive = "cipher"
+workload = "stream-1kib"
+payload_bytes = 1024
+iterations = 200000
+warmup_iterations = 2000
+
+[keying]
+key_bits = 256
+rotate_interval = 10000
+zeroize_after = true
+
+[recording]
+database = "results/crypto.db"
+table_name = "runs"
+flush_every = 500

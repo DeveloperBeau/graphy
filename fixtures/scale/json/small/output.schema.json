@@ -1,0 +1,20 @@
+{
+  "$id": "output.schema.json",
+  "title": "OutputOptions",
+  "type": "object",
+  "properties": {
+    "line_ending": {
+      "type": "string",
+      "enum": [
+        "lf",
+        "crlf"
+      ]
+    },
+    "encoding": {
+      "type": "string"
+    },
+    "page_width": {
+      "type": "integer"
+    }
+  }
+}

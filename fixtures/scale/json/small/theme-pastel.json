@@ -1,0 +1,10 @@
+{
+  "name": "pastel",
+  "foreground": "#5b5f71",
+  "background": "#faf4ed",
+  "accent": "#d7827e",
+  "border": "rounded",
+  "dim_headers": true,
+  "corner_style": "rounded",
+  "supports_truecolor": true
+}

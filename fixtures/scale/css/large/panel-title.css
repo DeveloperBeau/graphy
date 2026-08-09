@@ -1,0 +1,12 @@
+/* panel title */
+.panel-title {
+  display: block;
+  --tone: hsl(154, 18%, 40%);
+}
+.panel-title > * + * {
+  margin-top: 0.35rem;
+}
+.panel-title[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

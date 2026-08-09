@@ -1,0 +1,15 @@
+/* note and warning callouts */
+.callout {
+  border-left: 4px solid var(--amber);
+  padding: 0.5rem 1rem;
+  background: #f4efe4;
+}
+.callout--danger {
+  border-color: #8a2f2a;
+  background: #f6e6e4;
+}
+.callout-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}

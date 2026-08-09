@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "round",
+  "arity": 1,
+  "category": "rounding",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "round(0.5)"
+}

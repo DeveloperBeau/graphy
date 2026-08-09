@@ -1,0 +1,74 @@
+{
+  "min_nodes": 983,
+  "nodes": [
+    {
+      "label": "Ciphers.Aes128.Model",
+      "kind": "module"
+    },
+    {
+      "label": "Support.Result",
+      "kind": "module"
+    },
+    {
+      "label": "Core.Store",
+      "kind": "module"
+    },
+    {
+      "label": "Core.Registry",
+      "kind": "module"
+    },
+    {
+      "label": "summary",
+      "kind": "function"
+    },
+    {
+      "label": "catalog",
+      "kind": "function"
+    },
+    {
+      "label": "sample",
+      "kind": "function"
+    },
+    {
+      "label": "describe",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "lib/ciphers/aes128/impl.ex",
+      "relation": "imports",
+      "target_ends": "extern::Ciphers.Aes128.Model"
+    },
+    {
+      "source_ends": "lib/ciphers/aes128/runner.ex",
+      "relation": "imports",
+      "target_ends": "extern::Support.Result"
+    },
+    {
+      "source_ends": "lib/core/store.ex",
+      "relation": "imports",
+      "target_ends": "extern::Core.Config"
+    },
+    {
+      "source_ends": "lib/core/benchmark.ex",
+      "relation": "imports",
+      "target_ends": "extern::Support.Timer"
+    },
+    {
+      "source_ends": "lib/cli.ex",
+      "relation": "imports",
+      "target_ends": "lib/cryptobench.ex::Cryptobench"
+    },
+    {
+      "source_ends": "lib/support/result.ex",
+      "relation": "contains",
+      "target_ends": "lib/support/result.ex::pass"
+    },
+    {
+      "source_ends": "lib/ciphers/aes128/impl.ex",
+      "relation": "contains",
+      "target_ends": "lib/ciphers/aes128/impl.ex::encrypt"
+    }
+  ]
+}

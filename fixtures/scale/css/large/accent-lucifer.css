@@ -1,0 +1,11 @@
+/* accent lucifer */
+.accent-lucifer {
+  --cipher-accent: hsl(284, 55%, 48%);
+}
+.accent-lucifer .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-lucifer .legend-swatch {
+  background: var(--cipher-accent);
+}

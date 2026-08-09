@@ -1,0 +1,11 @@
+/* chart delta gridlines */
+.chart-delta-gridlines {
+  font-size: 0.75rem;
+  --chart-tone: hsl(25, 30%, 60%);
+}
+.chart-delta-gridlines .tick {
+  stroke: #2a3441;
+}
+.chart-delta-gridlines text {
+  fill: #9aa7b4;
+}

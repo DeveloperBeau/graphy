@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 5000
+  cool_down_secs: 2
+
+blake2b-512-stream-64b:
+  setup:
+    <<: *defaults
+    cipher: blake2b-512
+    key_bits: 512
+    payload_bytes: 64
+  execute:
+    <<: *defaults
+    iterations: 500000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: blake2b-512-stream-64b

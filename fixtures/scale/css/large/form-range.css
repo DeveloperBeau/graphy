@@ -1,0 +1,12 @@
+/* form range */
+.form-range {
+  display: block;
+  --tone: hsl(287, 18%, 40%);
+}
+.form-range > * + * {
+  margin-top: 0.35rem;
+}
+.form-range[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

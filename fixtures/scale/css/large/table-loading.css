@@ -1,0 +1,12 @@
+/* table loading */
+.table-loading {
+  display: block;
+  --tone: hsl(237, 18%, 40%);
+}
+.table-loading > * + * {
+  margin-top: 0.35rem;
+}
+.table-loading[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

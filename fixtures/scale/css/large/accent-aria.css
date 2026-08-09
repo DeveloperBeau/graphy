@@ -1,0 +1,11 @@
+/* accent aria */
+.accent-aria {
+  --cipher-accent: hsl(68, 55%, 48%);
+}
+.accent-aria .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-aria .legend-swatch {
+  background: var(--cipher-accent);
+}

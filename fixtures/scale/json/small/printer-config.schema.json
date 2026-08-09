@@ -1,0 +1,30 @@
+{
+  "$id": "printer-config.schema.json",
+  "title": "PrinterConfig",
+  "type": "object",
+  "properties": {
+    "default_theme": {
+      "type": "string"
+    },
+    "fallback_width": {
+      "type": "integer",
+      "minimum": 20
+    },
+    "theme": {
+      "$ref": "theme.schema.json"
+    },
+    "border": {
+      "$ref": "border.schema.json"
+    },
+    "layout": {
+      "$ref": "layout.schema.json"
+    },
+    "output": {
+      "$ref": "output.schema.json"
+    }
+  },
+  "required": [
+    "default_theme",
+    "layout"
+  ]
+}

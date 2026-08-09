@@ -1,0 +1,13 @@
+/* theme bundle */
+@import "theme-light.css";
+@import "theme-dark.css";
+@import "theme-contrast.css";
+@import "theme-solar.css";
+@import "theme-mono.css";
+@import "theme-paper.css";
+@import "theme-neon.css";
+@import "theme-ocean.css";
+@import "theme-forest.css";
+@import "theme-rose.css";
+@import "theme-slate.css";
+@import "theme-amber.css";

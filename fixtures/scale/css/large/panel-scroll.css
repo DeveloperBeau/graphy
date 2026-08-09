@@ -1,0 +1,12 @@
+/* panel scroll */
+.panel-scroll {
+  display: block;
+  --tone: hsl(297, 18%, 40%);
+}
+.panel-scroll > * + * {
+  margin-top: 0.35rem;
+}
+.panel-scroll[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

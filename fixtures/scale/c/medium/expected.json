@@ -1,0 +1,23 @@
+{
+  "min_nodes": 190,
+  "nodes": [
+    {"label": "main", "kind": "function"},
+    {"label": "commands_dispatch", "kind": "function"},
+    {"label": "gpa_compute", "kind": "function"},
+    {"label": "gpa_compute_cumulative", "kind": "function"},
+    {"label": "calculator_weighted_average", "kind": "function"},
+    {"label": "gradebook_add_enrollment", "kind": "function"},
+    {"label": "student_create", "kind": "function"},
+    {"label": "loader_load_students", "kind": "function"},
+    {"label": "honor_roll_print", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "src/grades/gpa.c::gpa_compute_cumulative", "relation": "calls", "target_ends": "src/grades/gpa.c::gpa_compute"},
+    {"source_ends": "src/main.c", "relation": "imports", "target_ends": "cli/commands.h"},
+    {"source_ends": "src/cli/commands.c", "relation": "imports", "target_ends": "reports/roster.h"},
+    {"source_ends": "src/store/loader.c", "relation": "imports", "target_ends": "util/strutil.h"},
+    {"source_ends": "src/reports/honor_roll.c", "relation": "imports", "target_ends": "grades/gpa.h"},
+    {"source_ends": "src/grades/gradebook.c", "relation": "contains", "target_ends": "src/grades/gradebook.c::gradebook_find"},
+    {"source_ends": "src/models/enrollment.c", "relation": "contains", "target_ends": "src/models/enrollment.c::enrollment_create"}
+  ]
+}

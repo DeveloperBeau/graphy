@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 5000
+  cool_down_secs: 2
+
+aes-256-xts-stream-64b:
+  setup:
+    <<: *defaults
+    cipher: aes-256-xts
+    key_bits: 256
+    payload_bytes: 64
+  execute:
+    <<: *defaults
+    iterations: 500000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: aes-256-xts-stream-64b

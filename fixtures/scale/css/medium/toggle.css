@@ -1,0 +1,10 @@
+/* component: toggle */
+.toggle-track {
+  width: 2.4rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background: var(--key);
+}
+.toggle-track[aria-checked='true'] {
+  background: var(--accent);
+}

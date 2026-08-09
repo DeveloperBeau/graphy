@@ -1,0 +1,25 @@
+{
+  "min_nodes": 200,
+  "nodes": [
+    { "label": "Lexer", "kind": "class" },
+    { "label": "Parser", "kind": "class" },
+    { "label": "Expr", "kind": "trait" },
+    { "label": "FunctionRegistry", "kind": "class" },
+    { "label": "Evaluator", "kind": "class" },
+    { "label": "CalcException", "kind": "class" },
+    { "label": "tokenize", "kind": "function" },
+    { "label": "evaluate", "kind": "function" },
+    { "label": "trimTrailingZeros", "kind": "function" },
+    { "label": "TokenType", "kind": "trait" }
+  ],
+  "edges": [
+    { "source_ends": "app/Calculator.scala", "relation": "imports", "target_ends": "Lexer.scala::Lexer" },
+    { "source_ends": "Installer.scala::installBuiltins", "relation": "calls", "target_ends": "Trig.scala::register" },
+    { "source_ends": "Session.scala::bootstrap", "relation": "calls", "target_ends": "Installer.scala::installBuiltins" },
+    { "source_ends": "OutputFormatter.scala::format", "relation": "calls", "target_ends": "NumberFormat.scala::trimTrailingZeros" },
+    { "source_ends": "CommandHandler.scala::handle", "relation": "calls", "target_ends": "HistoryFormatter.scala::format" },
+    { "source_ends": "BinaryExpr.scala::BinaryExpr", "relation": "inherits", "target_ends": "Expr.scala::Expr" },
+    { "source_ends": "LexException.scala::LexException", "relation": "inherits", "target_ends": "CalcException.scala::CalcException" },
+    { "source_ends": "lexer/Lexer.scala", "relation": "contains", "target_ends": "Lexer.scala::tokenize" }
+  ]
+}

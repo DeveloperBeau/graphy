@@ -1,0 +1,14 @@
+//! The porta family: submodules plus registry metadata.
+
+pub mod bench;
+pub mod cipher;
+pub mod keys;
+pub mod runner;
+
+/// Stable identifier used in reports and the results database.
+pub const PORTA_ID: &str = "porta";
+
+/// Category label shown by the live reporter.
+pub fn porta_category() -> &'static str {
+    "poly"
+}

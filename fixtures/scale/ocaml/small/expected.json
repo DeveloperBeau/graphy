@@ -1,0 +1,60 @@
+{
+  "min_nodes": 50,
+  "nodes": [
+    {
+      "label": "cell",
+      "kind": "type"
+    },
+    {
+      "label": "document",
+      "kind": "type"
+    },
+    {
+      "label": "align",
+      "kind": "type"
+    },
+    {
+      "label": "draw",
+      "kind": "value"
+    },
+    {
+      "label": "render",
+      "kind": "value"
+    },
+    {
+      "label": "parse",
+      "kind": "value"
+    },
+    {
+      "label": "emit",
+      "kind": "value"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "render/box.ml",
+      "relation": "imports",
+      "target_ends": "extern::Align"
+    },
+    {
+      "source_ends": "render/line.ml",
+      "relation": "imports",
+      "target_ends": "extern::Border"
+    },
+    {
+      "source_ends": "output/writer.ml",
+      "relation": "imports",
+      "target_ends": "extern::Palette"
+    },
+    {
+      "source_ends": "main.ml",
+      "relation": "imports",
+      "target_ends": "extern::Args"
+    },
+    {
+      "source_ends": "render/box.ml",
+      "relation": "contains",
+      "target_ends": "render/box.ml::draw"
+    }
+  ]
+}

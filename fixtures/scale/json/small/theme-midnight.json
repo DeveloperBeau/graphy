@@ -1,0 +1,10 @@
+{
+  "name": "midnight",
+  "foreground": "#c8d3f5",
+  "background": "#1e2030",
+  "accent": "#82aaff",
+  "border": "double",
+  "dim_headers": false,
+  "corner_style": "square",
+  "supports_truecolor": true
+}

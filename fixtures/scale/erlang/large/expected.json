@@ -1,0 +1,74 @@
+{
+  "min_nodes": 861,
+  "nodes": [
+    {
+      "label": "support_result",
+      "kind": "module"
+    },
+    {
+      "label": "core_store",
+      "kind": "module"
+    },
+    {
+      "label": "aes128_impl",
+      "kind": "module"
+    },
+    {
+      "label": "save",
+      "kind": "function"
+    },
+    {
+      "label": "summary",
+      "kind": "function"
+    },
+    {
+      "label": "catalog",
+      "kind": "function"
+    },
+    {
+      "label": "sample",
+      "kind": "function"
+    },
+    {
+      "label": "pass",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "aes128_impl.erl",
+      "relation": "imports",
+      "target_ends": "aes128_model.erl::aes128_model"
+    },
+    {
+      "source_ends": "aes128_runner.erl",
+      "relation": "imports",
+      "target_ends": "aes128_impl.erl::aes128_impl"
+    },
+    {
+      "source_ends": "aes128_runner.erl",
+      "relation": "imports",
+      "target_ends": "support_result.erl::support_result"
+    },
+    {
+      "source_ends": "core_store.erl",
+      "relation": "imports",
+      "target_ends": "core_config.erl::core_config"
+    },
+    {
+      "source_ends": "core_benchmark.erl",
+      "relation": "imports",
+      "target_ends": "support_timer.erl::support_timer"
+    },
+    {
+      "source_ends": "core_store.erl",
+      "relation": "contains",
+      "target_ends": "core_store.erl::save"
+    },
+    {
+      "source_ends": "support_result.erl",
+      "relation": "contains",
+      "target_ends": "support_result.erl::pass"
+    }
+  ]
+}

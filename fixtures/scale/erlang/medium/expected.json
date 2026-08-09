@@ -1,0 +1,69 @@
+{
+  "min_nodes": 225,
+  "nodes": [
+    {
+      "label": "calc_evaluator",
+      "kind": "module"
+    },
+    {
+      "label": "calc_parser",
+      "kind": "module"
+    },
+    {
+      "label": "fn_registry",
+      "kind": "module"
+    },
+    {
+      "label": "eval",
+      "kind": "function"
+    },
+    {
+      "label": "dispatch",
+      "kind": "function"
+    },
+    {
+      "label": "scan",
+      "kind": "function"
+    },
+    {
+      "label": "parse",
+      "kind": "function"
+    },
+    {
+      "label": "step",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "calc_evaluator.erl",
+      "relation": "imports",
+      "target_ends": "fn_registry.erl::fn_registry"
+    },
+    {
+      "source_ends": "calc_repl.erl",
+      "relation": "imports",
+      "target_ends": "calc_parser.erl::calc_parser"
+    },
+    {
+      "source_ends": "calc_parser.erl",
+      "relation": "imports",
+      "target_ends": "calc_ast.erl::calc_ast"
+    },
+    {
+      "source_ends": "calc_scanner.erl",
+      "relation": "imports",
+      "target_ends": "calc_charclass.erl::calc_charclass"
+    },
+    {
+      "source_ends": "calc_evaluator.erl",
+      "relation": "contains",
+      "target_ends": "calc_evaluator.erl::eval"
+    },
+    {
+      "source_ends": "fn_registry.erl",
+      "relation": "contains",
+      "target_ends": "fn_registry.erl::dispatch"
+    }
+  ]
+}

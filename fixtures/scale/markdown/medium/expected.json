@@ -1,0 +1,56 @@
+{
+  "min_nodes": 229,
+  "nodes": [
+    {
+      "label": "abacus",
+      "kind": "heading"
+    },
+    {
+      "label": "Getting started",
+      "kind": "heading"
+    },
+    {
+      "label": "Built-in functions",
+      "kind": "heading"
+    },
+    {
+      "label": "Memory registers",
+      "kind": "heading"
+    },
+    {
+      "label": "Keyboard editing",
+      "kind": "heading"
+    },
+    {
+      "label": "Exporting the tape",
+      "kind": "heading"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "index.md",
+      "relation": "references",
+      "target_ends": "link::getting-started.md"
+    },
+    {
+      "source_ends": "getting-started.md",
+      "relation": "references",
+      "target_ends": "link::expressions.md"
+    },
+    {
+      "source_ends": "functions.md",
+      "relation": "references",
+      "target_ends": "link::fn-abs.md"
+    },
+    {
+      "source_ends": "releases.md",
+      "relation": "references",
+      "target_ends": "link::release-1-4.md"
+    },
+    {
+      "source_ends": "keyboard.md",
+      "relation": "references",
+      "target_ends": "link::history.md"
+    }
+  ]
+}

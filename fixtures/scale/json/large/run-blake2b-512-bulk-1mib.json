@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "blake2b-512-bulk-1mib",
+  "cipher": "blake2b-512",
+  "kind_of_primitive": "digest",
+  "keysize": 512,
+  "workload": "bulk-1mib",
+  "payload_bytes": 1048576,
+  "iterations": 2000,
+  "warmup": 20,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

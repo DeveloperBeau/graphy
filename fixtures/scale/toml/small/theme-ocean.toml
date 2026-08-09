@@ -1,0 +1,12 @@
+display_name = "ocean"
+origin = "builtin"
+
+[colors]
+foreground = "#8fbcbb"
+background = "#2e3440"
+accent = "#88c0d0"
+
+[border]
+style = "rounded"
+weight = 1
+shade_corners = false

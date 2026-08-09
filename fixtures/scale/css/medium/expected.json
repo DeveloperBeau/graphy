@@ -1,0 +1,56 @@
+{
+  "min_nodes": 202,
+  "nodes": [
+    {
+      "label": ".calc-shell",
+      "kind": "selector"
+    },
+    {
+      "label": ".display-panel",
+      "kind": "selector"
+    },
+    {
+      "label": ".key",
+      "kind": "selector"
+    },
+    {
+      "label": ".key--operator",
+      "kind": "selector"
+    },
+    {
+      "label": ".toggle-track",
+      "kind": "selector"
+    },
+    {
+      "label": "[data-theme='dark']",
+      "kind": "selector"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "main.css",
+      "relation": "imports",
+      "target_ends": "css::base.css"
+    },
+    {
+      "source_ends": "base.css",
+      "relation": "imports",
+      "target_ends": "css::tokens.css"
+    },
+    {
+      "source_ends": "main.css",
+      "relation": "imports",
+      "target_ends": "css::components.css"
+    },
+    {
+      "source_ends": "components.css",
+      "relation": "imports",
+      "target_ends": "css::keys.css"
+    },
+    {
+      "source_ends": "themes.css",
+      "relation": "imports",
+      "target_ends": "css::theme-dark.css"
+    }
+  ]
+}

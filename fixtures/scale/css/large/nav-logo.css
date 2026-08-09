@@ -1,0 +1,12 @@
+/* nav logo */
+.nav-logo {
+  display: block;
+  --tone: hsl(292, 18%, 40%);
+}
+.nav-logo > * + * {
+  margin-top: 0.35rem;
+}
+.nav-logo[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

@@ -1,0 +1,12 @@
+/* badge unstable */
+.badge-unstable {
+  display: block;
+  --tone: hsl(347, 18%, 40%);
+}
+.badge-unstable > * + * {
+  margin-top: 0.35rem;
+}
+.badge-unstable[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

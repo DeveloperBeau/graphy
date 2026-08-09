@@ -1,0 +1,12 @@
+/* nav tabs */
+.nav-tabs {
+  display: block;
+  --tone: hsl(253, 18%, 40%);
+}
+.nav-tabs > * + * {
+  margin-top: 0.35rem;
+}
+.nav-tabs[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "mod",
+  "arity": 2,
+  "category": "arithmetic",
+  "domain": "real",
+  "precedence": 6,
+  "associativity": "left",
+  "example": "6 mod 3"
+}

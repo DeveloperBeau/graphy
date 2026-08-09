@@ -1,0 +1,24 @@
+{
+  "min_nodes": 260,
+  "nodes": [
+    {"label": "registrySubmitAll", "kind": "function"},
+    {"label": "schedulerRank", "kind": "function"},
+    {"label": "cliCommandsRun", "kind": "function"},
+    {"label": "eventloopRun", "kind": "function"},
+    {"label": "jobNew", "kind": "function"},
+    {"label": "computeJobCreate", "kind": "function"},
+    {"label": "priorityPolicyRank", "kind": "function"},
+    {"label": "reportPrintSummary", "kind": "function"},
+    {"label": "cliArgsParse", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "src/main.zig::main", "relation": "calls", "target_ends": "src/cli/commands.zig::cliCommandsRun"},
+    {"source_ends": "src/main.zig::main", "relation": "calls", "target_ends": "src/cli/args.zig::cliArgsParse"},
+    {"source_ends": "src/cli/commands.zig::cliCommandsRun", "relation": "calls", "target_ends": "src/cli/report.zig::reportPrintSummary"},
+    {"source_ends": "src/jobs/registry.zig::registrySubmitAll", "relation": "calls", "target_ends": "src/jobs/compute/factory.zig::computeJobCreate"},
+    {"source_ends": "src/jobs/compute/factory.zig::computeJobCreate", "relation": "calls", "target_ends": "src/core/job.zig::jobNew"},
+    {"source_ends": "src/sched/scheduler.zig::schedulerRank", "relation": "calls", "target_ends": "src/sched/priority_policy.zig::priorityPolicyRank"},
+    {"source_ends": "src/core/eventloop.zig::eventloopRun", "relation": "calls", "target_ends": "src/core/event.zig::eventNew"},
+    {"source_ends": "src/core/eventloop.zig::eventloopRun", "relation": "calls", "target_ends": "src/core/clock.zig::clockAdvance"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "solarized",
+  "foreground": "#657b83",
+  "background": "#fdf6e3",
+  "accent": "#b58900",
+  "border": "single",
+  "dim_headers": true,
+  "corner_style": "square",
+  "supports_truecolor": true
+}

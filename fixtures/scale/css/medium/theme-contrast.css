@@ -1,0 +1,10 @@
+/* theme: contrast */
+[data-theme='contrast'] {
+  --bg: hsl(60, 15%, 10%);
+  --panel: hsl(60, 14%, 16%);
+  --accent: hsl(200, 45%, 52%);
+  --key: hsl(60, 12%, 22%);
+}
+[data-theme='contrast'] .display-expression {
+  opacity: 0.57;
+}

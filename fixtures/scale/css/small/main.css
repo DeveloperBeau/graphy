@@ -1,0 +1,21 @@
+/* inkroll docs entry stylesheet */
+@import "tokens.css";
+@import "reset.css";
+@import "typography.css";
+@import "layout.css";
+@import "header.css";
+@import "footer.css";
+@import "code.css";
+@import "tables.css";
+@import "callouts.css";
+@import "badges.css";
+@import "print.css";
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+}
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}

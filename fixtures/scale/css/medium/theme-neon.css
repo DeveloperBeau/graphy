@@ -1,0 +1,10 @@
+/* theme: neon */
+[data-theme='neon'] {
+  --bg: hsl(180, 15%, 14%);
+  --panel: hsl(180, 14%, 20%);
+  --accent: hsl(320, 45%, 52%);
+  --key: hsl(180, 12%, 26%);
+}
+[data-theme='neon'] .display-expression {
+  opacity: 0.61;
+}

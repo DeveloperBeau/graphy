@@ -1,0 +1,27 @@
+{
+  "$id": "theme.schema.json",
+  "title": "Theme",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "foreground": {
+      "$ref": "color.schema.json"
+    },
+    "background": {
+      "$ref": "color.schema.json"
+    },
+    "accent": {
+      "$ref": "color.schema.json"
+    },
+    "dim_headers": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "foreground",
+    "background"
+  ]
+}

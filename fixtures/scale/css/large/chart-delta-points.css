@@ -1,0 +1,11 @@
+/* chart delta points */
+.chart-delta-points {
+  font-size: 0.75rem;
+  --chart-tone: hsl(51, 30%, 60%);
+}
+.chart-delta-points .tick {
+  stroke: #2a3441;
+}
+.chart-delta-points text {
+  fill: #9aa7b4;
+}

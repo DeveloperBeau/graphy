@@ -1,0 +1,64 @@
+{
+  "min_nodes": 100,
+  "nodes": [
+    {
+      "label": "calc_top",
+      "kind": "module"
+    },
+    {
+      "label": "alu_core",
+      "kind": "module"
+    },
+    {
+      "label": "full_adder",
+      "kind": "module"
+    },
+    {
+      "label": "ripple_adder_16",
+      "kind": "module"
+    },
+    {
+      "label": "booth_multiplier_16",
+      "kind": "module"
+    },
+    {
+      "label": "divider_16",
+      "kind": "module"
+    },
+    {
+      "label": "seven_seg_decoder",
+      "kind": "module"
+    },
+    {
+      "label": "barrel_shifter_16",
+      "kind": "module"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "calc_top.v",
+      "relation": "contains",
+      "target_ends": "calc_top.v::calc_top"
+    },
+    {
+      "source_ends": "alu_core.v",
+      "relation": "contains",
+      "target_ends": "alu_core.v::alu_core"
+    },
+    {
+      "source_ends": "full_adder.v",
+      "relation": "contains",
+      "target_ends": "full_adder.v::full_adder"
+    },
+    {
+      "source_ends": "divider_16.v",
+      "relation": "contains",
+      "target_ends": "divider_16.v::divider_16"
+    },
+    {
+      "source_ends": "seven_seg_decoder.v",
+      "relation": "contains",
+      "target_ends": "seven_seg_decoder.v::seven_seg_decoder"
+    }
+  ]
+}

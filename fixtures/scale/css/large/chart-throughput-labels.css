@@ -1,0 +1,11 @@
+/* chart throughput labels */
+.chart-throughput-labels {
+  font-size: 0.75rem;
+  --chart-tone: hsl(99, 30%, 60%);
+}
+.chart-throughput-labels .tick {
+  stroke: #2a3441;
+}
+.chart-throughput-labels text {
+  fill: #9aa7b4;
+}

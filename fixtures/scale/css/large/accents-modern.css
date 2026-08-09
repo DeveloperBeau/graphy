@@ -1,0 +1,25 @@
+/* bundle: accents-modern */
+@import "accent-aes.css";
+@import "accent-serpent.css";
+@import "accent-twofish.css";
+@import "accent-camellia.css";
+@import "accent-aria.css";
+@import "accent-sm4.css";
+@import "accent-kuznyechik.css";
+@import "accent-clefia.css";
+@import "accent-mars.css";
+@import "accent-rc6.css";
+@import "accent-cast256.css";
+@import "accent-safer.css";
+@import "accent-blowfish.css";
+@import "accent-cast5.css";
+@import "accent-idea.css";
+@import "accent-rc5.css";
+@import "accent-present.css";
+@import "accent-speck.css";
+@import "accent-simon.css";
+@import "accent-simeck.css";
+@import "accent-hight.css";
+@import "accent-lea.css";
+@import "accent-prince.css";
+@import "accent-klein.css";

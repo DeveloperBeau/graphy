@@ -1,0 +1,11 @@
+/* chart delta labels */
+.chart-delta-labels {
+  font-size: 0.75rem;
+  --chart-tone: hsl(64, 30%, 60%);
+}
+.chart-delta-labels .tick {
+  stroke: #2a3441;
+}
+.chart-delta-labels text {
+  fill: #9aa7b4;
+}

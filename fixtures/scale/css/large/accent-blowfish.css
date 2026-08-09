@@ -1,0 +1,11 @@
+/* accent blowfish */
+.accent-blowfish {
+  --cipher-accent: hsl(172, 55%, 48%);
+}
+.accent-blowfish .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-blowfish .legend-swatch {
+  background: var(--cipher-accent);
+}

@@ -1,0 +1,61 @@
+{
+  "min_nodes": 954,
+  "nodes": [
+    {
+      "label": "cipherbench handbook",
+      "kind": "heading"
+    },
+    {
+      "label": "How runs work",
+      "kind": "heading"
+    },
+    {
+      "label": "AES",
+      "kind": "heading"
+    },
+    {
+      "label": "AES in the suite",
+      "kind": "heading"
+    },
+    {
+      "label": "AES parameters",
+      "kind": "heading"
+    },
+    {
+      "label": "Cipher index",
+      "kind": "heading"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "index.md",
+      "relation": "references",
+      "target_ends": "link::methodology.md"
+    },
+    {
+      "source_ends": "cipher-index.md",
+      "relation": "references",
+      "target_ends": "link::block-index.md"
+    },
+    {
+      "source_ends": "block-index.md",
+      "relation": "references",
+      "target_ends": "link::aes.md"
+    },
+    {
+      "source_ends": "aes.md",
+      "relation": "references",
+      "target_ends": "link::aes-parameters.md"
+    },
+    {
+      "source_ends": "aes-results.md",
+      "relation": "references",
+      "target_ends": "link::aes.md"
+    },
+    {
+      "source_ends": "latency.md",
+      "relation": "references",
+      "target_ends": "link::twofish.md"
+    }
+  ]
+}

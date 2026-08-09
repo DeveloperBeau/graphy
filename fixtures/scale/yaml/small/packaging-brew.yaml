@@ -1,0 +1,18 @@
+brew_defaults: &brew_defaults
+  runner: macos-14
+  timeout_minutes: 25
+
+brew_bottle:
+  <<: *brew_defaults
+  script: brew build-bottle textprint.rb
+
+formula_bump:
+  <<: *brew_defaults
+  script: brew bump-formula-pr
+  needs:
+    - brew_bottle
+
+tap_push:
+  <<: *brew_defaults
+  script: git push tap main
+  tap: org/homebrew-cli
