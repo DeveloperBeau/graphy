@@ -71,16 +71,20 @@ fn service_emits_grouped_and_aliased_imports() {
 }
 
 #[test]
-fn service_does_not_emit_call_to_external_println() {
+fn service_call_to_external_println_stays_extern() {
+    // `fmt` is imported, so `fmt.Println` is linked — but only through an
+    // extern node, never resolved to a local definition.
     let out = extract_file(&fp("service.go"));
-    let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let println_calls: Vec<_> = all_calls
+    let println_calls: Vec<_> = out
+        .edges
         .iter()
-        .filter(|e| e.target.contains("Println"))
+        .filter(|e| e.relation == "calls" && e.target.contains("Println"))
         .collect();
     assert!(
-        println_calls.is_empty(),
-        "unexpected call edge to Println: {println_calls:#?}"
+        println_calls
+            .iter()
+            .all(|e| e.target.starts_with("extern::")),
+        "Println call resolved to a non-extern target: {println_calls:#?}"
     );
 }
 
@@ -346,12 +350,16 @@ fn pipeline_emits_at_least_one_imports_edge() {
 }
 
 #[test]
-fn pipeline_does_not_emit_local_call_to_println() {
+fn pipeline_call_to_println_never_resolves_locally() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let bad = g
         .graph
         .edge_references()
-        .filter(|e| e.weight().relation == "calls" && g.graph[e.target()].label.contains("Println"))
+        .filter(|e| {
+            e.weight().relation == "calls"
+                && g.graph[e.target()].label.contains("Println")
+                && g.graph[e.target()].source_file.is_some()
+        })
         .count();
-    assert_eq!(bad, 0, "unexpected pipeline call edge to Println");
+    assert_eq!(bad, 0, "Println call resolved to a local definition");
 }

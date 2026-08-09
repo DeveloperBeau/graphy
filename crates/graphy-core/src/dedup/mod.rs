@@ -190,7 +190,14 @@ fn best_match(index: &HashMap<String, Vec<NodeIndex>>, extern_label: &str) -> Op
         .trim();
     // Strip an optional ` as <alias>` clause.
     let cleaned = cleaned.split(" as ").next().unwrap_or(cleaned);
-    let parts: Vec<&str> = cleaned.split("::").filter(|s| !s.is_empty()).collect();
+    // Split on `::` (Rust/PHP/C++) and `.` (Python/Swift/Kotlin/Java/JS)
+    // so dotted module paths like `app.util.say` resolve against the
+    // `::`-joined suffix index the same way `app::util::say` would.
+    let parts: Vec<&str> = cleaned
+        .split("::")
+        .flat_map(|p| p.split('.'))
+        .filter(|s| !s.is_empty())
+        .collect();
     if parts.is_empty() {
         return None;
     }

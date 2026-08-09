@@ -54,7 +54,7 @@ fn walk(
             }
             "using_statement" | "import_module_command" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_import(out, file, text.trim(), child);
+                emit_import(out, symbols, file, text.trim(), child);
             }
             "command" => {
                 // Detect dot-source: command whose first child is a
@@ -78,7 +78,7 @@ fn walk(
                                     .trim()
                                     .trim_start_matches(".\\")
                                     .trim_start_matches("./");
-                                emit_import(out, file, path_text, item);
+                                emit_import(out, symbols, file, path_text, item);
                             }
                             break;
                         }

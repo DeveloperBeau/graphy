@@ -35,7 +35,8 @@ fn delta_louvain_with_scc_produces_reasonable_modularity() {
     let baseline_q = graphy_core::cluster::modularity(&baseline.graph);
 
     // Sanity: the baseline graph has the 6 nodes we expect.
-    assert_eq!(baseline.graph.node_count(), 6, "expected 6 nodes");
+    // 6 functions + the rec.py file node they hang off via `contains`.
+    assert_eq!(baseline.graph.node_count(), 7, "expected 7 nodes");
 
     // Touch the file (trivial change), then run the incremental path.
     // Because graph.json was written by the baseline run above, update_graph
@@ -54,11 +55,11 @@ fn delta_louvain_with_scc_produces_reasonable_modularity() {
     let delta = Pipeline::new(cfg).run().unwrap();
     let delta_q = graphy_core::cluster::modularity(&delta.graph);
 
-    // The incremental graph should also have 6 nodes.
+    // The incremental graph should also have 7 nodes (6 functions + file).
     assert_eq!(
         delta.graph.node_count(),
-        6,
-        "expected 6 nodes after incremental run"
+        7,
+        "expected 7 nodes after incremental run"
     );
 
     // Both runs should find non-negative modularity (they found some structure).

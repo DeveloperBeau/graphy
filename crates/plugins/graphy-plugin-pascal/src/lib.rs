@@ -73,6 +73,7 @@ fn walk(
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
                 emit_import(
                     out,
+                    symbols,
                     file,
                     text.trim_start_matches("uses").trim_end_matches(';').trim(),
                     child.start_position().row,

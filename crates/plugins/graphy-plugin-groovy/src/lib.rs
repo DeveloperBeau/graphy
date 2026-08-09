@@ -55,6 +55,7 @@ fn walk(
                 if let Ok(text) = child.utf8_text(src.as_bytes()) {
                     emit_import(
                         out,
+                        symbols,
                         file,
                         text.trim_start_matches("import").trim(),
                         child.start_position().row,

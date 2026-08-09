@@ -86,7 +86,7 @@ fn walk(
                 }
                 "alias" | "import" | "require" | "use" => {
                     if let Some(arg) = argument_text(child, src) {
-                        emit_import(out, file, arg, child.start_position().row);
+                        emit_import(out, symbols, file, arg, child.start_position().row);
                     }
                 }
                 _ => {

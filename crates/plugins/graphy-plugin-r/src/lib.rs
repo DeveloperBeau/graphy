@@ -68,7 +68,7 @@ fn walk(
                 .unwrap_or("")
                 .trim_matches(|c: char| matches!(c, '(' | ')' | ' '))
                 .trim_matches(|c| matches!(c, '"' | '\''));
-            emit_import(out, file, raw, child.start_position().row);
+            emit_import(out, symbols, file, raw, child.start_position().row);
         }
         walk(child, src, file, out, symbols);
     }

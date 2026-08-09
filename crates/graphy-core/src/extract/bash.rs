@@ -52,7 +52,7 @@ fn walk(
                 let mut subc = child.walk();
                 if let Some(a) = child.children_by_field_name("argument", &mut subc).next() {
                     let text = a.utf8_text(src.as_bytes()).expect("utf8 source");
-                    emit_import(out, file, text, child);
+                    emit_import(out, symbols, file, text, child);
                 }
             }
         }

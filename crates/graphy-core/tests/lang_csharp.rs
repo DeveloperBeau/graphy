@@ -106,16 +106,21 @@ fn service_emits_using_static() {
 }
 
 #[test]
-fn service_does_not_emit_call_to_external_writeline() {
+fn service_call_to_external_writeline_stays_extern() {
+    // `Console` is explicitly imported (`using static System.Console`), so
+    // the qualified call is linked — but only through an extern node. It
+    // must never resolve to a local definition.
     let out = extract_file(&fp("Service.cs"));
-    let all_calls: Vec<_> = out.edges.iter().filter(|e| e.relation == "calls").collect();
-    let bad: Vec<_> = all_calls
+    let writeline_calls: Vec<_> = out
+        .edges
         .iter()
-        .filter(|e| e.target.contains("WriteLine"))
+        .filter(|e| e.relation == "calls" && e.target.contains("WriteLine"))
         .collect();
     assert!(
-        bad.is_empty(),
-        "unexpected call edge to WriteLine: {bad:#?}"
+        writeline_calls
+            .iter()
+            .all(|e| e.target.starts_with("extern::")),
+        "WriteLine call resolved to a non-extern target: {writeline_calls:#?}"
     );
 }
 
@@ -382,14 +387,19 @@ fn pipeline_emits_at_least_one_imports_edge() {
 }
 
 #[test]
-fn pipeline_does_not_emit_local_call_to_writeline() {
+fn pipeline_call_to_writeline_never_resolves_locally() {
+    // The linked WriteLine call must survive the pipeline as an extern —
+    // dedup has no local definition to redirect it onto, and it must not
+    // be merged into one by accident.
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
     let bad = g
         .graph
         .edge_references()
         .filter(|e| {
-            e.weight().relation == "calls" && g.graph[e.target()].label.contains("WriteLine")
+            e.weight().relation == "calls"
+                && g.graph[e.target()].label.contains("WriteLine")
+                && g.graph[e.target()].source_file.is_some()
         })
         .count();
-    assert_eq!(bad, 0, "unexpected pipeline call edge to WriteLine");
+    assert_eq!(bad, 0, "WriteLine call resolved to a local definition");
 }

@@ -83,7 +83,7 @@ fn walk(
             "import_declaration" => {
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
                 let target = text.trim_start_matches("import").trim();
-                emit_import(out, file, target, child.start_position().row);
+                emit_import(out, symbols, file, target, child.start_position().row);
             }
             _ => {}
         }
