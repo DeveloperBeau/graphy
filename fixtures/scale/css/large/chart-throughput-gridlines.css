@@ -1,0 +1,11 @@
+/* chart throughput gridlines */
+.chart-throughput-gridlines {
+  font-size: 0.75rem;
+  --chart-tone: hsl(60, 30%, 60%);
+}
+.chart-throughput-gridlines .tick {
+  stroke: #2a3441;
+}
+.chart-throughput-gridlines text {
+  fill: #9aa7b4;
+}

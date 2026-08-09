@@ -1,0 +1,56 @@
+{
+  "min_nodes": 1154,
+  "nodes": [
+    {
+      "label": "nav#index-nav",
+      "kind": "nav"
+    },
+    {
+      "label": "main#block-main",
+      "kind": "main"
+    },
+    {
+      "label": "section#cipher-aes-profile",
+      "kind": "section"
+    },
+    {
+      "label": "main#cipher-chacha20-main",
+      "kind": "main"
+    },
+    {
+      "label": "section#results-serpent-headline",
+      "kind": "section"
+    },
+    {
+      "label": "main#hardware-main",
+      "kind": "main"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "index.html",
+      "relation": "references",
+      "target_ends": "link::methodology.html"
+    },
+    {
+      "source_ends": "cipher-aes.html",
+      "relation": "references",
+      "target_ends": "link::results-aes.html"
+    },
+    {
+      "source_ends": "cipher-aes.html",
+      "relation": "references",
+      "target_ends": "link::cipher-serpent.html"
+    },
+    {
+      "source_ends": "block.html",
+      "relation": "references",
+      "target_ends": "link::cipher-aes.html"
+    },
+    {
+      "source_ends": "bench-chacha20.html",
+      "relation": "references",
+      "target_ends": "link::hardware.html"
+    }
+  ]
+}

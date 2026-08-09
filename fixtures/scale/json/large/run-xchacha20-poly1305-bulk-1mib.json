@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "xchacha20-poly1305-bulk-1mib",
+  "cipher": "xchacha20-poly1305",
+  "kind_of_primitive": "cipher",
+  "keysize": 256,
+  "workload": "bulk-1mib",
+  "payload_bytes": 1048576,
+  "iterations": 2000,
+  "warmup": 20,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

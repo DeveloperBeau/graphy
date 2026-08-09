@@ -1,0 +1,12 @@
+/* badge run */
+.badge-run {
+  display: block;
+  --tone: hsl(321, 18%, 40%);
+}
+.badge-run > * + * {
+  margin-top: 0.35rem;
+}
+.badge-run[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

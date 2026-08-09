@@ -1,0 +1,12 @@
+/* foundation breakpoints */
+.foundation-breakpoints {
+  display: block;
+  --tone: hsl(65, 18%, 40%);
+}
+.foundation-breakpoints > * + * {
+  margin-top: 0.35rem;
+}
+.foundation-breakpoints[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

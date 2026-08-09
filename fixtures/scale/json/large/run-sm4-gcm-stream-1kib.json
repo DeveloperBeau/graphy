@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "sm4-gcm-stream-1kib",
+  "cipher": "sm4-gcm",
+  "kind_of_primitive": "cipher",
+  "keysize": 256,
+  "workload": "stream-1kib",
+  "payload_bytes": 1024,
+  "iterations": 200000,
+  "warmup": 2000,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

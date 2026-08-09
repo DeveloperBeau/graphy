@@ -1,0 +1,14 @@
+calc_perf_defaults: &calc_perf_defaults
+  runner: linux-metal
+  timeout_minutes: 20
+  cpu_governor: performance
+
+parse_bench:
+  <<: *calc_perf_defaults
+  script: calc bench parse corpus/expressions.txt
+  budget_ns: 900
+
+eval_bench:
+  <<: *calc_perf_defaults
+  script: calc bench eval corpus/expressions.txt
+  budget_ns: 1500

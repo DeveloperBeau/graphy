@@ -1,0 +1,11 @@
+/* chart spread points */
+.chart-spread-points {
+  font-size: 0.75rem;
+  --chart-tone: hsl(346, 30%, 60%);
+}
+.chart-spread-points .tick {
+  stroke: #2a3441;
+}
+.chart-spread-points text {
+  fill: #9aa7b4;
+}

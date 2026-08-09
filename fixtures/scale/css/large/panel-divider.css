@@ -1,0 +1,12 @@
+/* panel divider */
+.panel-divider {
+  display: block;
+  --tone: hsl(284, 18%, 40%);
+}
+.panel-divider > * + * {
+  margin-top: 0.35rem;
+}
+.panel-divider[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

@@ -1,0 +1,10 @@
+{
+  "max_entries": 500,
+  "dedupe": true,
+  "export_format": "csv",
+  "timestamp_entries": true,
+  "fuzzy_search": true,
+  "max_search_results": 20,
+  "persist_between_launches": true,
+  "clear_shortcut": "Ctrl+Shift+H"
+}

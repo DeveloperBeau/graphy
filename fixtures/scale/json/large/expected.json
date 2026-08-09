@@ -1,0 +1,64 @@
+{
+  "min_nodes": 2396,
+  "nodes": [
+    {
+      "label": "cpu_model",
+      "kind": "json_key"
+    },
+    {
+      "label": "kernel_version",
+      "kind": "json_key"
+    },
+    {
+      "label": "turbo_disabled",
+      "kind": "json_key"
+    },
+    {
+      "label": "db_path",
+      "kind": "json_key"
+    },
+    {
+      "label": "retention_runs",
+      "kind": "json_key"
+    },
+    {
+      "label": "flush_interval_ms",
+      "kind": "json_key"
+    },
+    {
+      "label": "payload_pattern",
+      "kind": "json_key"
+    },
+    {
+      "label": "block_size_bits",
+      "kind": "json_key"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "run-aes-128-gcm-bulk-4kib.json::$ref",
+      "relation": "references",
+      "target_ends": "run.schema.json"
+    },
+    {
+      "source_ends": "run-chacha20-stream-64b.json::$ref",
+      "relation": "references",
+      "target_ends": "run.schema.json"
+    },
+    {
+      "source_ends": "run.schema.json::$ref",
+      "relation": "references",
+      "target_ends": "cipher.schema.json"
+    },
+    {
+      "source_ends": "run.schema.json::$ref",
+      "relation": "references",
+      "target_ends": "environment.schema.json"
+    },
+    {
+      "source_ends": "results-db.schema.json",
+      "relation": "contains",
+      "target_ends": "results-db.schema.json::db_path"
+    }
+  ]
+}

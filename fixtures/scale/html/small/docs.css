@@ -1,0 +1,13 @@
+main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+}
+section h2 {
+  font-size: 1.05rem;
+  border-bottom: 1px solid #d5d8cf;
+  padding-bottom: 0.2rem;
+}
+section ul {
+  padding-left: 1.2rem;
+}

@@ -1,0 +1,12 @@
+/* table delta */
+.table-delta {
+  display: block;
+  --tone: hsl(211, 18%, 40%);
+}
+.table-delta > * + * {
+  margin-top: 0.35rem;
+}
+.table-delta[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

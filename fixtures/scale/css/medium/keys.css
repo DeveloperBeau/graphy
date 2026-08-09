@@ -1,0 +1,10 @@
+/* component: keys */
+.key {
+  background: var(--key);
+  color: var(--key-text);
+  border-radius: var(--radius);
+  padding: 0.9rem 0;
+}
+.key:active {
+  filter: brightness(1.2);
+}

@@ -1,0 +1,74 @@
+{
+  "min_nodes": 150,
+  "nodes": [
+    {
+      "label": "calc_sin",
+      "kind": "function"
+    },
+    {
+      "label": "calc_gcd",
+      "kind": "function"
+    },
+    {
+      "label": "parse_expression",
+      "kind": "function"
+    },
+    {
+      "label": "eval_expr",
+      "kind": "function"
+    },
+    {
+      "label": "mem_store",
+      "kind": "function"
+    },
+    {
+      "label": "scan_tokens",
+      "kind": "function"
+    },
+    {
+      "label": "Token",
+      "kind": "struct"
+    },
+    {
+      "label": "Cursor",
+      "kind": "struct"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "calc.jl::main_cli",
+      "relation": "calls",
+      "target_ends": "src/Calculator.jl::run_calc"
+    },
+    {
+      "source_ends": "src/Eval.jl::eval_expr",
+      "relation": "calls",
+      "target_ends": "src/Scanner.jl::scan_tokens"
+    },
+    {
+      "source_ends": "src/Eval.jl::eval_expr",
+      "relation": "calls",
+      "target_ends": "src/Parser.jl::parse_expression"
+    },
+    {
+      "source_ends": "src/Repl.jl::repl_loop",
+      "relation": "calls",
+      "target_ends": "src/Eval.jl::eval_expr"
+    },
+    {
+      "source_ends": "src/functions/SinFn.jl::sin_table",
+      "relation": "calls",
+      "target_ends": "src/functions/SinFn.jl::calc_sin"
+    },
+    {
+      "source_ends": "src/Eval.jl",
+      "relation": "imports",
+      "target_ends": "extern::..Scanner"
+    },
+    {
+      "source_ends": "src/Tokens.jl",
+      "relation": "contains",
+      "target_ends": "src/Tokens.jl::Token"
+    }
+  ]
+}

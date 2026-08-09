@@ -202,13 +202,22 @@ fn pipeline_emits_array_of_tables_nodes() {
 }
 
 #[test]
-fn pipeline_emits_no_edges() {
-    // TOML has no cross-file references; pipeline should produce zero edges.
+fn pipeline_emits_only_contains_edges() {
+    // TOML has no cross-file references. The only edges are the anchoring
+    // `contains` edges from each file to its section nodes — nothing floats.
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    let edge_count = g.graph.edge_references().count();
+    let non_contains = g
+        .graph
+        .edge_references()
+        .filter(|e| e.weight().relation != "contains")
+        .count();
     assert_eq!(
-        edge_count, 0,
-        "expected 0 edges for TOML-only fixture; got {edge_count}"
+        non_contains, 0,
+        "expected only contains edges for TOML-only fixture"
+    );
+    assert!(
+        g.graph.edge_references().count() > 0,
+        "sections should be anchored to their file"
     );
 }
 

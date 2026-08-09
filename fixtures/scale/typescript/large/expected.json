@@ -1,0 +1,74 @@
+{
+  "min_nodes": 500,
+  "nodes": [
+    {
+      "label": "getCipher",
+      "kind": "method"
+    },
+    {
+      "label": "writeResult",
+      "kind": "method"
+    },
+    {
+      "label": "runAll",
+      "kind": "method"
+    },
+    {
+      "label": "runChecks",
+      "kind": "method"
+    },
+    {
+      "label": "roundTrip",
+      "kind": "method"
+    },
+    {
+      "label": "fingerprint",
+      "kind": "method"
+    },
+    {
+      "label": "CipherError",
+      "kind": "class"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Caesar.ts::encrypt",
+      "relation": "calls",
+      "target_ends": "Bytes.ts::fromCodes"
+    },
+    {
+      "source_ends": "CheckCaesar.ts::run",
+      "relation": "calls",
+      "target_ends": "Caesar.ts::encrypt"
+    },
+    {
+      "source_ends": "CheckGronsfeld.ts::run",
+      "relation": "calls",
+      "target_ends": "GronsfeldSpec.ts::get"
+    },
+    {
+      "source_ends": "CheckFnvhash.ts::run",
+      "relation": "calls",
+      "target_ends": "CorpusHash.ts::texts"
+    },
+    {
+      "source_ends": "Pipeline.ts::roundTrip",
+      "relation": "calls",
+      "target_ends": "Registry.ts::getCipher"
+    },
+    {
+      "source_ends": "Runner.ts::runAll",
+      "relation": "calls",
+      "target_ends": "Pipeline.ts::roundTrip"
+    },
+    {
+      "source_ends": "main.ts::main",
+      "relation": "calls",
+      "target_ends": "CheckRunner.ts::runChecks"
+    }
+  ]
+}

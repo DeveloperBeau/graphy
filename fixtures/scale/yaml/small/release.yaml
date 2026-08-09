@@ -1,0 +1,20 @@
+release_defaults: &release_defaults
+  channel: stable
+  runner: linux-amd64
+  require_clean_tree: true
+
+tag_version:
+  <<: *release_defaults
+  script: ./scripts/tag.sh
+  push_tags: true
+
+sign_tarball:
+  <<: *release_defaults
+  script: ./scripts/sign.sh
+  signing_key: release-2026
+
+upload_assets:
+  <<: *release_defaults
+  script: gh release upload
+  needs:
+    - sign_tarball

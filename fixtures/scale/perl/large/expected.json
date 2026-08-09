@@ -1,0 +1,65 @@
+{
+  "min_nodes": 280,
+  "nodes": [
+    {
+      "label": "CipherLab::Families::Caesar::CaesarCipher",
+      "kind": "package"
+    },
+    {
+      "label": "CipherLab::Engine::CorrectnessEngine",
+      "kind": "package"
+    },
+    {
+      "label": "CipherLab::Engine::BenchmarkEngine",
+      "kind": "package"
+    },
+    {
+      "label": "CipherLab::Store::ResultsStore",
+      "kind": "package"
+    },
+    {
+      "label": "CipherLab::Registry::FamilyCatalog",
+      "kind": "package"
+    },
+    {
+      "label": "CipherLab::Engine::Harness",
+      "kind": "package"
+    },
+    {
+      "label": "encode",
+      "kind": "sub?ambiguous"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Families/Caesar/CaesarCipher.pm",
+      "relation": "contains",
+      "target_ends": "CaesarCipher.pm::CipherLab::Families::Caesar::CaesarCipher"
+    },
+    {
+      "source_ends": "Families/Caesar/CaesarRunner.pm",
+      "relation": "imports",
+      "target_ends": "CorrectnessEngine.pm::CipherLab::Engine::CorrectnessEngine"
+    },
+    {
+      "source_ends": "Families/Caesar/CaesarDescriptor.pm",
+      "relation": "imports",
+      "target_ends": "CaesarCipher.pm::CipherLab::Families::Caesar::CaesarCipher"
+    },
+    {
+      "source_ends": "Registry/FamilyCatalog.pm",
+      "relation": "imports",
+      "target_ends": "CaesarDescriptor.pm::CipherLab::Families::Caesar::CaesarDescriptor"
+    },
+    {
+      "source_ends": "Engine/Harness.pm",
+      "relation": "imports",
+      "target_ends": "FamilyCatalog.pm::CipherLab::Registry::FamilyCatalog"
+    },
+    {
+      "source_ends": "cipherlab.pl",
+      "relation": "imports",
+      "target_ends": "Harness.pm::CipherLab::Engine::Harness"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+default_locale = "en_US"
+
+[overrides]
+decimal_style = "auto"
+digit_shapes = "latin"
+
+[fallbacks]
+chain = ["en_US", "en"]
+
+[rtl]
+mirror_layout = false
+digit_direction = "ltr"

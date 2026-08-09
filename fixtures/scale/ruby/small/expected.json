@@ -1,0 +1,60 @@
+{
+  "min_nodes": 26,
+  "nodes": [
+    {
+      "label": "upcase_title",
+      "kind": "method"
+    },
+    {
+      "label": "make_banner",
+      "kind": "method"
+    },
+    {
+      "label": "boxed",
+      "kind": "method"
+    },
+    {
+      "label": "wrap_text",
+      "kind": "method"
+    },
+    {
+      "label": "render_page",
+      "kind": "method"
+    },
+    {
+      "label": "print_report",
+      "kind": "method"
+    },
+    {
+      "label": "run",
+      "kind": "method"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "make_banner.rb::make_banner",
+      "relation": "calls",
+      "target_ends": "upcase_title.rb::upcase_title"
+    },
+    {
+      "source_ends": "boxed.rb::boxed",
+      "relation": "calls",
+      "target_ends": "make_banner.rb::make_banner"
+    },
+    {
+      "source_ends": "render_page.rb::render_page",
+      "relation": "calls",
+      "target_ends": "wrap_text.rb::wrap_text"
+    },
+    {
+      "source_ends": "print_report.rb::print_report",
+      "relation": "calls",
+      "target_ends": "boxed.rb::boxed"
+    },
+    {
+      "source_ends": "main.rb::run",
+      "relation": "calls",
+      "target_ends": "print_report.rb::print_report"
+    }
+  ]
+}

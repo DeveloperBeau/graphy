@@ -1,0 +1,12 @@
+/* panel resize */
+.panel-resize {
+  display: block;
+  --tone: hsl(310, 18%, 40%);
+}
+.panel-resize > * + * {
+  margin-top: 0.35rem;
+}
+.panel-resize[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

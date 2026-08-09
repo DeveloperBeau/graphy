@@ -1,0 +1,14 @@
+[wrap]
+wrap_width = 80
+break_long_words = false
+hyphenate = false
+
+[align]
+default_align = "left"
+justify_last_line = false
+
+[margins]
+left = 2
+right = 2
+top = 0
+bottom = 1

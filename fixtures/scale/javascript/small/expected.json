@@ -1,0 +1,65 @@
+{
+  "min_nodes": 30,
+  "nodes": [
+    {
+      "label": "toUpper",
+      "kind": "function"
+    },
+    {
+      "label": "makeBanner",
+      "kind": "function"
+    },
+    {
+      "label": "wrapText",
+      "kind": "function"
+    },
+    {
+      "label": "renderPage",
+      "kind": "function"
+    },
+    {
+      "label": "borderTop",
+      "kind": "function"
+    },
+    {
+      "label": "printReport",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "banner.js::makeBanner",
+      "relation": "calls",
+      "target_ends": "format.js::underline"
+    },
+    {
+      "source_ends": "layout.js::renderPage",
+      "relation": "calls",
+      "target_ends": "wrap.js::wrapText"
+    },
+    {
+      "source_ends": "layout.js::renderPage",
+      "relation": "calls",
+      "target_ends": "border.js::borderTop"
+    },
+    {
+      "source_ends": "border.js::borderTop",
+      "relation": "calls",
+      "target_ends": "theme.js::themeChars"
+    },
+    {
+      "source_ends": "printer.js::printPage",
+      "relation": "calls",
+      "target_ends": "layout.js::renderPage"
+    },
+    {
+      "source_ends": "main.js::main",
+      "relation": "calls",
+      "target_ends": "printer.js::printReport"
+    }
+  ]
+}

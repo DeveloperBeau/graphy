@@ -1,0 +1,12 @@
+/* table frame */
+.table-frame {
+  display: block;
+  --tone: hsl(94, 18%, 40%);
+}
+.table-frame > * + * {
+  margin-top: 0.35rem;
+}
+.table-frame[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

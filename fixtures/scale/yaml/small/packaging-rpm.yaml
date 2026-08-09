@@ -1,0 +1,19 @@
+rpm_defaults: &rpm_defaults
+  runner: fedora-40
+  timeout_minutes: 20
+  dist_tag: fc40
+
+rpm_package:
+  <<: *rpm_defaults
+  script: rpmbuild -bb textprint.spec
+
+rpmlint_pass:
+  <<: *rpm_defaults
+  script: rpmlint textprint.rpm
+  needs:
+    - rpm_package
+
+copr_upload:
+  <<: *rpm_defaults
+  script: copr-cli build textprint
+  project: cli-tools

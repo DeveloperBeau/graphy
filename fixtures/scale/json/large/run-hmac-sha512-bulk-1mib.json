@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "hmac-sha512-bulk-1mib",
+  "cipher": "hmac-sha512",
+  "kind_of_primitive": "mac",
+  "keysize": 512,
+  "workload": "bulk-1mib",
+  "payload_bytes": 1048576,
+  "iterations": 2000,
+  "warmup": 20,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

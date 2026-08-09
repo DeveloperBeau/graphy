@@ -1,0 +1,69 @@
+{
+  "min_nodes": 320,
+  "nodes": [
+    {
+      "label": "ICipher",
+      "kind": "interface"
+    },
+    {
+      "label": "CaesarCipher",
+      "kind": "class"
+    },
+    {
+      "label": "CorrectnessEngine",
+      "kind": "class"
+    },
+    {
+      "label": "BenchmarkEngine",
+      "kind": "class"
+    },
+    {
+      "label": "ResultsStore",
+      "kind": "class"
+    },
+    {
+      "label": "FamilyCatalog",
+      "kind": "class"
+    },
+    {
+      "label": "Harness",
+      "kind": "class"
+    },
+    {
+      "label": "Program",
+      "kind": "class"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Families/Caesar/CaesarDescriptor.cs::Cipher",
+      "relation": "returns",
+      "target_ends": "Abstractions/ICipher.cs::ICipher"
+    },
+    {
+      "source_ends": "Families/Caesar/CaesarDescriptor.cs::Vectors",
+      "relation": "returns",
+      "target_ends": "Abstractions/TestVector.cs::TestVector"
+    },
+    {
+      "source_ends": "Registry/FamilyCatalog.cs",
+      "relation": "imports",
+      "target_ends": "extern::CipherLab.Families.Caesar"
+    },
+    {
+      "source_ends": "Engine/Harness.cs",
+      "relation": "imports",
+      "target_ends": "extern::CipherLab.Registry"
+    },
+    {
+      "source_ends": "Program.cs",
+      "relation": "imports",
+      "target_ends": "Store/SessionState.cs::Store"
+    },
+    {
+      "source_ends": "Families/Caesar/CaesarCipher.cs",
+      "relation": "contains",
+      "target_ends": "CaesarCipher.cs::CaesarCipher"
+    }
+  ]
+}

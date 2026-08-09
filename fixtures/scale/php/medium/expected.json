@@ -1,0 +1,69 @@
+{
+  "min_nodes": 130,
+  "nodes": [
+    {
+      "label": "Lexer",
+      "kind": "class"
+    },
+    {
+      "label": "TokenStream",
+      "kind": "class"
+    },
+    {
+      "label": "Evaluator",
+      "kind": "class"
+    },
+    {
+      "label": "FunctionRegistry",
+      "kind": "class"
+    },
+    {
+      "label": "BinaryOp",
+      "kind": "class"
+    },
+    {
+      "label": "HistoryLog",
+      "kind": "class"
+    },
+    {
+      "label": "Repl",
+      "kind": "class"
+    },
+    {
+      "label": "Node",
+      "kind": "interface"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "src/Lexing/Lexer.php",
+      "relation": "contains",
+      "target_ends": "Lexer.php::Lexer"
+    },
+    {
+      "source_ends": "src/Ast/BinaryOp.php::BinaryOp",
+      "relation": "implements",
+      "target_ends": "Node.php::Node"
+    },
+    {
+      "source_ends": "src/Eval/Evaluator.php",
+      "relation": "imports",
+      "target_ends": "extern::Calc\\Functions\\FunctionRegistry"
+    },
+    {
+      "source_ends": "src/Repl/ReplContext.php",
+      "relation": "imports",
+      "target_ends": "extern::Calc\\Functions\\StandardLibrary"
+    },
+    {
+      "source_ends": "index.php",
+      "relation": "imports",
+      "target_ends": "extern::Calc\\Repl\\Repl"
+    },
+    {
+      "source_ends": "src/Functions/StandardLibrary.php",
+      "relation": "contains",
+      "target_ends": "StandardLibrary.php::buildRegistry"
+    }
+  ]
+}

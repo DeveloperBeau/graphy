@@ -1,0 +1,65 @@
+{
+  "min_nodes": 40,
+  "nodes": [
+    {
+      "label": "textprint",
+      "kind": "program"
+    },
+    {
+      "label": "tp_banner",
+      "kind": "module"
+    },
+    {
+      "label": "cmd_banner",
+      "kind": "subroutine"
+    },
+    {
+      "label": "colorize",
+      "kind": "function"
+    },
+    {
+      "label": "center_text",
+      "kind": "function"
+    },
+    {
+      "label": "log_write",
+      "kind": "subroutine"
+    },
+    {
+      "label": "config_width",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "main.f90",
+      "relation": "imports",
+      "target_ends": "src/tp_banner.f90::tp_banner"
+    },
+    {
+      "source_ends": "src/tp_banner.f90",
+      "relation": "imports",
+      "target_ends": "src/tp_align.f90::tp_align"
+    },
+    {
+      "source_ends": "src/tp_banner.f90",
+      "relation": "imports",
+      "target_ends": "src/tp_config.f90::tp_config"
+    },
+    {
+      "source_ends": "main.f90",
+      "relation": "contains",
+      "target_ends": "main.f90::textprint"
+    },
+    {
+      "source_ends": "src/tp_banner.f90",
+      "relation": "contains",
+      "target_ends": "src/tp_banner.f90::cmd_banner"
+    },
+    {
+      "source_ends": "src/tp_colors.f90",
+      "relation": "contains",
+      "target_ends": "src/tp_colors.f90::colorize"
+    }
+  ]
+}

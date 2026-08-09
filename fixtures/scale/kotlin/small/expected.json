@@ -1,0 +1,25 @@
+{
+  "min_nodes": 40,
+  "nodes": [
+    { "label": "Renderer", "kind": "class" },
+    { "label": "Document", "kind": "class" },
+    { "label": "RenderOptions", "kind": "class" },
+    { "label": "Frame", "kind": "class" },
+    { "label": "Styles", "kind": "object" },
+    { "label": "wrapLine", "kind": "function" },
+    { "label": "alignLine", "kind": "function" },
+    { "label": "frameNamed", "kind": "function" },
+    { "label": "padTo", "kind": "function" },
+    { "label": "fromText", "kind": "function" }
+  ],
+  "edges": [
+    { "source_ends": "Renderer.kt::render", "relation": "calls", "target_ends": "Wrap.kt::wrapLine" },
+    { "source_ends": "Renderer.kt::render", "relation": "calls", "target_ends": "Align.kt::alignLine" },
+    { "source_ends": "Renderer.kt::render", "relation": "calls", "target_ends": "Frames.kt::frameNamed" },
+    { "source_ends": "Main.kt::main", "relation": "calls", "target_ends": "Document.kt::fromText" },
+    { "source_ends": "Align.kt::alignCenter", "relation": "calls", "target_ends": "TextUtil.kt::padTo" },
+    { "source_ends": "Main.kt", "relation": "imports", "target_ends": "Renderer.kt::Renderer" },
+    { "source_ends": "cli/Args.kt", "relation": "imports", "target_ends": "RenderOptions.kt::RenderOptions" },
+    { "source_ends": "render/Renderer.kt", "relation": "contains", "target_ends": "Renderer.kt::render" }
+  ]
+}

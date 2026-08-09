@@ -1,0 +1,12 @@
+/* panel kpi */
+.panel-kpi {
+  display: block;
+  --tone: hsl(336, 18%, 40%);
+}
+.panel-kpi > * + * {
+  margin-top: 0.35rem;
+}
+.panel-kpi[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

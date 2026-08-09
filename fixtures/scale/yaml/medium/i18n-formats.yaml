@@ -1,0 +1,12 @@
+i18n_defaults: &i18n_defaults
+  runner: linux-small
+  timeout_minutes: 6
+  locales: en_US de_DE fr_FR ja_JP
+
+separator_matrix:
+  <<: *i18n_defaults
+  script: calc i18n --separators
+
+rtl_digits:
+  <<: *i18n_defaults
+  script: calc i18n --rtl

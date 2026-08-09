@@ -1,0 +1,25 @@
+{
+  "min_nodes": 1100,
+  "nodes": [
+    {"label": "fnv1aDigest", "kind": "function"},
+    {"label": "sdbmDigest", "kind": "function"},
+    {"label": "djb2RunnerExecute", "kind": "function"},
+    {"label": "benchRegistryRunAll", "kind": "function"},
+    {"label": "benchRunnerExecuteAll", "kind": "function"},
+    {"label": "coreTimerStart", "kind": "function"},
+    {"label": "coreSampleBytes", "kind": "function"},
+    {"label": "hexdumpFold", "kind": "function"},
+    {"label": "benchEntryNew", "kind": "function"},
+    {"label": "cliRun", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "src/main.zig::main", "relation": "calls", "target_ends": "src/cli.zig::cliRun"},
+    {"source_ends": "src/cli.zig::cliRun", "relation": "calls", "target_ends": "src/bench/runner.zig::benchRunnerExecuteAll"},
+    {"source_ends": "src/bench/runner.zig::benchRunnerExecuteAll", "relation": "calls", "target_ends": "src/bench/registry.zig::benchRegistryRunAll"},
+    {"source_ends": "src/bench/registry.zig::benchRegistryRunAll", "relation": "calls", "target_ends": "src/hashes/fnv1a/runner.zig::fnv1aRunnerExecute"},
+    {"source_ends": "src/bench/registry.zig::benchRegistryRunAll", "relation": "calls", "target_ends": "src/hashes/djb2/runner.zig::djb2RunnerExecute"},
+    {"source_ends": "src/hashes/sdbm/bench.zig::sdbmBenchRun", "relation": "calls", "target_ends": "src/hashes/sdbm/algo.zig::sdbmDigest"},
+    {"source_ends": "src/hashes/fnv1a/runner.zig::fnv1aRunnerExecute", "relation": "calls", "target_ends": "src/hashes/fnv1a/bench.zig::fnv1aBenchRun"},
+    {"source_ends": "src/bench/runner.zig::benchRunnerExecuteAll", "relation": "calls", "target_ends": "src/core/hexdump.zig::hexdumpFold"}
+  ]
+}

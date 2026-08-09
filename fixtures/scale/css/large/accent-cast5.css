@@ -1,0 +1,11 @@
+/* accent cast5 */
+.accent-cast5 {
+  --cipher-accent: hsl(185, 55%, 48%);
+}
+.accent-cast5 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-cast5 .legend-swatch {
+  background: var(--cipher-accent);
+}

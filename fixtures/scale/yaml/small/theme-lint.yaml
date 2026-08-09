@@ -1,0 +1,18 @@
+theme_defaults: &theme_defaults
+  runner: linux-small
+  timeout_minutes: 5
+  themes_dir: themes/
+
+palette_contrast:
+  <<: *theme_defaults
+  script: textprint --check-contrast
+  min_ratio: 4.5
+
+ansi_bounds:
+  <<: *theme_defaults
+  script: ./scripts/ansi-range.sh
+
+dedupe_themes:
+  <<: *theme_defaults
+  script: ./scripts/theme-dupes.sh
+  fail_on_dupe: true

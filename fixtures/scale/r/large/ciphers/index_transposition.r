@@ -1,0 +1,32 @@
+# Load and register the transposition cipher family.
+
+source("ciphers/railfence/runner.r")
+source("ciphers/railfence/check.r")
+source("ciphers/columnar/runner.r")
+source("ciphers/columnar/check.r")
+source("ciphers/scytale/runner.r")
+source("ciphers/scytale/check.r")
+source("ciphers/revblocks/runner.r")
+source("ciphers/revblocks/check.r")
+source("ciphers/zigzag/runner.r")
+source("ciphers/zigzag/check.r")
+source("ciphers/blockswap/runner.r")
+source("ciphers/blockswap/check.r")
+source("ciphers/rotblocks/runner.r")
+source("ciphers/rotblocks/check.r")
+source("ciphers/interleave/runner.r")
+source("ciphers/interleave/check.r")
+source("ciphers/stride/runner.r")
+source("ciphers/stride/check.r")
+
+transposition_register_all <- function() {
+  register_cipher("railfence")
+  register_cipher("columnar")
+  register_cipher("scytale")
+  register_cipher("revblocks")
+  register_cipher("zigzag")
+  register_cipher("blockswap")
+  register_cipher("rotblocks")
+  register_cipher("interleave")
+  register_cipher("stride")
+}

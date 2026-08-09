@@ -1,0 +1,25 @@
+{
+  "min_nodes": 700,
+  "nodes": [
+    {"label": "tea_encrypt", "kind": "function"},
+    {"label": "rc4_encrypt", "kind": "function"},
+    {"label": "vigenere_decrypt", "kind": "function"},
+    {"label": "crc32_digest", "kind": "function"},
+    {"label": "run_all", "kind": "function"},
+    {"label": "hex_encode", "kind": "function"},
+    {"label": "BenchEntry", "kind": "struct"},
+    {"label": "RunRecord", "kind": "struct"},
+    {"label": "XorShift32", "kind": "struct"},
+    {"label": "CipherError", "kind": "enum"}
+  ],
+  "edges": [
+    {"source_ends": "src/ciphers/tea/runner.rs", "relation": "imports", "target_ends": "src/ciphers/tea/cipher.rs::tea_encrypt"},
+    {"source_ends": "src/ciphers/autokey/runner.rs", "relation": "imports", "target_ends": "src/ciphers/autokey/cipher.rs::autokey_decrypt"},
+    {"source_ends": "src/ciphers/vigenere/bench.rs", "relation": "imports", "target_ends": "src/ciphers/vigenere/keys.rs::vigenere_default_key"},
+    {"source_ends": "src/bench/runner.rs", "relation": "imports", "target_ends": "src/bench/collect.rs::best_of"},
+    {"source_ends": "src/ciphers/rc4/bench.rs", "relation": "imports", "target_ends": "src/core/timer.rs::Stopwatch"},
+    {"source_ends": "src/bench/registry_classical.rs", "relation": "imports", "target_ends": "src/bench/entry.rs::BenchEntry"},
+    {"source_ends": "src/cli.rs", "relation": "imports", "target_ends": "src/bench/mod.rs::registry"},
+    {"source_ends": "src/core/rng.rs", "relation": "contains", "target_ends": "src/core/rng.rs::XorShift32"}
+  ]
+}

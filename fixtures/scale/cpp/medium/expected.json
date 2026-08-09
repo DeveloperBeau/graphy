@@ -1,0 +1,20 @@
+{
+  "min_nodes": 160,
+  "nodes": [
+    {"label": "CatalogStore", "kind": "class"},
+    {"label": "Member", "kind": "class"},
+    {"label": "Loan", "kind": "class"},
+    {"label": "WaitlistManager", "kind": "class"},
+    {"label": "SearchQuery", "kind": "struct"},
+    {"label": "fine_calculator_amount_owed", "kind": "function"},
+    {"label": "search_query_parse", "kind": "function"},
+    {"label": "date_util_days_between", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "loans/fine_calculator.cpp::fine_calculator_amount_owed", "relation": "calls", "target_ends": "utils/date_util.cpp::date_util_days_between"},
+    {"source_ends": "search/search_query.cpp::search_query_parse", "relation": "calls", "target_ends": "utils/string_util.cpp::string_util_trim"},
+    {"source_ends": "notifications/notification_service.cpp::notification_service_send", "relation": "calls", "target_ends": "notifications/notification_service.cpp::notification_service_build_reminder"},
+    {"source_ends": "medium/main.cpp", "relation": "imports", "target_ends": "extern::config/config_loader.hpp"},
+    {"source_ends": "catalog/catalog_store.cpp", "relation": "contains", "target_ends": "catalog/catalog_store.cpp::catalog_store_add_book"}
+  ]
+}

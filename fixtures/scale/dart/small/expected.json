@@ -1,0 +1,21 @@
+{
+  "min_nodes": 55,
+  "nodes": [
+    { "label": "Renderer", "kind": "class" },
+    { "label": "Document", "kind": "class" },
+    { "label": "RenderOptions", "kind": "class" },
+    { "label": "BorderPainter", "kind": "class" },
+    { "label": "RenderTarget", "kind": "class" },
+    { "label": "wrap", "kind": "function" },
+    { "label": "align", "kind": "function" },
+    { "label": "frameNamed", "kind": "function" },
+    { "label": "padTo", "kind": "function" }
+  ],
+  "edges": [
+    { "source_ends": "main.dart", "relation": "imports", "target_ends": "arg_parser.dart" },
+    { "source_ends": "render/renderer.dart", "relation": "imports", "target_ends": "frames.dart" },
+    { "source_ends": "render/renderer.dart", "relation": "imports", "target_ends": "aligner.dart" },
+    { "source_ends": "border_painter.dart::BorderPainter", "relation": "implements", "target_ends": "render_target.dart::RenderTarget" },
+    { "source_ends": "render/renderer.dart", "relation": "contains", "target_ends": "renderer.dart::render" }
+  ]
+}

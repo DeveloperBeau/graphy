@@ -1,0 +1,11 @@
+/* accent rabbit */
+.accent-rabbit {
+  --cipher-accent: hsl(162, 55%, 48%);
+}
+.accent-rabbit .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-rabbit .legend-swatch {
+  background: var(--cipher-accent);
+}

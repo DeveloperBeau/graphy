@@ -1,0 +1,13 @@
+/* bundle: foundation */
+@import "foundation-palette.css";
+@import "foundation-spacing.css";
+@import "foundation-elevation.css";
+@import "foundation-radius.css";
+@import "foundation-motion.css";
+@import "foundation-breakpoints.css";
+@import "foundation-z-index.css";
+@import "foundation-focus.css";
+
+.foundation-scope {
+  display: contents;
+}

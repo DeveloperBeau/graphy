@@ -1,0 +1,11 @@
+/* chart keyschedule series */
+.chart-keyschedule-series {
+  font-size: 0.75rem;
+  --chart-tone: hsl(268, 30%, 60%);
+}
+.chart-keyschedule-series .tick {
+  stroke: #2a3441;
+}
+.chart-keyschedule-series text {
+  fill: #9aa7b4;
+}

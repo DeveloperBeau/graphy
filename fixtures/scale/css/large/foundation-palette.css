@@ -1,0 +1,12 @@
+/* foundation palette */
+.foundation-palette {
+  display: block;
+  --tone: hsl(0, 18%, 40%);
+}
+.foundation-palette > * + * {
+  margin-top: 0.35rem;
+}
+.foundation-palette[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

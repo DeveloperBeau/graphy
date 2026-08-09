@@ -1,0 +1,19 @@
+{
+  "$id": "environment.schema.json",
+  "title": "HostEnvironment",
+  "type": "object",
+  "properties": {
+    "cpu_model": {
+      "type": "string"
+    },
+    "kernel_version": {
+      "type": "string"
+    },
+    "turbo_disabled": {
+      "type": "boolean"
+    },
+    "isolated_core": {
+      "type": "integer"
+    }
+  }
+}

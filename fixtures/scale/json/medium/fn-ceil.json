@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "ceil",
+  "arity": 1,
+  "category": "rounding",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "ceil(0.5)"
+}

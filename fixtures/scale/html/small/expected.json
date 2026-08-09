@@ -1,0 +1,56 @@
+{
+  "min_nodes": 75,
+  "nodes": [
+    {
+      "label": "nav#index-nav",
+      "kind": "nav"
+    },
+    {
+      "label": "main#index-main",
+      "kind": "main"
+    },
+    {
+      "label": "section#usage-piping",
+      "kind": "section"
+    },
+    {
+      "label": "section#install-source",
+      "kind": "section"
+    },
+    {
+      "label": "nav#faq-nav",
+      "kind": "nav"
+    },
+    {
+      "label": "section#presets-build",
+      "kind": "section"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "index.html",
+      "relation": "references",
+      "target_ends": "link::install.html"
+    },
+    {
+      "source_ends": "install.html",
+      "relation": "references",
+      "target_ends": "link::usage.html"
+    },
+    {
+      "source_ends": "usage.html",
+      "relation": "references",
+      "target_ends": "link::styles.css"
+    },
+    {
+      "source_ends": "index.html",
+      "relation": "contains",
+      "target_ends": "index.html#index-main"
+    },
+    {
+      "source_ends": "faq.html",
+      "relation": "contains",
+      "target_ends": "faq.html#faq-windows"
+    }
+  ]
+}

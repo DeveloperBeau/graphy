@@ -1,0 +1,11 @@
+/* accent twofish */
+.accent-twofish {
+  --cipher-accent: hsl(42, 55%, 48%);
+}
+.accent-twofish .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-twofish .legend-swatch {
+  background: var(--cipher-accent);
+}

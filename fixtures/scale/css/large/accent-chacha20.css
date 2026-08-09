@@ -1,0 +1,11 @@
+/* accent chacha20 */
+.accent-chacha20 {
+  --cipher-accent: hsl(110, 55%, 48%);
+}
+.accent-chacha20 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-chacha20 .legend-swatch {
+  background: var(--cipher-accent);
+}

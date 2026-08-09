@@ -1,0 +1,12 @@
+/* badge new */
+.badge-new {
+  display: block;
+  --tone: hsl(0, 18%, 40%);
+}
+.badge-new > * + * {
+  margin-top: 0.35rem;
+}
+.badge-new[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

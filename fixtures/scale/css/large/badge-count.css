@@ -1,0 +1,12 @@
+/* badge count */
+.badge-count {
+  display: block;
+  --tone: hsl(26, 18%, 40%);
+}
+.badge-count > * + * {
+  margin-top: 0.35rem;
+}
+.badge-count[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

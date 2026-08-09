@@ -1,0 +1,12 @@
+/* nav collapse */
+.nav-collapse {
+  display: block;
+  --tone: hsl(266, 18%, 40%);
+}
+.nav-collapse > * + * {
+  margin-top: 0.35rem;
+}
+.nav-collapse[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

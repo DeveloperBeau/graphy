@@ -1,0 +1,65 @@
+{
+  "min_nodes": 236,
+  "nodes": [
+    {
+      "label": "Lexer.Scanner",
+      "kind": "module"
+    },
+    {
+      "label": "Eval.Evaluator",
+      "kind": "module"
+    },
+    {
+      "label": "Functions.Registry",
+      "kind": "module"
+    },
+    {
+      "label": "eval",
+      "kind": "function"
+    },
+    {
+      "label": "dispatch",
+      "kind": "function"
+    },
+    {
+      "label": "scan",
+      "kind": "function"
+    },
+    {
+      "label": "eval_line",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "lib/eval/evaluator.ex",
+      "relation": "imports",
+      "target_ends": "extern::Functions.Registry"
+    },
+    {
+      "source_ends": "lib/parser/parser.ex",
+      "relation": "imports",
+      "target_ends": "extern::Parser.Ast"
+    },
+    {
+      "source_ends": "lib/repl/loop.ex",
+      "relation": "imports",
+      "target_ends": "extern::Parser.Parser"
+    },
+    {
+      "source_ends": "lib/cli.ex",
+      "relation": "imports",
+      "target_ends": "lib/calc.ex::Calc"
+    },
+    {
+      "source_ends": "lib/eval/evaluator.ex",
+      "relation": "contains",
+      "target_ends": "lib/eval/evaluator.ex::eval"
+    },
+    {
+      "source_ends": "lib/functions/registry.ex",
+      "relation": "contains",
+      "target_ends": "lib/functions/registry.ex::dispatch"
+    }
+  ]
+}

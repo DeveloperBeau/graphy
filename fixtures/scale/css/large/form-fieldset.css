@@ -1,0 +1,12 @@
+/* form fieldset */
+.form-fieldset {
+  display: block;
+  --tone: hsl(313, 18%, 40%);
+}
+.form-fieldset > * + * {
+  margin-top: 0.35rem;
+}
+.form-fieldset[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

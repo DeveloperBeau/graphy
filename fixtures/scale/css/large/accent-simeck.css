@@ -1,0 +1,11 @@
+/* accent simeck */
+.accent-simeck {
+  --cipher-accent: hsl(263, 55%, 48%);
+}
+.accent-simeck .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-simeck .legend-swatch {
+  background: var(--cipher-accent);
+}

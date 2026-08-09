@@ -1,0 +1,61 @@
+{
+  "min_nodes": 1009,
+  "nodes": [
+    {
+      "label": "selectRun",
+      "kind": "function"
+    },
+    {
+      "label": "refreshMetrics",
+      "kind": "function"
+    },
+    {
+      "label": "summarizeAes",
+      "kind": "function"
+    },
+    {
+      "label": "trendForChacha20",
+      "kind": "function"
+    },
+    {
+      "label": "detailForSerpent",
+      "kind": "function"
+    },
+    {
+      "label": "orderModernPanels",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "App.svelte",
+      "relation": "imports",
+      "target_ends": "Dashboard.svelte/Dashboard"
+    },
+    {
+      "source_ends": "Dashboard.svelte",
+      "relation": "imports",
+      "target_ends": "ModernSection.svelte/ModernSection"
+    },
+    {
+      "source_ends": "ModernSection.svelte",
+      "relation": "imports",
+      "target_ends": "AesPanel.svelte/AesPanel"
+    },
+    {
+      "source_ends": "AesPanel.svelte",
+      "relation": "imports",
+      "target_ends": "AesTrend.svelte/AesTrend"
+    },
+    {
+      "source_ends": "AesPanel.svelte",
+      "relation": "imports",
+      "target_ends": "AesDetail.svelte/AesDetail"
+    },
+    {
+      "source_ends": "StreamSection.svelte",
+      "relation": "imports",
+      "target_ends": "Chacha20Panel.svelte/Chacha20Panel"
+    }
+  ]
+}

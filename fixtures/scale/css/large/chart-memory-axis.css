@@ -1,0 +1,11 @@
+/* chart memory axis */
+.chart-memory-axis {
+  font-size: 0.75rem;
+  --chart-tone: hsl(177, 30%, 60%);
+}
+.chart-memory-axis .tick {
+  stroke: #2a3441;
+}
+.chart-memory-axis text {
+  fill: #9aa7b4;
+}

@@ -1,0 +1,20 @@
+{
+  "min_nodes": 550,
+  "nodes": [
+    {"label": "lz_toy_bench_run", "kind": "function"},
+    {"label": "lz_toy_encode", "kind": "function"},
+    {"label": "registry_run", "kind": "function"},
+    {"label": "registry_group_a_run", "kind": "function"},
+    {"label": "atbash_verify", "kind": "function"},
+    {"label": "rot13_bench_run", "kind": "function"},
+    {"label": "BenchResult", "kind": "struct"},
+    {"label": "Timer", "kind": "class"}
+  ],
+  "edges": [
+    {"source_ends": "families/lz_toy_bench.cpp::lz_toy_bench_run", "relation": "calls", "target_ends": "families/lz_toy.cpp::lz_toy_encode"},
+    {"source_ends": "registry/registry_run.cpp::registry_run", "relation": "calls", "target_ends": "registry/registry_group_a.cpp::registry_group_a_run"},
+    {"source_ends": "families/atbash.cpp::atbash_verify", "relation": "calls", "target_ends": "families/atbash.cpp::atbash_encode"},
+    {"source_ends": "families/rot13_bench.cpp::rot13_bench_run", "relation": "calls", "target_ends": "families/rot13.cpp::rot13_decode"},
+    {"source_ends": "large/main.cpp", "relation": "imports", "target_ends": "extern::registry/registry.hpp"}
+  ]
+}

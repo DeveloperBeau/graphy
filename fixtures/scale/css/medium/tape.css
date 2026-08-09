@@ -1,0 +1,14 @@
+/* component: tape */
+.tape-panel {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+}
+.tape-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+.tape-line time {
+  opacity: 0.5;
+  font-size: 0.75rem;
+}

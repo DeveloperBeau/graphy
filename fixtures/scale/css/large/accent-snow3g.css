@@ -1,0 +1,11 @@
+/* accent snow3g */
+.accent-snow3g {
+  --cipher-accent: hsl(175, 55%, 48%);
+}
+.accent-snow3g .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-snow3g .legend-swatch {
+  background: var(--cipher-accent);
+}

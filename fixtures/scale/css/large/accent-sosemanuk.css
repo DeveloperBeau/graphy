@@ -1,0 +1,11 @@
+/* accent sosemanuk */
+.accent-sosemanuk {
+  --cipher-accent: hsl(149, 55%, 48%);
+}
+.accent-sosemanuk .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-sosemanuk .legend-swatch {
+  background: var(--cipher-accent);
+}

@@ -1,0 +1,10 @@
+/* component: modal */
+.confirm-modal {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 1.25rem;
+  max-width: 20rem;
+}
+.confirm-modal::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}

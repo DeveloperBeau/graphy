@@ -1,0 +1,10 @@
+/* theme: forest */
+[data-theme='forest'] {
+  --bg: hsl(240, 15%, 16%);
+  --panel: hsl(240, 14%, 22%);
+  --accent: hsl(20, 45%, 52%);
+  --key: hsl(240, 12%, 28%);
+}
+[data-theme='forest'] .display-expression {
+  opacity: 0.63;
+}

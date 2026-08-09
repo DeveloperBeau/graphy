@@ -1,0 +1,12 @@
+/* nav item */
+.nav-item {
+  display: block;
+  --tone: hsl(201, 18%, 40%);
+}
+.nav-item > * + * {
+  margin-top: 0.35rem;
+}
+.nav-item[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

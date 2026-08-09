@@ -1,0 +1,12 @@
+main {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+}
+main h1 {
+  font-weight: 600;
+}
+section ul {
+  columns: 2 14rem;
+  padding-left: 1.2rem;
+}

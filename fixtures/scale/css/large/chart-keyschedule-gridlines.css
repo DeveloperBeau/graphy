@@ -1,0 +1,11 @@
+/* chart keyschedule gridlines */
+.chart-keyschedule-gridlines {
+  font-size: 0.75rem;
+  --chart-tone: hsl(255, 30%, 60%);
+}
+.chart-keyschedule-gridlines .tick {
+  stroke: #2a3441;
+}
+.chart-keyschedule-gridlines text {
+  fill: #9aa7b4;
+}

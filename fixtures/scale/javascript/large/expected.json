@@ -1,0 +1,87 @@
+{
+  "min_nodes": 500,
+  "nodes": [
+    {
+      "label": "caesarEncrypt",
+      "kind": "function"
+    },
+    {
+      "label": "gronsfeldEncrypt",
+      "kind": "function"
+    },
+    {
+      "label": "checkCaesar",
+      "kind": "function"
+    },
+    {
+      "label": "fnvhashDigest",
+      "kind": "function"
+    },
+    {
+      "label": "additiveChecks",
+      "kind": "function"
+    },
+    {
+      "label": "roundTrip",
+      "kind": "function"
+    },
+    {
+      "label": "runAll",
+      "kind": "function"
+    },
+    {
+      "label": "runChecks",
+      "kind": "function"
+    },
+    {
+      "label": "corpusHash",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "ciphers/caesar.js::caesarEncrypt",
+      "relation": "calls",
+      "target_ends": "bytes.js::fromCodes"
+    },
+    {
+      "source_ends": "checks/checkCaesar.js::checkCaesar",
+      "relation": "calls",
+      "target_ends": "ciphers/caesar.js::caesarEncrypt"
+    },
+    {
+      "source_ends": "checks/checkGronsfeld.js::checkGronsfeld",
+      "relation": "calls",
+      "target_ends": "gronsfeldSpec.js::gronsfeldSpec"
+    },
+    {
+      "source_ends": "checks/checkFnvhash.js::checkFnvhash",
+      "relation": "calls",
+      "target_ends": "corpusHash.js::corpusHash"
+    },
+    {
+      "source_ends": "checkRunner.js::runChecks",
+      "relation": "calls",
+      "target_ends": "registryAdditive.js::additiveChecks"
+    },
+    {
+      "source_ends": "pipeline.js::roundTrip",
+      "relation": "calls",
+      "target_ends": "registry.js::getCipher"
+    },
+    {
+      "source_ends": "runner.js::runAll",
+      "relation": "calls",
+      "target_ends": "pipeline.js::roundTrip"
+    },
+    {
+      "source_ends": "main.js::main",
+      "relation": "calls",
+      "target_ends": "checkRunner.js::runChecks"
+    }
+  ]
+}

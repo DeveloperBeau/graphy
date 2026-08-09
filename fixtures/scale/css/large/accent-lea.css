@@ -1,0 +1,11 @@
+/* accent lea */
+.accent-lea {
+  --cipher-accent: hsl(289, 55%, 48%);
+}
+.accent-lea .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-lea .legend-swatch {
+  background: var(--cipher-accent);
+}

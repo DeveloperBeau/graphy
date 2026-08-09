@@ -1,0 +1,21 @@
+{
+  "$id": "display.schema.json",
+  "title": "DisplayFormat",
+  "type": "object",
+  "properties": {
+    "notation": {
+      "type": "string",
+      "enum": [
+        "plain",
+        "scientific",
+        "engineering"
+      ]
+    },
+    "digit_grouping": {
+      "type": "boolean"
+    },
+    "trailing_zeros": {
+      "type": "boolean"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "min_nodes": 578,
+  "nodes": [
+    {
+      "label": "sin_accuracy",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "divide_latency",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "factorial_accuracy",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "atan2_latency",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "stddev_accuracy",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "hypot_latency",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "compile_calc",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "sweep_decimal128",
+      "kind": "yaml_key"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "accuracy-sin.yaml::sin_accuracy",
+      "relation": "references",
+      "target_ends": "accuracy-sin.yaml::job_defaults"
+    },
+    {
+      "source_ends": "accuracy-divide.yaml::divide_latency",
+      "relation": "references",
+      "target_ends": "accuracy-divide.yaml::job_defaults"
+    },
+    {
+      "source_ends": "accuracy-hypot.yaml::hypot_latency",
+      "relation": "references",
+      "target_ends": "accuracy-hypot.yaml::job_defaults"
+    },
+    {
+      "source_ends": "build.yaml::compile_calc",
+      "relation": "references",
+      "target_ends": "build.yaml::calc_build_defaults"
+    },
+    {
+      "source_ends": "accuracy-stddev.yaml",
+      "relation": "contains",
+      "target_ends": "accuracy-stddev.yaml::stddev_accuracy"
+    }
+  ]
+}

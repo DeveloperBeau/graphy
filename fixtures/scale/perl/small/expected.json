@@ -1,0 +1,56 @@
+{
+  "min_nodes": 40,
+  "nodes": [
+    {
+      "label": "TextPrint::Options",
+      "kind": "package"
+    },
+    {
+      "label": "TextPrint::ArgParser",
+      "kind": "package"
+    },
+    {
+      "label": "TextPrint::Renderer",
+      "kind": "package"
+    },
+    {
+      "label": "TextPrint::Theme",
+      "kind": "package"
+    },
+    {
+      "label": "TextPrint::Border",
+      "kind": "package"
+    },
+    {
+      "label": "new",
+      "kind": "sub?ambiguous"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "lib/TextPrint/Options.pm",
+      "relation": "contains",
+      "target_ends": "Options.pm::TextPrint::Options"
+    },
+    {
+      "source_ends": "lib/TextPrint/ArgParser.pm",
+      "relation": "imports",
+      "target_ends": "Options.pm::TextPrint::Options"
+    },
+    {
+      "source_ends": "lib/TextPrint/Theme.pm",
+      "relation": "imports",
+      "target_ends": "AnsiPalette.pm::TextPrint::AnsiPalette"
+    },
+    {
+      "source_ends": "textprint.pl",
+      "relation": "imports",
+      "target_ends": "Renderer.pm::TextPrint::Renderer"
+    },
+    {
+      "source_ends": "lib/TextPrint/Renderer.pm",
+      "relation": "imports",
+      "target_ends": "Border.pm::TextPrint::Border"
+    }
+  ]
+}

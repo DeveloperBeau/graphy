@@ -1,0 +1,13 @@
+/* abacus entry stylesheet */
+@import "base.css";
+@import "components.css";
+@import "themes.css";
+
+.app-frame {
+  min-height: 100vh;
+  display: grid;
+  place-items: start center;
+}
+.app-frame > footer {
+  align-self: end;
+}

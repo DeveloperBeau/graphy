@@ -1,0 +1,65 @@
+{
+  "min_nodes": 192,
+  "nodes": [
+    {
+      "label": "token",
+      "kind": "type"
+    },
+    {
+      "label": "expr",
+      "kind": "type"
+    },
+    {
+      "label": "eval",
+      "kind": "value"
+    },
+    {
+      "label": "dispatch",
+      "kind": "value"
+    },
+    {
+      "label": "scan",
+      "kind": "value"
+    },
+    {
+      "label": "parse",
+      "kind": "value"
+    },
+    {
+      "label": "step",
+      "kind": "value"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "eval/evaluator.ml",
+      "relation": "imports",
+      "target_ends": "extern::Ast"
+    },
+    {
+      "source_ends": "parser/parser.ml",
+      "relation": "imports",
+      "target_ends": "extern::Token"
+    },
+    {
+      "source_ends": "lexer/scanner.ml",
+      "relation": "imports",
+      "target_ends": "extern::Charclass"
+    },
+    {
+      "source_ends": "io/output.ml",
+      "relation": "imports",
+      "target_ends": "extern::Log"
+    },
+    {
+      "source_ends": "eval/evaluator.ml",
+      "relation": "contains",
+      "target_ends": "eval/evaluator.ml::eval"
+    },
+    {
+      "source_ends": "functions/registry.ml",
+      "relation": "contains",
+      "target_ends": "functions/registry.ml::dispatch"
+    }
+  ]
+}

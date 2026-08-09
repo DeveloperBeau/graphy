@@ -1,0 +1,10 @@
+/* component: badge */
+.angle-badge {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.angle-badge--degrees {
+  color: #d08b2c;
+}

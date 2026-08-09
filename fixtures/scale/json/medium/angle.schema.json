@@ -1,0 +1,13 @@
+{
+  "$id": "angle.schema.json",
+  "title": "AngleMode",
+  "type": "object",
+  "properties": {
+    "full_turn": {
+      "type": "number"
+    },
+    "suffix": {
+      "type": "string"
+    }
+  }
+}

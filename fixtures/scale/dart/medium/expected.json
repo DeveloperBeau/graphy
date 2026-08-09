@@ -1,0 +1,20 @@
+{
+  "min_nodes": 200,
+  "nodes": [
+    { "label": "Lexer", "kind": "class" },
+    { "label": "Parser", "kind": "class" },
+    { "label": "Expr", "kind": "class" },
+    { "label": "FunctionRegistry", "kind": "class" },
+    { "label": "Evaluator", "kind": "class" },
+    { "label": "CalcException", "kind": "class" },
+    { "label": "tokenize", "kind": "function" },
+    { "label": "evaluate", "kind": "function" }
+  ],
+  "edges": [
+    { "source_ends": "app/calculator.dart", "relation": "imports", "target_ends": "lexer.dart" },
+    { "source_ends": "repl/session.dart", "relation": "imports", "target_ends": "installer.dart" },
+    { "source_ends": "repl/session.dart", "relation": "imports", "target_ends": "function_registry.dart" },
+    { "source_ends": "main.dart", "relation": "imports", "target_ends": "repl.dart" },
+    { "source_ends": "lexer/lexer.dart", "relation": "contains", "target_ends": "lexer.dart::tokenize" }
+  ]
+}

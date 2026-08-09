@@ -1,0 +1,11 @@
+/* chart keyschedule axis */
+.chart-keyschedule-axis {
+  font-size: 0.75rem;
+  --chart-tone: hsl(242, 30%, 60%);
+}
+.chart-keyschedule-axis .tick {
+  stroke: #2a3441;
+}
+.chart-keyschedule-axis text {
+  fill: #9aa7b4;
+}

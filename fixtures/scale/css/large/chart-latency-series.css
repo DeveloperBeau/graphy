@@ -1,0 +1,11 @@
+/* chart latency series */
+.chart-latency-series {
+  font-size: 0.75rem;
+  --chart-tone: hsl(138, 30%, 60%);
+}
+.chart-latency-series .tick {
+  stroke: #2a3441;
+}
+.chart-latency-series text {
+  fill: #9aa7b4;
+}

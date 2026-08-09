@@ -1,0 +1,12 @@
+/* panel toolbar */
+.panel-toolbar {
+  display: block;
+  --tone: hsl(271, 18%, 40%);
+}
+.panel-toolbar > * + * {
+  margin-top: 0.35rem;
+}
+.panel-toolbar[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

@@ -1,0 +1,11 @@
+/* base: motion */
+.press-flash {
+  transition: background 90ms ease-out;
+}
+.slide-panel {
+  transition: transform 220ms ease;
+  transform: translateX(0);
+}
+.slide-panel.is-closed {
+  transform: translateX(100%);
+}

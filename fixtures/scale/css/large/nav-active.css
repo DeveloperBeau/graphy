@@ -1,0 +1,12 @@
+/* nav active */
+.nav-active {
+  display: block;
+  --tone: hsl(305, 18%, 40%);
+}
+.nav-active > * + * {
+  margin-top: 0.35rem;
+}
+.nav-active[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

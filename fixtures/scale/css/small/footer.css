@@ -1,0 +1,10 @@
+/* site footer */
+.site-footer {
+  border-top: 1px solid var(--rule);
+  margin-top: 3rem;
+  padding: 1rem;
+  font-size: 0.8rem;
+}
+.site-footer .mailing-list {
+  font-weight: 600;
+}

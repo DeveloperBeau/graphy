@@ -1,0 +1,10 @@
+/* theme: slate */
+[data-theme='slate'] {
+  --bg: hsl(300, 15%, 18%);
+  --panel: hsl(300, 14%, 24%);
+  --accent: hsl(80, 45%, 52%);
+  --key: hsl(300, 12%, 30%);
+}
+[data-theme='slate'] .display-expression {
+  opacity: 0.65;
+}

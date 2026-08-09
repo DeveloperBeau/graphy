@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "aes-128-ctr-stream-64b",
+  "cipher": "aes-128-ctr",
+  "kind_of_primitive": "cipher",
+  "keysize": 128,
+  "workload": "stream-64b",
+  "payload_bytes": 64,
+  "iterations": 500000,
+  "warmup": 5000,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

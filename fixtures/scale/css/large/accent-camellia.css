@@ -1,0 +1,11 @@
+/* accent camellia */
+.accent-camellia {
+  --cipher-accent: hsl(55, 55%, 48%);
+}
+.accent-camellia .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-camellia .legend-swatch {
+  background: var(--cipher-accent);
+}

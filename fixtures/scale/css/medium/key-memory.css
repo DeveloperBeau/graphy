@@ -1,0 +1,12 @@
+/* component: key-memory */
+.key--memory {
+  background: #37424e;
+  font-size: 0.85rem;
+}
+.key--memory .register-no {
+  color: var(--accent);
+  font-weight: 700;
+}
+.key--memory.is-hidden {
+  display: none;
+}

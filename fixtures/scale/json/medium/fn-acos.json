@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "acos",
+  "arity": 1,
+  "category": "trigonometric",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "acos(0.5)"
+}

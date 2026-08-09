@@ -1,0 +1,15 @@
+// Self-inverse codec (splitpack): reverse chunks of 2.
+function splitpackEncode(text) {
+  const k = 2;
+  const parts = [];
+  for (let i = 0; i < text.length; i += k) {
+    parts.push(text.slice(i, i + k).split('').reverse().join(''));
+  }
+  return parts.join('');
+}
+
+function splitpackDecode(text) {
+  return splitpackEncode(text);
+}
+
+export default { splitpackEncode, splitpackDecode };

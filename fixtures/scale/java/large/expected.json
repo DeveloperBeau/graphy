@@ -1,0 +1,25 @@
+{
+  "min_nodes": 750,
+  "nodes": [
+    { "label": "Cipher", "kind": "interface" },
+    { "label": "CipherSuite", "kind": "interface" },
+    { "label": "HashFunction", "kind": "interface" },
+    { "label": "BenchmarkRunner", "kind": "class" },
+    { "label": "ProgressReporter", "kind": "class" },
+    { "label": "FeistelNetwork", "kind": "class" },
+    { "label": "PlayfairCipher", "kind": "class" },
+    { "label": "Rc4Cipher", "kind": "class" },
+    { "label": "formatRow", "kind": "method" },
+    { "label": "runAll", "kind": "method" }
+  ],
+  "edges": [
+    { "source_ends": "CaesarSuite.java::CaesarSuite", "relation": "implements", "target_ends": "CipherSuite.java::CipherSuite" },
+    { "source_ends": "Rc4Cipher.java::Rc4Cipher", "relation": "implements", "target_ends": "Cipher.java::Cipher" },
+    { "source_ends": "bench/BenchmarkRunner.java", "relation": "imports", "target_ends": "ResultStore.java::ResultStore" },
+    { "source_ends": "adfgvx/AdfgvxCipher.java", "relation": "imports", "target_ends": "ColumnarCipher.java::ColumnarCipher" },
+    { "source_ends": "cbc/CbcModeCipher.java", "relation": "imports", "target_ends": "FeistelNetwork.java::FeistelNetwork" },
+    { "source_ends": "report/Summary.java::render", "relation": "calls", "target_ends": "TableFormat.java::formatRow" },
+    { "source_ends": "ResultStore.java::append", "relation": "calls", "target_ends": "JsonLines.java::toJson" },
+    { "source_ends": "bench/BenchmarkRunner.java", "relation": "contains", "target_ends": "BenchmarkRunner.java::runAll" }
+  ]
+}

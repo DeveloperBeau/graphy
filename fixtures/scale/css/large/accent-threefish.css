@@ -1,0 +1,11 @@
+/* accent threefish */
+.accent-threefish {
+  --cipher-accent: hsl(102, 55%, 48%);
+}
+.accent-threefish .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-threefish .legend-swatch {
+  background: var(--cipher-accent);
+}

@@ -1,0 +1,11 @@
+/* accent panama */
+.accent-panama {
+  --cipher-accent: hsl(349, 55%, 48%);
+}
+.accent-panama .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-panama .legend-swatch {
+  background: var(--cipher-accent);
+}

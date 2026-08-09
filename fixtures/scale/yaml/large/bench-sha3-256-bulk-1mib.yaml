@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 20
+  cool_down_secs: 2
+
+sha3-256-bulk-1mib:
+  setup:
+    <<: *defaults
+    cipher: sha3-256
+    key_bits: 256
+    payload_bytes: 1048576
+  execute:
+    <<: *defaults
+    iterations: 2000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: sha3-256-bulk-1mib

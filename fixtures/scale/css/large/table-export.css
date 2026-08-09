@@ -1,0 +1,12 @@
+/* table export */
+.table-export {
+  display: block;
+  --tone: hsl(341, 18%, 40%);
+}
+.table-export > * + * {
+  margin-top: 0.35rem;
+}
+.table-export[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

@@ -1,0 +1,10 @@
+{
+  "$ref": "display.schema.json",
+  "notation": "plain",
+  "thousands_separator": ",",
+  "decimal_point": ".",
+  "scientific_threshold": 1000000000000.0,
+  "max_digits": 34,
+  "trailing_zeros": false,
+  "digit_grouping": true
+}

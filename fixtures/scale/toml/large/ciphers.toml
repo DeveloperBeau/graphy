@@ -1,0 +1,21 @@
+registry_rev = 12
+
+[[families]]
+family = "aes"
+modes = ["gcm", "cbc", "ctr", "xts"]
+hardware_accel = true
+
+[[families]]
+family = "chacha"
+modes = ["stream", "poly1305"]
+hardware_accel = false
+
+[[families]]
+family = "sha"
+modes = ["sha2", "sha3"]
+hardware_accel = true
+
+[[families]]
+family = "legacy-block"
+modes = ["blowfish", "twofish", "serpent", "idea", "cast5"]
+hardware_accel = false

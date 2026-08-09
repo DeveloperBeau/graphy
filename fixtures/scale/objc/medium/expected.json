@@ -1,0 +1,65 @@
+{
+  "min_nodes": 130,
+  "nodes": [
+    {
+      "label": "CCLexer",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CCParser",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CCEvaluator",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CCFunctionRegistry",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CCHistoryLog",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CCRepl",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Lexing/CCLexer.h",
+      "relation": "imports",
+      "target_ends": "extern::CCToken.h"
+    },
+    {
+      "source_ends": "Parsing/CCParser.m",
+      "relation": "imports",
+      "target_ends": "extern::CCLexer.h"
+    },
+    {
+      "source_ends": "Eval/CCEvaluator.m",
+      "relation": "imports",
+      "target_ends": "extern::CCBinaryOp.h"
+    },
+    {
+      "source_ends": "Repl/CCRepl.m",
+      "relation": "imports",
+      "target_ends": "extern::CCParser.h"
+    },
+    {
+      "source_ends": "main.m",
+      "relation": "imports",
+      "target_ends": "extern::CCRepl.h"
+    },
+    {
+      "source_ends": "main.m",
+      "relation": "contains",
+      "target_ends": "main.m::main"
+    }
+  ]
+}

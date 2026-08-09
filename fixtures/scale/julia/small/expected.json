@@ -1,0 +1,65 @@
+{
+  "min_nodes": 45,
+  "nodes": [
+    {
+      "label": "run_textprint",
+      "kind": "function"
+    },
+    {
+      "label": "cmd_banner",
+      "kind": "function"
+    },
+    {
+      "label": "colorize",
+      "kind": "function"
+    },
+    {
+      "label": "wrap_text",
+      "kind": "function"
+    },
+    {
+      "label": "center_text",
+      "kind": "function"
+    },
+    {
+      "label": "log_write",
+      "kind": "function"
+    },
+    {
+      "label": "config_get",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "textprint.jl::main_cli",
+      "relation": "calls",
+      "target_ends": "src/TextPrint.jl::run_textprint"
+    },
+    {
+      "source_ends": "src/TextPrint.jl::run_textprint",
+      "relation": "calls",
+      "target_ends": "src/Banner.jl::cmd_banner"
+    },
+    {
+      "source_ends": "src/Banner.jl::cmd_banner",
+      "relation": "calls",
+      "target_ends": "src/Align.jl::center_text"
+    },
+    {
+      "source_ends": "src/Colors.jl::colorize",
+      "relation": "calls",
+      "target_ends": "src/Colors.jl::color_code"
+    },
+    {
+      "source_ends": "textprint.jl",
+      "relation": "imports",
+      "target_ends": "extern::.TextPrint"
+    },
+    {
+      "source_ends": "src/TextPrint.jl",
+      "relation": "contains",
+      "target_ends": "src/TextPrint.jl::run_textprint"
+    }
+  ]
+}

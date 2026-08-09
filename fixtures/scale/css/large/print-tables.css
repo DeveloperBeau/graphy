@@ -1,0 +1,12 @@
+/* print tables */
+.print-tables {
+  display: block;
+  --tone: hsl(355, 18%, 40%);
+}
+.print-tables > * + * {
+  margin-top: 0.35rem;
+}
+.print-tables[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

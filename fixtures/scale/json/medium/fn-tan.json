@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "tan",
+  "arity": 1,
+  "category": "trigonometric",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "tan(0.5)"
+}

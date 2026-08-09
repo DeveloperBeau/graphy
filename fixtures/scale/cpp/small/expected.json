@@ -1,0 +1,22 @@
+{
+  "min_nodes": 50,
+  "nodes": [
+    {"label": "Circle", "kind": "class"},
+    {"label": "Rectangle", "kind": "class"},
+    {"label": "Triangle", "kind": "class"},
+    {"label": "Scene", "kind": "class"},
+    {"label": "ReportPrinter", "kind": "class"},
+    {"label": "Point", "kind": "struct"},
+    {"label": "point_distance", "kind": "function"},
+    {"label": "triangle_perimeter", "kind": "function"},
+    {"label": "scene_total_area", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "geometry/triangle.cpp::triangle_perimeter", "relation": "calls", "target_ends": "geometry/point.cpp::point_distance"},
+    {"source_ends": "report/report_printer.cpp::report_printer_run", "relation": "calls", "target_ends": "report/report_printer.cpp::report_printer_summarize"},
+    {"source_ends": "small/main.cpp", "relation": "imports", "target_ends": "extern::geometry/shape_scene.hpp"},
+    {"source_ends": "geometry/triangle.cpp", "relation": "imports", "target_ends": "extern::point.hpp"},
+    {"source_ends": "geometry/circle.cpp", "relation": "contains", "target_ends": "geometry/circle.cpp::circle_area"},
+    {"source_ends": "small/main.cpp", "relation": "contains", "target_ends": "main.cpp::main"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "atan2",
+  "arity": 2,
+  "category": "trigonometric",
+  "domain": "real",
+  "precedence": 6,
+  "associativity": "left",
+  "example": "6 atan2 3"
+}

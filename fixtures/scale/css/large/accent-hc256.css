@@ -1,0 +1,11 @@
+/* accent hc256 */
+.accent-hc256 {
+  --cipher-accent: hsl(227, 55%, 48%);
+}
+.accent-hc256 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-hc256 .legend-swatch {
+  background: var(--cipher-accent);
+}

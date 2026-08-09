@@ -1,0 +1,65 @@
+{
+  "min_nodes": 45,
+  "nodes": [
+    {
+      "label": "main",
+      "kind": "function"
+    },
+    {
+      "label": "cmd_banner",
+      "kind": "function"
+    },
+    {
+      "label": "colorize",
+      "kind": "function"
+    },
+    {
+      "label": "wrap_text",
+      "kind": "function"
+    },
+    {
+      "label": "center_text",
+      "kind": "function"
+    },
+    {
+      "label": "log_write",
+      "kind": "function"
+    },
+    {
+      "label": "config_get",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "textprint.sh",
+      "relation": "imports",
+      "target_ends": "extern::./commands/banner.sh"
+    },
+    {
+      "source_ends": "commands/banner.sh",
+      "relation": "imports",
+      "target_ends": "extern::./lib/colors.sh"
+    },
+    {
+      "source_ends": "lib/colors.sh::colorize",
+      "relation": "calls",
+      "target_ends": "lib/colors.sh::color_code"
+    },
+    {
+      "source_ends": "lib/wrap.sh::wrap_text",
+      "relation": "calls",
+      "target_ends": "lib/wrap.sh::wrap_line"
+    },
+    {
+      "source_ends": "textprint.sh::main",
+      "relation": "calls",
+      "target_ends": "textprint.sh::usage"
+    },
+    {
+      "source_ends": "textprint.sh",
+      "relation": "contains",
+      "target_ends": "textprint.sh::main"
+    }
+  ]
+}

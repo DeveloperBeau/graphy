@@ -1,0 +1,19 @@
+cron_defaults: &cron_defaults
+  cron: "0 2 * * *"
+  timezone: Europe/Amsterdam
+  notify_failures_only: true
+
+dependency_refresh:
+  <<: *cron_defaults
+  script: ./scripts/update-lockfiles.sh
+  open_pr: true
+
+security_scan:
+  <<: *cron_defaults
+  script: trivy filesystem --exit-code 1 .
+  severity_gate: HIGH
+
+warm_caches:
+  <<: *cron_defaults
+  script: make warm-cache
+  keep_days: 7

@@ -1,0 +1,12 @@
+/* foundation motion */
+.foundation-motion {
+  display: block;
+  --tone: hsl(52, 18%, 40%);
+}
+.foundation-motion > * + * {
+  margin-top: 0.35rem;
+}
+.foundation-motion[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

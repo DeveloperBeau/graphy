@@ -1,0 +1,12 @@
+/* nav footer */
+.nav-footer {
+  display: block;
+  --tone: hsl(279, 18%, 40%);
+}
+.nav-footer > * + * {
+  margin-top: 0.35rem;
+}
+.nav-footer[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

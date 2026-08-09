@@ -1,0 +1,64 @@
+{
+  "min_nodes": 3563,
+  "nodes": [
+    {
+      "label": "run.aes_128_gcm_bulk_4kib",
+      "kind": "table"
+    },
+    {
+      "label": "run.chacha20_poly1305_stream_64b",
+      "kind": "table"
+    },
+    {
+      "label": "run.blake3_bulk_1mib",
+      "kind": "table"
+    },
+    {
+      "label": "families",
+      "kind": "table_array_element"
+    },
+    {
+      "label": "sqlite",
+      "kind": "table"
+    },
+    {
+      "label": "mitigations",
+      "kind": "table"
+    },
+    {
+      "label": "retention",
+      "kind": "table"
+    },
+    {
+      "label": "matrix",
+      "kind": "table"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "bench-aes-128-gcm-bulk-4kib.toml",
+      "relation": "contains",
+      "target_ends": "bench-aes-128-gcm-bulk-4kib.toml::run.aes_128_gcm_bulk_4kib"
+    },
+    {
+      "source_ends": "database.toml",
+      "relation": "contains",
+      "target_ends": "database.toml::sqlite"
+    },
+    {
+      "source_ends": "ciphers.toml",
+      "relation": "contains",
+      "target_ends": "ciphers.toml::families"
+    },
+    {
+      "source_ends": "environment.toml",
+      "relation": "contains",
+      "target_ends": "environment.toml::mitigations"
+    },
+    {
+      "source_ends": "workspace.toml",
+      "relation": "contains",
+      "target_ends": "workspace.toml::matrix"
+    }
+  ]
+}

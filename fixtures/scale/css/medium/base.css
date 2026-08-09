@@ -1,0 +1,13 @@
+/* base bundle */
+@import "tokens.css";
+@import "reset.css";
+@import "type.css";
+@import "layout.css";
+@import "grid.css";
+@import "focus.css";
+@import "motion.css";
+@import "scrollbars.css";
+
+.base-scope {
+  display: contents;
+}

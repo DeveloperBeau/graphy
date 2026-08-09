@@ -1,0 +1,11 @@
+/* accent rc5 */
+.accent-rc5 {
+  --cipher-accent: hsl(211, 55%, 48%);
+}
+.accent-rc5 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-rc5 .legend-swatch {
+  background: var(--cipher-accent);
+}

@@ -1,0 +1,74 @@
+{
+  "min_nodes": 693,
+  "nodes": [
+    {
+      "label": "test_result",
+      "kind": "type"
+    },
+    {
+      "label": "config",
+      "kind": "type"
+    },
+    {
+      "label": "vector",
+      "kind": "type"
+    },
+    {
+      "label": "save",
+      "kind": "value"
+    },
+    {
+      "label": "summary",
+      "kind": "value"
+    },
+    {
+      "label": "catalog",
+      "kind": "value"
+    },
+    {
+      "label": "sample",
+      "kind": "value"
+    },
+    {
+      "label": "describe",
+      "kind": "value"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "ciphers/aes128/impl.ml",
+      "relation": "imports",
+      "target_ends": "extern::Model"
+    },
+    {
+      "source_ends": "ciphers/aes128/runner.ml",
+      "relation": "imports",
+      "target_ends": "extern::Impl"
+    },
+    {
+      "source_ends": "core/store.ml",
+      "relation": "imports",
+      "target_ends": "extern::Config"
+    },
+    {
+      "source_ends": "support/vectors.ml",
+      "relation": "imports",
+      "target_ends": "extern::Rng"
+    },
+    {
+      "source_ends": "support/report.ml",
+      "relation": "imports",
+      "target_ends": "extern::Result"
+    },
+    {
+      "source_ends": "core/store.ml",
+      "relation": "contains",
+      "target_ends": "core/store.ml::save"
+    },
+    {
+      "source_ends": "support/result.ml",
+      "relation": "contains",
+      "target_ends": "support/result.ml::pass"
+    }
+  ]
+}

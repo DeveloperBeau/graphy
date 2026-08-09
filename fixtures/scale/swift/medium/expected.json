@@ -1,0 +1,69 @@
+{
+  "min_nodes": 130,
+  "nodes": [
+    {
+      "label": "Lexer",
+      "kind": "class"
+    },
+    {
+      "label": "TokenStream",
+      "kind": "class"
+    },
+    {
+      "label": "Evaluator",
+      "kind": "class"
+    },
+    {
+      "label": "FunctionRegistry",
+      "kind": "class"
+    },
+    {
+      "label": "BinaryOp",
+      "kind": "struct"
+    },
+    {
+      "label": "HistoryLog",
+      "kind": "class"
+    },
+    {
+      "label": "Repl",
+      "kind": "class"
+    },
+    {
+      "label": "nextToken",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Lexing/Lexer.swift",
+      "relation": "contains",
+      "target_ends": "Lexer.swift::Lexer"
+    },
+    {
+      "source_ends": "Lexing/Lexer.swift::nextToken",
+      "relation": "returns",
+      "target_ends": "Token.swift::Token"
+    },
+    {
+      "source_ends": "Repl/ReplContext.swift::ReplContext",
+      "relation": "has_field",
+      "target_ends": "Settings.swift::Settings"
+    },
+    {
+      "source_ends": "Eval/Evaluator.swift::Evaluator",
+      "relation": "has_field",
+      "target_ends": "FunctionRegistry.swift::FunctionRegistry"
+    },
+    {
+      "source_ends": "main.swift",
+      "relation": "imports",
+      "target_ends": "extern::Foundation"
+    },
+    {
+      "source_ends": "Repl/Repl.swift",
+      "relation": "contains",
+      "target_ends": "Repl.swift::Repl"
+    }
+  ]
+}

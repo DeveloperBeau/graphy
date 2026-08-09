@@ -1,0 +1,15 @@
+display_defaults: &display_defaults
+  runner: linux-small
+  timeout_minutes: 5
+
+scientific_render:
+  <<: *display_defaults
+  script: calc render --notation scientific
+
+engineering_render:
+  <<: *display_defaults
+  script: calc render --notation engineering
+
+grouping_render:
+  <<: *display_defaults
+  script: calc render --grouping on

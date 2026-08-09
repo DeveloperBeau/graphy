@@ -1,0 +1,25 @@
+{
+  "min_nodes": 750,
+  "nodes": [
+    { "label": "Cipher", "kind": "interface" },
+    { "label": "CipherSuite", "kind": "interface" },
+    { "label": "HashFunction", "kind": "interface" },
+    { "label": "BenchmarkRunner", "kind": "class" },
+    { "label": "ProgressReporter", "kind": "class" },
+    { "label": "FeistelNetwork", "kind": "class" },
+    { "label": "PlayfairCipher", "kind": "class" },
+    { "label": "Rc4Cipher", "kind": "class" },
+    { "label": "roundTrip", "kind": "function" },
+    { "label": "runAll", "kind": "function" }
+  ],
+  "edges": [
+    { "source_ends": "CaesarSuite.kt::run", "relation": "calls", "target_ends": "RoundTrip.kt::roundTrip" },
+    { "source_ends": "Fnv1aSuite.kt::run", "relation": "calls", "target_ends": "Determinism.kt::stableDigest" },
+    { "source_ends": "Main.kt::main", "relation": "calls", "target_ends": "SuiteCatalog.kt::allSuites" },
+    { "source_ends": "bench/BenchmarkRunner.kt", "relation": "imports", "target_ends": "ResultStore.kt::ResultStore" },
+    { "source_ends": "adfgvx/AdfgvxCipher.kt", "relation": "imports", "target_ends": "ColumnarCipher.kt::ColumnarCipher" },
+    { "source_ends": "cbc/CbcModeCipher.kt", "relation": "imports", "target_ends": "FeistelNetwork.kt::FeistelNetwork" },
+    { "source_ends": "caesar/CaesarSuite.kt", "relation": "imports", "target_ends": "CipherSuite.kt::CipherSuite" },
+    { "source_ends": "bench/BenchmarkRunner.kt", "relation": "contains", "target_ends": "BenchmarkRunner.kt::runAll" }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "min_nodes": 24,
+  "nodes": [
+    {
+      "label": "to_upper",
+      "kind": "function"
+    },
+    {
+      "label": "make_banner",
+      "kind": "function"
+    },
+    {
+      "label": "wrap_text",
+      "kind": "function"
+    },
+    {
+      "label": "render_page",
+      "kind": "function"
+    },
+    {
+      "label": "print_report",
+      "kind": "function"
+    },
+    {
+      "label": "run",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "banner.lua::make_banner",
+      "relation": "calls",
+      "target_ends": "format.lua::to_upper"
+    },
+    {
+      "source_ends": "banner.lua::boxed",
+      "relation": "calls",
+      "target_ends": "banner.lua::make_banner"
+    },
+    {
+      "source_ends": "layout.lua::render_page",
+      "relation": "calls",
+      "target_ends": "wrap.lua::wrap_text"
+    },
+    {
+      "source_ends": "printer.lua::print_report",
+      "relation": "calls",
+      "target_ends": "banner.lua::boxed"
+    },
+    {
+      "source_ends": "main.lua::run",
+      "relation": "calls",
+      "target_ends": "printer.lua::print_report"
+    }
+  ]
+}

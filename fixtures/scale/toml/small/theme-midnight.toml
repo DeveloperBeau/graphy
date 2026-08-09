@@ -1,0 +1,12 @@
+display_name = "midnight"
+origin = "builtin"
+
+[colors]
+foreground = "#c8d3f5"
+background = "#1e2030"
+accent = "#82aaff"
+
+[border]
+style = "double"
+weight = 1
+shade_corners = false

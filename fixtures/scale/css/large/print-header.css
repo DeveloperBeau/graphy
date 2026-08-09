@@ -1,0 +1,12 @@
+/* print header */
+.print-header {
+  display: block;
+  --tone: hsl(8, 18%, 40%);
+}
+.print-header > * + * {
+  margin-top: 0.35rem;
+}
+.print-header[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

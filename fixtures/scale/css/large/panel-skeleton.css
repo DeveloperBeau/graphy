@@ -1,0 +1,12 @@
+/* panel skeleton */
+.panel-skeleton {
+  display: block;
+  --tone: hsl(258, 18%, 40%);
+}
+.panel-skeleton > * + * {
+  margin-top: 0.35rem;
+}
+.panel-skeleton[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

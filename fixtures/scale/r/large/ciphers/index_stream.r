@@ -1,0 +1,32 @@
+# Load and register the stream cipher family.
+
+source("ciphers/xorbasic/runner.r")
+source("ciphers/xorbasic/check.r")
+source("ciphers/xorroll/runner.r")
+source("ciphers/xorroll/check.r")
+source("ciphers/rc4lite/runner.r")
+source("ciphers/rc4lite/check.r")
+source("ciphers/lcgstream/runner.r")
+source("ciphers/lcgstream/check.r")
+source("ciphers/xorshift/runner.r")
+source("ciphers/xorshift/check.r")
+source("ciphers/feistel/runner.r")
+source("ciphers/feistel/check.r")
+source("ciphers/cbcxor/runner.r")
+source("ciphers/cbcxor/check.r")
+source("ciphers/ctrxor/runner.r")
+source("ciphers/ctrxor/check.r")
+source("ciphers/maskstream/runner.r")
+source("ciphers/maskstream/check.r")
+
+stream_register_all <- function() {
+  register_cipher("xorbasic")
+  register_cipher("xorroll")
+  register_cipher("rc4lite")
+  register_cipher("lcgstream")
+  register_cipher("xorshift")
+  register_cipher("feistel")
+  register_cipher("cbcxor")
+  register_cipher("ctrxor")
+  register_cipher("maskstream")
+}

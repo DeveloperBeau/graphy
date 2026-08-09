@@ -1,0 +1,12 @@
+display_name = "mono"
+origin = "builtin"
+
+[colors]
+foreground = "#d0d0d0"
+background = "#101010"
+accent = "#ffffff"
+
+[border]
+style = "ascii"
+weight = 1
+shade_corners = false

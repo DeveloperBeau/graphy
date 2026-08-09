@@ -1,0 +1,14 @@
+db_defaults: &db_defaults
+  engine: sqlite
+  journal_mode: wal
+  synchronous: normal
+
+primary_db:
+  <<: *db_defaults
+  path: results/crypto.db
+  flush_every: 500
+
+archive_db:
+  <<: *db_defaults
+  path: results/archive.db
+  compress: zstd

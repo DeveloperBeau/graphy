@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "e^x",
+  "arity": 1,
+  "category": "logarithmic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "e^x(0.5)"
+}

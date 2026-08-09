@@ -1,0 +1,65 @@
+{
+  "min_nodes": 40,
+  "nodes": [
+    {
+      "label": "main",
+      "kind": "function"
+    },
+    {
+      "label": "cmd_banner",
+      "kind": "function"
+    },
+    {
+      "label": "colorize",
+      "kind": "function"
+    },
+    {
+      "label": "wrap_text",
+      "kind": "function"
+    },
+    {
+      "label": "center_text",
+      "kind": "function"
+    },
+    {
+      "label": "log_write",
+      "kind": "function"
+    },
+    {
+      "label": "config_get",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "textprint.r",
+      "relation": "imports",
+      "target_ends": "commands/banner.r"
+    },
+    {
+      "source_ends": "commands/banner.r",
+      "relation": "imports",
+      "target_ends": "lib/colors.r"
+    },
+    {
+      "source_ends": "commands/table.r",
+      "relation": "imports",
+      "target_ends": "lib/align.r"
+    },
+    {
+      "source_ends": "textprint.r",
+      "relation": "contains",
+      "target_ends": "textprint.r::main"
+    },
+    {
+      "source_ends": "lib/wrap.r",
+      "relation": "contains",
+      "target_ends": "lib/wrap.r::wrap_line"
+    },
+    {
+      "source_ends": "commands/banner.r",
+      "relation": "contains",
+      "target_ends": "commands/banner.r::banner_preview"
+    }
+  ]
+}

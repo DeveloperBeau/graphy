@@ -1,0 +1,83 @@
+{
+  "min_nodes": 350,
+  "nodes": [
+    {
+      "label": "caesar_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "check_caesar",
+      "kind": "function"
+    },
+    {
+      "label": "fnvhash_digest",
+      "kind": "function"
+    },
+    {
+      "label": "get_cipher",
+      "kind": "function"
+    },
+    {
+      "label": "round_trip",
+      "kind": "function"
+    },
+    {
+      "label": "run_all",
+      "kind": "function"
+    },
+    {
+      "label": "run_checks",
+      "kind": "function"
+    },
+    {
+      "label": "corpus_hash",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "caesar.lua::caesar_encrypt",
+      "relation": "calls",
+      "target_ends": "bytes.lua::to_codes"
+    },
+    {
+      "source_ends": "check_caesar.lua::check_caesar",
+      "relation": "calls",
+      "target_ends": "caesar_spec.lua::get"
+    },
+    {
+      "source_ends": "check_fnvhash.lua::check_fnvhash",
+      "relation": "calls",
+      "target_ends": "corpus_hash.lua::corpus_hash"
+    },
+    {
+      "source_ends": "pipeline.lua::round_trip",
+      "relation": "calls",
+      "target_ends": "registry.lua::get_cipher"
+    },
+    {
+      "source_ends": "runner.lua::run_all",
+      "relation": "calls",
+      "target_ends": "pipeline.lua::round_trip"
+    },
+    {
+      "source_ends": "runner.lua::run_all",
+      "relation": "calls",
+      "target_ends": "writer.lua::write_result"
+    },
+    {
+      "source_ends": "main.lua::main",
+      "relation": "calls",
+      "target_ends": "runner.lua::run_all"
+    },
+    {
+      "source_ends": "main.lua::main",
+      "relation": "calls",
+      "target_ends": "check_runner.lua::run_checks"
+    }
+  ]
+}

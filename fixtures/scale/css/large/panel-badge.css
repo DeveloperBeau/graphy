@@ -1,0 +1,12 @@
+/* panel badge */
+.panel-badge {
+  display: block;
+  --tone: hsl(323, 18%, 40%);
+}
+.panel-badge > * + * {
+  margin-top: 0.35rem;
+}
+.panel-badge[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

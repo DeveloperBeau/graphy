@@ -1,0 +1,24 @@
+{
+  "min_nodes": 200,
+  "nodes": [
+    { "label": "Lexer", "kind": "class" },
+    { "label": "Parser", "kind": "class" },
+    { "label": "Expr", "kind": "interface" },
+    { "label": "FunctionRegistry", "kind": "class" },
+    { "label": "TokenType", "kind": "enum" },
+    { "label": "CalcException", "kind": "class" },
+    { "label": "Evaluator", "kind": "class" },
+    { "label": "tokenize", "kind": "method" },
+    { "label": "evaluate", "kind": "method" },
+    { "label": "trimTrailingZeros", "kind": "method" }
+  ],
+  "edges": [
+    { "source_ends": "app/Calculator.java", "relation": "imports", "target_ends": "Lexer.java::Lexer" },
+    { "source_ends": "repl/Session.java", "relation": "imports", "target_ends": "BuiltinInstaller.java::BuiltinInstaller" },
+    { "source_ends": "ParseException.java::ParseException", "relation": "inherits", "target_ends": "CalcException.java::CalcException" },
+    { "source_ends": "BinaryExpr.java::BinaryExpr", "relation": "implements", "target_ends": "Expr.java::Expr" },
+    { "source_ends": "OutputFormatter.java::format", "relation": "calls", "target_ends": "NumberFormatUtil.java::trimTrailingZeros" },
+    { "source_ends": "OperatorTable.java::apply", "relation": "calls", "target_ends": "DoubleCompare.java::nearlyZero" },
+    { "source_ends": "lexer/Lexer.java", "relation": "contains", "target_ends": "Lexer.java::tokenize" }
+  ]
+}

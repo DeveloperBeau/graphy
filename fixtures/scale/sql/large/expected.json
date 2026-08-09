@@ -1,0 +1,74 @@
+{
+  "min_nodes": 1214,
+  "nodes": [
+    {
+      "label": "machines",
+      "kind": "table"
+    },
+    {
+      "label": "cipher_families",
+      "kind": "table"
+    },
+    {
+      "label": "runs",
+      "kind": "table"
+    },
+    {
+      "label": "passes",
+      "kind": "table"
+    },
+    {
+      "label": "run_summaries",
+      "kind": "table"
+    },
+    {
+      "label": "latest_stable_summaries",
+      "kind": "view"
+    },
+    {
+      "label": "params_aes",
+      "kind": "table"
+    },
+    {
+      "label": "results_aes",
+      "kind": "table"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "runs.sql::runs",
+      "relation": "references",
+      "target_ends": "::machines"
+    },
+    {
+      "source_ends": "passes.sql::passes",
+      "relation": "references",
+      "target_ends": "::runs"
+    },
+    {
+      "source_ends": "passes.sql::passes",
+      "relation": "references",
+      "target_ends": "::cipher_families"
+    },
+    {
+      "source_ends": "run_summaries.sql::run_summaries",
+      "relation": "references",
+      "target_ends": "::runs"
+    },
+    {
+      "source_ends": "params_aes.sql::params_aes",
+      "relation": "references",
+      "target_ends": "::cipher_families"
+    },
+    {
+      "source_ends": "results_aes.sql::results_aes",
+      "relation": "references",
+      "target_ends": "::run_summaries"
+    },
+    {
+      "source_ends": "regression_notes_aes.sql::regression_notes_aes",
+      "relation": "references",
+      "target_ends": "::regressions"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+suite_defaults: &suite_defaults
+  harness: cryptobench
+  results_db: results/crypto.db
+  fail_fast: false
+
+full_matrix:
+  <<: *suite_defaults
+  include: "bench-*.yaml"
+  shards: 8
+
+quick_pass:
+  <<: *suite_defaults
+  include: "bench-*-stream-64b.yaml"
+  shards: 2
+
+weekly_deep:
+  <<: *suite_defaults
+  include: "bench-*-bulk-1mib.yaml"
+  repeat: 5

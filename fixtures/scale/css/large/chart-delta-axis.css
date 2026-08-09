@@ -1,0 +1,11 @@
+/* chart delta axis */
+.chart-delta-axis {
+  font-size: 0.75rem;
+  --chart-tone: hsl(12, 30%, 60%);
+}
+.chart-delta-axis .tick {
+  stroke: #2a3441;
+}
+.chart-delta-axis text {
+  fill: #9aa7b4;
+}

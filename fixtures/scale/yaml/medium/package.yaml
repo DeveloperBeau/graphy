@@ -1,0 +1,17 @@
+pkg_defaults: &pkg_defaults
+  runner: linux-amd64
+  timeout_minutes: 10
+
+musl_static:
+  <<: *pkg_defaults
+  script: cargo build --target x86_64-unknown-linux-musl
+
+windows_msi:
+  <<: *pkg_defaults
+  script: cargo wix
+  runner_override: windows-2025
+
+macos_universal:
+  <<: *pkg_defaults
+  script: lipo -create
+  runner_override: macos-14

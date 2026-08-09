@@ -1,0 +1,12 @@
+/* form radio */
+.form-radio {
+  display: block;
+  --tone: hsl(274, 18%, 40%);
+}
+.form-radio > * + * {
+  margin-top: 0.35rem;
+}
+.form-radio[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

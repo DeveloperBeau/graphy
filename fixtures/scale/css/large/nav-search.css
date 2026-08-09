@@ -1,0 +1,12 @@
+/* nav search */
+.nav-search {
+  display: block;
+  --tone: hsl(227, 18%, 40%);
+}
+.nav-search > * + * {
+  margin-top: 0.35rem;
+}
+.nav-search[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

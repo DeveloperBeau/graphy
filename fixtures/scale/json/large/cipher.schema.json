@@ -1,0 +1,22 @@
+{
+  "$id": "cipher.schema.json",
+  "title": "CipherPrimitive",
+  "type": "object",
+  "properties": {
+    "cipher_name": {
+      "type": "string"
+    },
+    "block_size_bits": {
+      "type": "integer"
+    },
+    "key_schedule": {
+      "type": "string"
+    },
+    "aead": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "cipher_name"
+  ]
+}

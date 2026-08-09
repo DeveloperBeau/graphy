@@ -1,0 +1,12 @@
+/* component: key-equals */
+.key--equals {
+  background: #d08b2c;
+  color: #101418;
+  font-weight: 700;
+}
+.key--equals:active {
+  filter: brightness(0.95);
+}
+.key--equals.is-hidden {
+  display: none;
+}

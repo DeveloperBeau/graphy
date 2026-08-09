@@ -1,0 +1,10 @@
+/* theme: mono */
+[data-theme='mono'] {
+  --bg: hsl(120, 15%, 12%);
+  --panel: hsl(120, 14%, 18%);
+  --accent: hsl(260, 45%, 52%);
+  --key: hsl(120, 12%, 24%);
+}
+[data-theme='mono'] .display-expression {
+  opacity: 0.59;
+}

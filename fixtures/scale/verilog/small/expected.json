@@ -1,0 +1,64 @@
+{
+  "min_nodes": 24,
+  "nodes": [
+    {
+      "label": "display_top",
+      "kind": "module"
+    },
+    {
+      "label": "timing_gen",
+      "kind": "module"
+    },
+    {
+      "label": "char_rom",
+      "kind": "module"
+    },
+    {
+      "label": "glyph_renderer",
+      "kind": "module"
+    },
+    {
+      "label": "line_buffer",
+      "kind": "module"
+    },
+    {
+      "label": "vram",
+      "kind": "module"
+    },
+    {
+      "label": "palette_lut",
+      "kind": "module"
+    },
+    {
+      "label": "host_if",
+      "kind": "module"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "display_top.v",
+      "relation": "contains",
+      "target_ends": "display_top.v::display_top"
+    },
+    {
+      "source_ends": "char_rom.v",
+      "relation": "contains",
+      "target_ends": "char_rom.v::char_rom"
+    },
+    {
+      "source_ends": "glyph_renderer.v",
+      "relation": "contains",
+      "target_ends": "glyph_renderer.v::glyph_renderer"
+    },
+    {
+      "source_ends": "vram.v",
+      "relation": "contains",
+      "target_ends": "vram.v::vram"
+    },
+    {
+      "source_ends": "timing_gen.v",
+      "relation": "contains",
+      "target_ends": "timing_gen.v::timing_gen"
+    }
+  ]
+}

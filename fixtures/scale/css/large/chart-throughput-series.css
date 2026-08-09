@@ -1,0 +1,11 @@
+/* chart throughput series */
+.chart-throughput-series {
+  font-size: 0.75rem;
+  --chart-tone: hsl(73, 30%, 60%);
+}
+.chart-throughput-series .tick {
+  stroke: #2a3441;
+}
+.chart-throughput-series text {
+  fill: #9aa7b4;
+}

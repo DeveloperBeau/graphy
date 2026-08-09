@@ -1,0 +1,11 @@
+/* accent speck */
+.accent-speck {
+  --cipher-accent: hsl(237, 55%, 48%);
+}
+.accent-speck .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-speck .legend-swatch {
+  background: var(--cipher-accent);
+}

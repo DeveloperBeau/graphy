@@ -1,0 +1,11 @@
+/* accent tea */
+.accent-tea {
+  --cipher-accent: hsl(63, 55%, 48%);
+}
+.accent-tea .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-tea .legend-swatch {
+  background: var(--cipher-accent);
+}

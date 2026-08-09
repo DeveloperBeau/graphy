@@ -1,0 +1,12 @@
+/* colour and font tokens */
+:root {
+  --ink: #1c1f22;
+  --paper: #fbfbf8;
+  --navy: #14203a;
+  --amber: #b3762e;
+  --rule: #d5d8cf;
+  --mono: 'JetBrains Mono', monospace;
+}
+.swatch-navy {
+  background: var(--navy);
+}

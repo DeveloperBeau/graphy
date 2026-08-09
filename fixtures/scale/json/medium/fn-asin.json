@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "asin",
+  "arity": 1,
+  "category": "trigonometric",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "asin(0.5)"
+}

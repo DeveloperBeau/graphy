@@ -1,0 +1,74 @@
+{
+  "min_nodes": 700,
+  "nodes": [
+    {
+      "label": "caesar_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "vigenere_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "fnv1a_digest",
+      "kind": "function"
+    },
+    {
+      "label": "railfence_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "store_append",
+      "kind": "function"
+    },
+    {
+      "label": "progress_tick",
+      "kind": "function"
+    },
+    {
+      "label": "register_cipher",
+      "kind": "function"
+    },
+    {
+      "label": "xorroll_keystream",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "ciphers/index_shift.r",
+      "relation": "imports",
+      "target_ends": "ciphers/caesar/runner.r"
+    },
+    {
+      "source_ends": "ciphers/caesar/runner.r",
+      "relation": "imports",
+      "target_ends": "ciphers/caesar/cipher.r"
+    },
+    {
+      "source_ends": "ciphbench.r",
+      "relation": "imports",
+      "target_ends": "core/store.r"
+    },
+    {
+      "source_ends": "ciphbench.r",
+      "relation": "imports",
+      "target_ends": "ciphers/index_hash.r"
+    },
+    {
+      "source_ends": "ciphers/beaufort/check.r",
+      "relation": "imports",
+      "target_ends": "ciphers/beaufort/cipher.r"
+    },
+    {
+      "source_ends": "core/run.r",
+      "relation": "contains",
+      "target_ends": "core/run.r::bench_all"
+    },
+    {
+      "source_ends": "ciphers/fnv1a/cipher.r",
+      "relation": "contains",
+      "target_ends": "ciphers/fnv1a/cipher.r::fnv1a_digest"
+    }
+  ]
+}

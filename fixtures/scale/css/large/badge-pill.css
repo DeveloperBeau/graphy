@@ -1,0 +1,12 @@
+/* badge pill */
+.badge-pill {
+  display: block;
+  --tone: hsl(65, 18%, 40%);
+}
+.badge-pill > * + * {
+  margin-top: 0.35rem;
+}
+.badge-pill[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

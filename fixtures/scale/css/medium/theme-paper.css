@@ -1,0 +1,10 @@
+/* theme: paper */
+[data-theme='paper'] {
+  --bg: hsl(150, 15%, 13%);
+  --panel: hsl(150, 14%, 19%);
+  --accent: hsl(290, 45%, 52%);
+  --key: hsl(150, 12%, 25%);
+}
+[data-theme='paper'] .display-expression {
+  opacity: 0.60;
+}

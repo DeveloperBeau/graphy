@@ -1,0 +1,12 @@
+/* print footnotes */
+.print-footnotes {
+  display: block;
+  --tone: hsl(21, 18%, 40%);
+}
+.print-footnotes > * + * {
+  margin-top: 0.35rem;
+}
+.print-footnotes[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

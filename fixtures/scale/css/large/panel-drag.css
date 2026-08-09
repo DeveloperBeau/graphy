@@ -1,0 +1,12 @@
+/* panel drag */
+.panel-drag {
+  display: block;
+  --tone: hsl(232, 18%, 40%);
+}
+.panel-drag > * + * {
+  margin-top: 0.35rem;
+}
+.panel-drag[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

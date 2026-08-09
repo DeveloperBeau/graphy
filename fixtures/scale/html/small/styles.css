@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  font-family: 'JetBrains Mono', 'Fira Mono', monospace;
+  color: #1c1f22;
+  background: #fbfbf8;
+}
+nav {
+  background: #14203a;
+  padding: 0.6rem 1rem;
+}
+nav a {
+  color: #e8ecf5;
+  margin-right: 0.8rem;
+  text-decoration: none;
+}

@@ -1,0 +1,38 @@
+enum FamilyCatalog {
+    static func all() -> [FamilyDescriptor] {
+        return [
+        CaesarDescriptor(),
+        Rot13Descriptor(),
+        AtbashDescriptor(),
+        AffineDescriptor(),
+        VigenereDescriptor(),
+        AutokeyDescriptor(),
+        BeaufortDescriptor(),
+        GronsfeldDescriptor(),
+        TrithemiusDescriptor(),
+        KeywordDescriptor(),
+        SubstitutionDescriptor(),
+        RailfenceDescriptor(),
+        ScytaleDescriptor(),
+        ColumnarDescriptor(),
+        PolybiusDescriptor(),
+        BaconDescriptor(),
+        XorStaticDescriptor(),
+        XorRollingDescriptor(),
+        Rc4Descriptor(),
+        LcgStreamDescriptor(),
+        NibbleSwapDescriptor(),
+        RotByteDescriptor(),
+        BlockReverseDescriptor(),
+        FeistelDescriptor(),
+        TeaDescriptor(),
+        XteaDescriptor(),
+        Fnv1a32Descriptor(),
+        Djb2Descriptor(),
+        SdbmDescriptor(),
+        Adler32Descriptor(),
+        Crc32Descriptor(),
+        Sum16Descriptor(),
+        ]
+    }
+}

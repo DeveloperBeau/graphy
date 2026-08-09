@@ -1,0 +1,12 @@
+/* nav rail */
+.nav-rail {
+  display: block;
+  --tone: hsl(188, 18%, 40%);
+}
+.nav-rail > * + * {
+  margin-top: 0.35rem;
+}
+.nav-rail[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

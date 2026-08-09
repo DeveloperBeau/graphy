@@ -1,0 +1,12 @@
+/* form date */
+.form-date {
+  display: block;
+  --tone: hsl(300, 18%, 40%);
+}
+.form-date > * + * {
+  margin-top: 0.35rem;
+}
+.form-date[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

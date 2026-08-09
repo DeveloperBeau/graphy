@@ -1,0 +1,12 @@
+/* component: constants */
+.constants-list {
+  columns: 2 8rem;
+  font-size: 0.85rem;
+}
+.constant-symbol {
+  font-style: italic;
+  margin-right: 0.4rem;
+}
+.constants-list.is-hidden {
+  display: none;
+}

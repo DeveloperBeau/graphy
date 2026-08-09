@@ -1,0 +1,29 @@
+{
+  "$id": "layout.schema.json",
+  "title": "Layout",
+  "type": "object",
+  "properties": {
+    "wrap_mode": {
+      "type": "string",
+      "enum": [
+        "word",
+        "char",
+        "none"
+      ]
+    },
+    "justify": {
+      "type": "boolean"
+    },
+    "tab_stop": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 16
+    },
+    "margin_left": {
+      "type": "integer"
+    },
+    "margin_right": {
+      "type": "integer"
+    }
+  }
+}

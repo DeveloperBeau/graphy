@@ -1,0 +1,83 @@
+{
+  "min_nodes": 45,
+  "nodes": [
+    {
+      "label": "tokenize",
+      "kind": "method"
+    },
+    {
+      "label": "apply_op",
+      "kind": "method"
+    },
+    {
+      "label": "to_rpn",
+      "kind": "method"
+    },
+    {
+      "label": "evaluate",
+      "kind": "method"
+    },
+    {
+      "label": "History",
+      "kind": "class"
+    },
+    {
+      "label": "run_batch",
+      "kind": "method"
+    },
+    {
+      "label": "divide",
+      "kind": "method"
+    },
+    {
+      "label": "trig_sine",
+      "kind": "method"
+    },
+    {
+      "label": "main",
+      "kind": "method"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "tokenize.rb::tokenize",
+      "relation": "calls",
+      "target_ends": "token_of.rb::token_of"
+    },
+    {
+      "source_ends": "to_rpn.rb::to_rpn",
+      "relation": "calls",
+      "target_ends": "tokenize.rb::tokenize"
+    },
+    {
+      "source_ends": "to_rpn.rb::to_rpn",
+      "relation": "calls",
+      "target_ends": "precedence.rb::precedence"
+    },
+    {
+      "source_ends": "evaluate.rb::evaluate",
+      "relation": "calls",
+      "target_ends": "to_rpn.rb::to_rpn"
+    },
+    {
+      "source_ends": "evaluate.rb::evaluate",
+      "relation": "calls",
+      "target_ends": "apply_op.rb::apply_op"
+    },
+    {
+      "source_ends": "run_batch.rb::run_batch",
+      "relation": "calls",
+      "target_ends": "evaluate.rb::evaluate"
+    },
+    {
+      "source_ends": "trig_sine.rb::trig_sine",
+      "relation": "calls",
+      "target_ends": "guard_number.rb::guard_number"
+    },
+    {
+      "source_ends": "main.rb::main",
+      "relation": "calls",
+      "target_ends": "run_batch.rb::run_batch"
+    }
+  ]
+}

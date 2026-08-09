@@ -1,0 +1,26 @@
+{
+  "min_nodes": 430,
+  "nodes": [
+    {"label": "Fnv1aDigest", "kind": "function"},
+    {"label": "CliRun", "kind": "function"},
+    {"label": "RunnerRun", "kind": "function"},
+    {"label": "VerifyAll", "kind": "function"},
+    {"label": "MeasureAll", "kind": "function"},
+    {"label": "Entry", "kind": "type"},
+    {"label": "Report", "kind": "type"},
+    {"label": "BuildCorpus", "kind": "function"},
+    {"label": "RotateLeft64", "kind": "function"},
+    {"label": "MixUint64", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "main.go::main", "relation": "calls", "target_ends": "cli/cli.go::CliRun"},
+    {"source_ends": "cli/cli.go::CliRun", "relation": "calls", "target_ends": "runner/runner.go::RunnerRun"},
+    {"source_ends": "runner/runner.go::RunnerRun", "relation": "calls", "target_ends": "registry/registry.go::VerifyAll"},
+    {"source_ends": "runner/runner.go::RunnerRun", "relation": "calls", "target_ends": "registry/registry.go::MeasureAll"},
+    {"source_ends": "runner/runner.go::RunnerRun", "relation": "calls", "target_ends": "coresample/corpus.go::BuildCorpus"},
+    {"source_ends": "registry/group_bytemix.go::VerifyBytemixGroup", "relation": "calls", "target_ends": "fnv1a/verify.go::Fnv1aVerify"},
+    {"source_ends": "fnv1a/bench.go::Fnv1aMeasure", "relation": "calls", "target_ends": "coretimer/timer.go::Time"},
+    {"source_ends": "fnv1a/bench.go::Fnv1aMeasure", "relation": "calls", "target_ends": "entry/entry.go::NewEntry"},
+    {"source_ends": "main.go", "relation": "imports", "target_ends": "extern::example.com/hashbench/cli"}
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "min_nodes": 301,
+  "nodes": [
+    {
+      "label": "nav#index-nav",
+      "kind": "nav"
+    },
+    {
+      "label": "main#calculator-main",
+      "kind": "main"
+    },
+    {
+      "label": "section#functions-arith",
+      "kind": "section"
+    },
+    {
+      "label": "section#about-releases",
+      "kind": "section"
+    },
+    {
+      "label": "nav#help-nav",
+      "kind": "nav"
+    },
+    {
+      "label": "main#fn-add-main",
+      "kind": "main"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "index.html",
+      "relation": "references",
+      "target_ends": "link::calculator.html"
+    },
+    {
+      "source_ends": "calculator.html",
+      "relation": "references",
+      "target_ends": "link::history.html"
+    },
+    {
+      "source_ends": "functions.html",
+      "relation": "references",
+      "target_ends": "link::base.css"
+    },
+    {
+      "source_ends": "fn-add.html",
+      "relation": "references",
+      "target_ends": "link::fn-subtract.html"
+    },
+    {
+      "source_ends": "about.html",
+      "relation": "references",
+      "target_ends": "link::release-3-2.html"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "min_nodes": 190,
+  "nodes": [
+    {"label": "scan_tokens", "kind": "function"},
+    {"label": "parse_expression", "kind": "function"},
+    {"label": "eval_expr", "kind": "function"},
+    {"label": "call_function", "kind": "function"},
+    {"label": "run_repl", "kind": "function"},
+    {"label": "format_value", "kind": "function"},
+    {"label": "Expr", "kind": "enum"},
+    {"label": "Token", "kind": "enum"},
+    {"label": "CalcError", "kind": "enum"},
+    {"label": "VarStore", "kind": "struct"}
+  ],
+  "edges": [
+    {"source_ends": "src/parser/binary.rs", "relation": "imports", "target_ends": "src/parser/unary.rs::parse_unary"},
+    {"source_ends": "src/eval/walker.rs", "relation": "imports", "target_ends": "src/eval/binop.rs::apply_binop"},
+    {"source_ends": "src/funcs/dispatch.rs", "relation": "imports", "target_ends": "src/funcs/stats.rs::stat_dispatch"},
+    {"source_ends": "src/eval/unop.rs", "relation": "imports", "target_ends": "src/funcs/combinatorics.rs::factorial"},
+    {"source_ends": "src/cli/repl.rs", "relation": "imports", "target_ends": "src/cli/prompt.rs::read_line"},
+    {"source_ends": "src/eval/walker.rs::eval_expr", "relation": "calls", "target_ends": "src/eval/walker.rs::lookup_variable"},
+    {"source_ends": "src/lexer/scanner.rs", "relation": "contains", "target_ends": "src/lexer/scanner.rs::scan_tokens"},
+    {"source_ends": "src/cli/line.rs", "relation": "imports", "target_ends": "src/history/log.rs::HistoryLog"}
+  ]
+}

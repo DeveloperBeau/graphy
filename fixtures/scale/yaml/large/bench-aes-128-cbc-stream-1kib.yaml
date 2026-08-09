@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 2000
+  cool_down_secs: 2
+
+aes-128-cbc-stream-1kib:
+  setup:
+    <<: *defaults
+    cipher: aes-128-cbc
+    key_bits: 128
+    payload_bytes: 1024
+  execute:
+    <<: *defaults
+    iterations: 200000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: aes-128-cbc-stream-1kib

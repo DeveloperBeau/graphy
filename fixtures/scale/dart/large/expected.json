@@ -1,0 +1,22 @@
+{
+  "min_nodes": 900,
+  "nodes": [
+    { "label": "Cipher", "kind": "class" },
+    { "label": "CipherSuite", "kind": "class" },
+    { "label": "HashFunction", "kind": "class" },
+    { "label": "BenchmarkRunner", "kind": "class" },
+    { "label": "ProgressReporter", "kind": "class" },
+    { "label": "FeistelNetwork", "kind": "class" },
+    { "label": "PlayfairCipher", "kind": "class" },
+    { "label": "Rc4Cipher", "kind": "class" },
+    { "label": "runAll", "kind": "function" }
+  ],
+  "edges": [
+    { "source_ends": "main.dart", "relation": "imports", "target_ends": "benchmark_runner.dart" },
+    { "source_ends": "bench/benchmark_runner.dart", "relation": "imports", "target_ends": "result_store.dart" },
+    { "source_ends": "ciphers/adfgvx/adfgvx_cipher.dart", "relation": "imports", "target_ends": "columnar_cipher.dart" },
+    { "source_ends": "ciphers/cbc/cbc_cipher.dart", "relation": "imports", "target_ends": "feistel_network.dart" },
+    { "source_ends": "main.dart", "relation": "imports", "target_ends": "suite_catalog.dart" },
+    { "source_ends": "bench/benchmark_runner.dart", "relation": "contains", "target_ends": "benchmark_runner.dart::runAll" }
+  ]
+}

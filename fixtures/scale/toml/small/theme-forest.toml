@@ -1,0 +1,12 @@
+display_name = "forest"
+origin = "builtin"
+
+[colors]
+foreground = "#a9b665"
+background = "#282828"
+accent = "#d8a657"
+
+[border]
+style = "single"
+weight = 1
+shade_corners = false

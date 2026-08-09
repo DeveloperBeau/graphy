@@ -1,0 +1,24 @@
+{
+  "min_nodes": 80,
+  "nodes": [
+    {"label": "cliArgsParse", "kind": "function"},
+    {"label": "cliCommandsRun", "kind": "function"},
+    {"label": "schemaValidate", "kind": "function"},
+    {"label": "parserParseFile", "kind": "function"},
+    {"label": "printerPrintEntries", "kind": "function"},
+    {"label": "stringsTrim", "kind": "function"},
+    {"label": "entryFromToken", "kind": "function"},
+    {"label": "lexerTokenizeLine", "kind": "function"},
+    {"label": "ioReadFileLines", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "src/main.zig::main", "relation": "calls", "target_ends": "src/cli/commands.zig::cliCommandsRun"},
+    {"source_ends": "src/cli/commands.zig::cliCommandsRun", "relation": "calls", "target_ends": "src/format/printer.zig::printerPrintEntries"},
+    {"source_ends": "src/cli/commands.zig::cliCommandsRun", "relation": "calls", "target_ends": "src/parser/parser.zig::parserParseFile"},
+    {"source_ends": "src/parser/entry.zig::entryFromToken", "relation": "calls", "target_ends": "src/util/strings.zig::stringsTrim"},
+    {"source_ends": "src/parser/lexer.zig::lexerTokenizeLine", "relation": "calls", "target_ends": "src/util/strings.zig::stringsTrim"},
+    {"source_ends": "src/validate/schema.zig::schemaValidate", "relation": "calls", "target_ends": "src/validate/rules.zig::rulesCheckRequired"},
+    {"source_ends": "src/parser/parser.zig::parserParseFile", "relation": "calls", "target_ends": "src/util/io.zig::ioReadFileLines"},
+    {"source_ends": "src/cli/commands.zig", "relation": "imports", "target_ends": "extern::args.zig"}
+  ]
+}

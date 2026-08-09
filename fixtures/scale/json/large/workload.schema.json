@@ -1,0 +1,21 @@
+{
+  "$id": "workload.schema.json",
+  "title": "WorkloadShape",
+  "type": "object",
+  "properties": {
+    "workload_name": {
+      "type": "string"
+    },
+    "payload_pattern": {
+      "type": "string",
+      "enum": [
+        "random",
+        "zeros",
+        "text"
+      ]
+    },
+    "chunked": {
+      "type": "boolean"
+    }
+  }
+}

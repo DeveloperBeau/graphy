@@ -1,0 +1,74 @@
+{
+  "min_nodes": 600,
+  "nodes": [
+    {
+      "label": "caesar_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "vigenere_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "fnv1a_digest",
+      "kind": "function"
+    },
+    {
+      "label": "railfence_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "store_append",
+      "kind": "function"
+    },
+    {
+      "label": "progress_tick",
+      "kind": "function"
+    },
+    {
+      "label": "register_cipher",
+      "kind": "function"
+    },
+    {
+      "label": "caesar_run_bench",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "src/ciphers/caesar/Runner.jl::caesar_run_bench",
+      "relation": "calls",
+      "target_ends": "src/ciphers/caesar/Cipher.jl::caesar_encrypt"
+    },
+    {
+      "source_ends": "src/ciphers/caesar/Check.jl::caesar_verify",
+      "relation": "calls",
+      "target_ends": "src/ciphers/caesar/Cipher.jl::caesar_decrypt"
+    },
+    {
+      "source_ends": "src/ciphers/TableShift.jl::register_shift_ciphers",
+      "relation": "calls",
+      "target_ends": "src/core/Registry.jl::register_cipher"
+    },
+    {
+      "source_ends": "src/core/Run.jl::bench_all",
+      "relation": "calls",
+      "target_ends": "src/core/Corpus.jl::corpus_sample"
+    },
+    {
+      "source_ends": "src/core/Run.jl::bench_one",
+      "relation": "calls",
+      "target_ends": "src/core/Store.jl::store_append"
+    },
+    {
+      "source_ends": "src/ciphers/caesar/Runner.jl",
+      "relation": "imports",
+      "target_ends": "extern::..CaesarCipher"
+    },
+    {
+      "source_ends": "src/core/Run.jl",
+      "relation": "contains",
+      "target_ends": "src/core/Run.jl::bench_all"
+    }
+  ]
+}

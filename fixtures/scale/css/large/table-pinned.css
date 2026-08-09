@@ -1,0 +1,12 @@
+/* table pinned */
+.table-pinned {
+  display: block;
+  --tone: hsl(302, 18%, 40%);
+}
+.table-pinned > * + * {
+  margin-top: 0.35rem;
+}
+.table-pinned[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

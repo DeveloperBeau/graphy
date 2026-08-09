@@ -1,0 +1,11 @@
+/* accent feal */
+.accent-feal {
+  --cipher-accent: hsl(271, 55%, 48%);
+}
+.accent-feal .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-feal .legend-swatch {
+  background: var(--cipher-accent);
+}

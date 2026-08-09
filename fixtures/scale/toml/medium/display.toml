@@ -1,0 +1,13 @@
+[notation]
+default_mode = "plain"
+scientific_threshold = 1.0e12
+engineering_step = 3
+
+[grouping]
+thousands_separator = ","
+decimal_point = "."
+group_size = 3
+
+[precision_hint]
+trailing_zeros = false
+max_digits = 34
