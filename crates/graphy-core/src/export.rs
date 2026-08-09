@@ -95,6 +95,26 @@ pub(crate) fn render_html(g: &KnowledgeGraph, a: &Analysis) -> String {
     border: 1px solid var(--line); color: var(--fg); border-radius: 4px; box-sizing: border-box; }}
   aside .result {{ padding: 4px 0; cursor: pointer; border-bottom: 1px solid var(--line); }}
   aside .result:hover {{ color: var(--accent); }}
+  aside .result .hidden-tag {{ color: var(--muted); font-size: 11px; }}
+  aside .filters label {{ display: flex; align-items: center; gap: 6px; padding: 2px 0;
+    color: var(--muted); cursor: pointer; }}
+  aside .filters label:hover {{ color: var(--fg); }}
+  aside .filters .count {{ margin-left: auto; font-variant-numeric: tabular-nums; }}
+  aside .hidden-list div {{ padding: 2px 0; cursor: pointer; color: var(--muted);
+    border-bottom: 1px dotted rgba(255,255,255,0.04); }}
+  aside .hidden-list div:hover {{ color: var(--fg); }}
+  aside .linkbtn {{ color: var(--accent); cursor: pointer; font-size: 12px; }}
+  aside #selected .hide-btn {{ margin-top: 8px; display: inline-block; padding: 3px 8px;
+    border: 1px solid var(--line); border-radius: 4px; cursor: pointer; color: var(--muted); }}
+  aside #selected .hide-btn:hover {{ color: var(--fg); border-color: var(--accent); }}
+  #tooltip {{ position: absolute; display: none; pointer-events: none; z-index: 10;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 10px; max-width: 400px; font-size: 11px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5); }}
+  #tooltip .tid {{ color: var(--accent); font-weight: 600; word-break: break-all;
+    margin-bottom: 2px; }}
+  #tooltip .muted {{ color: var(--muted); }}
+  #tooltip div {{ padding: 1px 0; }}
   aside .legend span {{ display: inline-block; width: 10px; height: 10px;
     margin-right: 5px; vertical-align: -1px; border-radius: 50%; }}
   aside #selected {{ font-size: 12px; }}
@@ -107,16 +127,23 @@ pub(crate) fn render_html(g: &KnowledgeGraph, a: &Analysis) -> String {
 </head>
 <body>
 <div id="app">
-  <div id="canvas-wrap"><svg id="svg"></svg></div>
+  <div id="canvas-wrap"><svg id="svg"></svg><div id="tooltip"></div></div>
   <aside>
     <h1>graphy</h1>
-    <div class="kv"><span>nodes</span><strong>{nodes}</strong></div>
-    <div class="kv"><span>edges</span><strong>{edges}</strong></div>
+    <div class="kv"><span>nodes</span><strong id="node-count">{nodes}</strong></div>
+    <div class="kv"><span>edges</span><strong id="edge-count">{edges}</strong></div>
     <div class="kv"><span>communities</span><strong>{communities}</strong></div>
 
     <h2>Search</h2>
     <input id="q" type="search" placeholder="filter by label…" />
     <div id="results"></div>
+
+    <h2>Filters</h2>
+    <div class="filters" id="filters"></div>
+
+    <h2>Hidden</h2>
+    <span class="linkbtn" id="show-all">show all</span>
+    <div class="hidden-list" id="hidden-list"></div>
 
     <h2>Legend</h2>
     <div class="legend">
@@ -145,10 +172,69 @@ const DATA = {data};
     .filter(e => byId[e.source] && byId[e.target])
     .map(e => ({{...e}}));
   const adj = Object.fromEntries(nodes.map(n => [n.id, new Set()]));
+  const nodeEdges = Object.fromEntries(nodes.map(n => [n.id, []]));
   for (const e of edges) {{
     adj[e.source].add(e.target);
     adj[e.target].add(e.source);
+    nodeEdges[e.source].push({{ rel: e.relation, dir: "out", other: e.target }});
+    nodeEdges[e.target].push({{ rel: e.relation, dir: "in", other: e.source }});
   }}
+
+  // Visibility: a per-kind filter plus a manual hidden set. Member-level kinds
+  // start hidden — they swamp the graph and human readers mostly want the
+  // type/function level.
+  const kindOf = n => (n.kind || "other").replace("?ambiguous", "");
+  const DEFAULT_HIDDEN_KINDS = new Set(["method", "field", "property", "var", "variant", "constant"]);
+  const kindCounts = {{}};
+  for (const n of nodes) kindCounts[kindOf(n)] = (kindCounts[kindOf(n)] || 0) + 1;
+  const kindVisible = {{}};
+  for (const k of Object.keys(kindCounts)) kindVisible[k] = !DEFAULT_HIDDEN_KINDS.has(k);
+  const hiddenIds = new Set();
+  const isVisible = n => kindVisible[kindOf(n)] && !hiddenIds.has(n.id);
+
+  function refreshCounts() {{
+    const vn = nodes.filter(isVisible).length;
+    const ve = edges.filter(e => isVisible(byId[e.source]) && isVisible(byId[e.target])).length;
+    document.getElementById("node-count").textContent = `${{vn}} / ${{nodes.length}}`;
+    document.getElementById("edge-count").textContent = `${{ve}} / ${{edges.length}}`;
+  }}
+
+  function refreshHiddenList() {{
+    const list = document.getElementById("hidden-list");
+    list.innerHTML = [...hiddenIds].map(id =>
+      `<div data-id="${{escape(id)}}">↩ ${{escape((byId[id] || {{label: id}}).label)}}</div>`
+    ).join("");
+    list.querySelectorAll("[data-id]").forEach(el => {{
+      el.addEventListener("click", () => {{
+        hiddenIds.delete(el.getAttribute("data-id"));
+        refreshAll();
+      }});
+    }});
+  }}
+
+  function refreshAll() {{
+    refreshCounts();
+    refreshHiddenList();
+    render();
+  }}
+
+  // Filters panel: one checkbox per kind present in the data.
+  const filters = document.getElementById("filters");
+  filters.innerHTML = Object.keys(kindCounts).sort().map(k =>
+    `<label><input type="checkbox" data-kind="${{escape(k)}}" ${{kindVisible[k] ? "checked" : ""}}/>
+      ${{escape(k)}}<span class="count">${{kindCounts[k]}}</span></label>`
+  ).join("");
+  filters.querySelectorAll("input").forEach(el => {{
+    el.addEventListener("change", () => {{
+      kindVisible[el.getAttribute("data-kind")] = el.checked;
+      refreshAll();
+    }});
+  }});
+
+  document.getElementById("show-all").addEventListener("click", () => {{
+    hiddenIds.clear();
+    refreshAll();
+  }});
 
   // Community color palette (sampled HSL).
   const palette = i => `hsl(${{(i * 47) % 360}}, 65%, 55%)`;
@@ -217,6 +303,20 @@ const DATA = {data};
   }}, {{ passive: false }});
 
   let selectedId = null;
+  function reveal(id) {{
+    // Make a node visible again before selecting it: clear a manual hide and,
+    // if its kind filter is off, switch that filter on.
+    const n = byId[id];
+    if (!n) return;
+    hiddenIds.delete(id);
+    if (!kindVisible[kindOf(n)]) {{
+      kindVisible[kindOf(n)] = true;
+      const cb = document.querySelector(`#filters input[data-kind="${{CSS.escape(kindOf(n))}}"]`);
+      if (cb) cb.checked = true;
+    }}
+    refreshAll();
+  }}
+
   function highlight(id) {{
     selectedId = id;
     const neighbours = id ? adj[id] : null;
@@ -237,17 +337,58 @@ const DATA = {data};
       <div class="label">${{escape(n.label)}}</div>
       <div style="color:var(--muted)">${{escape(n.source_file || "")}} ${{escape(n.source_location || "")}}</div>
       <div style="color:var(--muted); margin-top:4px">kind: ${{escape(n.kind || "—")}}</div>
+      <span class="hide-btn" id="hide-btn">hide node</span>
       <div class="neighbors">${{neigh.map(m =>
-        `<div data-id="${{escape(m.id)}}">↳ ${{escape(m.label)}}</div>`
+        `<div data-id="${{escape(m.id)}}">↳ ${{escape(m.label)}}${{isVisible(m) ? "" : ' <span class="hidden-tag">(hidden)</span>'}}</div>`
       ).join("")}}</div>`;
+    sel.querySelector('#hide-btn').addEventListener("click", () => {{
+      hiddenIds.add(id);
+      selectedId = null;
+      highlight(null);
+      refreshAll();
+    }});
     sel.querySelectorAll("[data-id]").forEach(el => {{
-      el.addEventListener("click", () => highlight(el.getAttribute("data-id")));
+      el.addEventListener("click", () => {{
+        const nid = el.getAttribute("data-id");
+        reveal(nid);
+        highlight(nid);
+      }});
     }});
   }}
 
   function escape(s) {{
     return String(s).replace(/[&<>"']/g, c => ({{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}})[c]);
   }}
+
+  // Hover tooltip: full node id plus every relation in both directions.
+  const tooltip = document.getElementById("tooltip");
+  const PASSIVE = {{ calls: "called by", imports: "imported by", contains: "contained by",
+    references: "referenced by", inherits: "inherited by", implements: "implemented by" }};
+  function tooltipHtml(n) {{
+    const rows = (nodeEdges[n.id] || []).map(x => {{
+      const m = byId[x.other];
+      const lbl = m ? m.label : x.other;
+      return x.dir === "out"
+        ? `<div>${{escape(x.rel)}} → ${{escape(lbl)}}</div>`
+        : `<div>← ${{escape(PASSIVE[x.rel] || x.rel + " by")}} ${{escape(lbl)}}</div>`;
+    }});
+    const extra = rows.length > 12
+      ? `<div class="muted">+${{rows.length - 12}} more</div>` : "";
+    return `<div class="tid">${{escape(n.id)}}</div>
+      <div class="muted">kind: ${{escape(n.kind || "—")}}</div>
+      ${{rows.slice(0, 12).join("")}}${{extra}}`;
+  }}
+  svg.addEventListener("mousemove", e => {{
+    const gEl = e.target.closest(".node");
+    const n = gEl ? byId[gEl.getAttribute("data-id")] : null;
+    if (!n) {{ tooltip.style.display = "none"; return; }}
+    tooltip.innerHTML = tooltipHtml(n);
+    tooltip.style.display = "block";
+    const rect = wrap.getBoundingClientRect();
+    tooltip.style.left = `${{e.clientX - rect.left + 14}}px`;
+    tooltip.style.top = `${{e.clientY - rect.top + 14}}px`;
+  }});
+  svg.addEventListener("mouseleave", () => {{ tooltip.style.display = "none"; }});
 
   // Search panel.
   const qInput = document.getElementById("q");
@@ -257,10 +398,14 @@ const DATA = {data};
     if (!q) {{ results.innerHTML = ""; return; }}
     const matches = nodes.filter(n => n.label.toLowerCase().includes(q)).slice(0, 12);
     results.innerHTML = matches.map(n =>
-      `<div class="result" data-id="${{escape(n.id)}}">${{escape(n.label)}}</div>`
+      `<div class="result" data-id="${{escape(n.id)}}">${{escape(n.label)}}${{isVisible(n) ? "" : ' <span class="hidden-tag">(hidden)</span>'}}</div>`
     ).join("");
     results.querySelectorAll(".result").forEach(el => {{
-      el.addEventListener("click", () => highlight(el.getAttribute("data-id")));
+      el.addEventListener("click", () => {{
+        const nid = el.getAttribute("data-id");
+        reveal(nid);
+        highlight(nid);
+      }});
     }});
   }});
 
@@ -269,9 +414,11 @@ const DATA = {data};
     let svgHtml = "";
     for (const e of edges) {{
       const a = byId[e.source], b = byId[e.target];
+      if (!isVisible(a) || !isVisible(b)) continue;
       svgHtml += `<line class="link ${{escape(e.relation)}}" data-source="${{escape(e.source)}}" data-target="${{escape(e.target)}}" x1="${{a.x*scale+tx}}" y1="${{a.y*scale+ty}}" x2="${{b.x*scale+tx}}" y2="${{b.y*scale+ty}}"/>`;
     }}
     for (const n of nodes) {{
+      if (!isVisible(n)) continue;
       const r = 4 + Math.min(8, (adj[n.id].size || 0) / 2);
       const color = palette(n.community ?? 0);
       svgHtml += `<g class="node" data-id="${{escape(n.id)}}" transform="translate(${{n.x*scale+tx}},${{n.y*scale+ty}})">
@@ -297,6 +444,8 @@ const DATA = {data};
     render();
     if (ticks > 0) requestAnimationFrame(step);
   }}
+  refreshCounts();
+  refreshHiddenList();
   step();
 }})();
 </script>
@@ -308,4 +457,39 @@ const DATA = {data};
         communities = a.community_count,
         data = data_json,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::analyze::Analysis;
+    use crate::schema::Node;
+
+    #[test]
+    fn html_carries_visibility_controls() {
+        let mut g = KnowledgeGraph::new();
+        g.add_node_record(Node {
+            id: "f.rs::Widget::render".into(),
+            label: "render".into(),
+            kind: Some("method".into()),
+            ..Default::default()
+        });
+        let a = Analysis {
+            node_count: 1,
+            edge_count: 0,
+            community_count: 1,
+            god_nodes: vec![],
+            ambiguous_edge_count: 0,
+            dedup_imports_resolved: 0,
+            glob_imports_skipped: 0,
+            modularity: 0.0,
+        };
+        let html = render_html(&g, &a);
+        assert!(html.contains(r#"<div class="filters" id="filters">"#));
+        assert!(html.contains(r#"<div class="hidden-list" id="hidden-list">"#));
+        assert!(html.contains("DEFAULT_HIDDEN_KINDS"));
+        assert!(html.contains(r#""method""#));
+        assert!(html.contains(r#"<div id="tooltip"></div>"#));
+        assert!(html.contains("tooltipHtml"));
+    }
 }
