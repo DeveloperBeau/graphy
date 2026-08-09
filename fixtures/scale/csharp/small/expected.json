@@ -1,0 +1,60 @@
+{
+  "min_nodes": 45,
+  "nodes": [
+    {
+      "label": "Options",
+      "kind": "class"
+    },
+    {
+      "label": "ArgParser",
+      "kind": "class"
+    },
+    {
+      "label": "Renderer",
+      "kind": "class"
+    },
+    {
+      "label": "Theme",
+      "kind": "class"
+    },
+    {
+      "label": "Border",
+      "kind": "class"
+    },
+    {
+      "label": "Parse",
+      "kind": "method"
+    },
+    {
+      "label": "Named",
+      "kind": "method"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Cli/Options.cs",
+      "relation": "contains",
+      "target_ends": "Options.cs::Options"
+    },
+    {
+      "source_ends": "Cli/ArgParser.cs::Parse",
+      "relation": "returns",
+      "target_ends": "Options.cs::Options"
+    },
+    {
+      "source_ends": "Style/Theme.cs::Named",
+      "relation": "returns",
+      "target_ends": "Theme.cs::Theme"
+    },
+    {
+      "source_ends": "Render/Renderer.cs",
+      "relation": "imports",
+      "target_ends": "extern::TextPrint.Style"
+    },
+    {
+      "source_ends": "Program.cs",
+      "relation": "imports",
+      "target_ends": "extern::TextPrint.Cli"
+    }
+  ]
+}

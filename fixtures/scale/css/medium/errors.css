@@ -1,0 +1,10 @@
+/* component: errors */
+.error-banner {
+  background: #3a1f1c;
+  color: #f2b8ae;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+}
+.error-banner code {
+  color: #fff;
+}

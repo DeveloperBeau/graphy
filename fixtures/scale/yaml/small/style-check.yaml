@@ -1,0 +1,16 @@
+style_defaults: &style_defaults
+  runner: linux-small
+  timeout_minutes: 5
+
+format_check:
+  <<: *style_defaults
+  script: make fmt-diff
+  fail_fast: true
+
+spelling_audit:
+  <<: *style_defaults
+  script: codespell src/ docs/
+
+header_order:
+  <<: *style_defaults
+  script: ./scripts/include-order.sh

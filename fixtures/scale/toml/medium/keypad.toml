@@ -1,0 +1,11 @@
+layout = "numpad"
+
+[bindings]
+evaluate = "Enter"
+clear_entry = "Escape"
+backspace = "Backspace"
+memory_recall = "Ctrl+R"
+
+[repeat]
+initial_delay_ms = 400
+interval_ms = 60

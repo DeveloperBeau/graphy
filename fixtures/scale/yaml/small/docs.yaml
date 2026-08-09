@@ -1,0 +1,18 @@
+docs_defaults: &docs_defaults
+  runner: linux-small
+  timeout_minutes: 10
+  output_dir: site/
+
+render_manpages:
+  <<: *docs_defaults
+  script: make man
+  compress: gzip
+
+build_site:
+  <<: *docs_defaults
+  script: mkdocs build --strict
+
+link_audit:
+  <<: *docs_defaults
+  script: lychee site/
+  retries: 2

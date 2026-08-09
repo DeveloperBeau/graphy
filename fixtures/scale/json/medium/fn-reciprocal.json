@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "1/x",
+  "arity": 1,
+  "category": "arithmetic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "1/x(0.5)"
+}

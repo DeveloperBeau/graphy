@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "sd",
+  "arity": 1,
+  "category": "statistic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "sd(0.5)"
+}

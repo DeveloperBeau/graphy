@@ -1,0 +1,22 @@
+{
+  "min_nodes": 60,
+  "nodes": [
+    {"label": "parse_args", "kind": "function"},
+    {"label": "render", "kind": "function"},
+    {"label": "wrap_text", "kind": "function"},
+    {"label": "align_line", "kind": "function"},
+    {"label": "frame", "kind": "function"},
+    {"label": "Options", "kind": "struct"},
+    {"label": "PrintError", "kind": "enum"},
+    {"label": "Alignment", "kind": "enum"}
+  ],
+  "edges": [
+    {"source_ends": "src/cli.rs", "relation": "imports", "target_ends": "src/render.rs::render"},
+    {"source_ends": "src/render.rs", "relation": "imports", "target_ends": "src/wrap.rs::wrap_text"},
+    {"source_ends": "src/render.rs", "relation": "imports", "target_ends": "src/alignment.rs::align_line"},
+    {"source_ends": "src/config.rs", "relation": "imports", "target_ends": "src/errors.rs::PrintError"},
+    {"source_ends": "src/border.rs::frame", "relation": "calls", "target_ends": "src/border.rs::charset"},
+    {"source_ends": "src/theme.rs::colorize", "relation": "calls", "target_ends": "src/theme.rs::code_for"},
+    {"source_ends": "src/render.rs", "relation": "contains", "target_ends": "src/render.rs::render"}
+  ]
+}

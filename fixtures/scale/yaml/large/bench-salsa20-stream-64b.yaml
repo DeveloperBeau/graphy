@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 5000
+  cool_down_secs: 2
+
+salsa20-stream-64b:
+  setup:
+    <<: *defaults
+    cipher: salsa20
+    key_bits: 256
+    payload_bytes: 64
+  execute:
+    <<: *defaults
+    iterations: 500000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: salsa20-stream-64b

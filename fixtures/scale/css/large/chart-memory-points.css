@@ -1,0 +1,11 @@
+/* chart memory points */
+.chart-memory-points {
+  font-size: 0.75rem;
+  --chart-tone: hsl(216, 30%, 60%);
+}
+.chart-memory-points .tick {
+  stroke: #2a3441;
+}
+.chart-memory-points text {
+  fill: #9aa7b4;
+}

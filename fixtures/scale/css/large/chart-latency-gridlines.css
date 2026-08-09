@@ -1,0 +1,11 @@
+/* chart latency gridlines */
+.chart-latency-gridlines {
+  font-size: 0.75rem;
+  --chart-tone: hsl(125, 30%, 60%);
+}
+.chart-latency-gridlines .tick {
+  stroke: #2a3441;
+}
+.chart-latency-gridlines text {
+  fill: #9aa7b4;
+}

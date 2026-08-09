@@ -1,0 +1,83 @@
+{
+  "min_nodes": 400,
+  "nodes": [
+    {
+      "label": "caesar_encrypt",
+      "kind": "method"
+    },
+    {
+      "label": "check_caesar",
+      "kind": "method"
+    },
+    {
+      "label": "fnvhash_digest",
+      "kind": "method"
+    },
+    {
+      "label": "get_cipher",
+      "kind": "method"
+    },
+    {
+      "label": "round_trip",
+      "kind": "method"
+    },
+    {
+      "label": "run_all",
+      "kind": "method"
+    },
+    {
+      "label": "run_checks",
+      "kind": "method"
+    },
+    {
+      "label": "corpus_hash",
+      "kind": "method"
+    },
+    {
+      "label": "main",
+      "kind": "method"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "caesar_decrypt.rb::caesar_decrypt",
+      "relation": "calls",
+      "target_ends": "caesar_encrypt.rb::caesar_encrypt"
+    },
+    {
+      "source_ends": "check_caesar.rb::check_caesar",
+      "relation": "calls",
+      "target_ends": "caesar_encrypt.rb::caesar_encrypt"
+    },
+    {
+      "source_ends": "check_caesar.rb::check_caesar",
+      "relation": "calls",
+      "target_ends": "corpus_additive.rb::corpus_additive"
+    },
+    {
+      "source_ends": "check_fnvhash.rb::check_fnvhash",
+      "relation": "calls",
+      "target_ends": "fnvhash_digest.rb::fnvhash_digest"
+    },
+    {
+      "source_ends": "round_trip.rb::round_trip",
+      "relation": "calls",
+      "target_ends": "get_cipher.rb::get_cipher"
+    },
+    {
+      "source_ends": "run_all.rb::run_all",
+      "relation": "calls",
+      "target_ends": "round_trip.rb::round_trip"
+    },
+    {
+      "source_ends": "main.rb::main",
+      "relation": "calls",
+      "target_ends": "run_all.rb::run_all"
+    },
+    {
+      "source_ends": "main.rb::main",
+      "relation": "calls",
+      "target_ends": "run_checks.rb::run_checks"
+    }
+  ]
+}

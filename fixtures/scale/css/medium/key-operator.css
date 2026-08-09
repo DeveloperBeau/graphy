@@ -1,0 +1,11 @@
+/* component: key-operator */
+.key--operator {
+  background: var(--accent);
+  color: #fff;
+}
+.key--operator:disabled {
+  opacity: 0.4;
+}
+.key--operator.is-hidden {
+  display: none;
+}

@@ -1,0 +1,12 @@
+/* foundation z index */
+.foundation-z-index {
+  display: block;
+  --tone: hsl(78, 18%, 40%);
+}
+.foundation-z-index > * + * {
+  margin-top: 0.35rem;
+}
+.foundation-z-index[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

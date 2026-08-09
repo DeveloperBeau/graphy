@@ -1,0 +1,13 @@
+/* print overrides */
+.site-header, .site-footer {
+  display: none;
+}
+body {
+  background: #fff;
+  color: #000;
+}
+pre {
+  border: 1px solid #999;
+  background: #fff;
+  color: #000;
+}

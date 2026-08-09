@@ -1,0 +1,11 @@
+/* chart throughput points */
+.chart-throughput-points {
+  font-size: 0.75rem;
+  --chart-tone: hsl(86, 30%, 60%);
+}
+.chart-throughput-points .tick {
+  stroke: #2a3441;
+}
+.chart-throughput-points text {
+  fill: #9aa7b4;
+}

@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "sha256-stream-64b",
+  "cipher": "sha256",
+  "kind_of_primitive": "digest",
+  "keysize": 256,
+  "workload": "stream-64b",
+  "payload_bytes": 64,
+  "iterations": 500000,
+  "warmup": 5000,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

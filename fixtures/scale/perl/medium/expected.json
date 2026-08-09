@@ -1,0 +1,65 @@
+{
+  "min_nodes": 130,
+  "nodes": [
+    {
+      "label": "Calc::Lexing::Lexer",
+      "kind": "package"
+    },
+    {
+      "label": "Calc::Parsing::TokenStream",
+      "kind": "package"
+    },
+    {
+      "label": "Calc::Eval::Evaluator",
+      "kind": "package"
+    },
+    {
+      "label": "Calc::Functions::FunctionRegistry",
+      "kind": "package"
+    },
+    {
+      "label": "Calc::Memory::HistoryLog",
+      "kind": "package"
+    },
+    {
+      "label": "Calc::Repl::Repl",
+      "kind": "package"
+    },
+    {
+      "label": "next_token",
+      "kind": "sub"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "lib/Calc/Lexing/Lexer.pm",
+      "relation": "contains",
+      "target_ends": "Lexer.pm::Calc::Lexing::Lexer"
+    },
+    {
+      "source_ends": "lib/Calc/Lexing/Lexer.pm",
+      "relation": "imports",
+      "target_ends": "SymbolTokens.pm::Calc::Lexing::SymbolTokens"
+    },
+    {
+      "source_ends": "lib/Calc/Parsing/TokenStream.pm",
+      "relation": "imports",
+      "target_ends": "Lexer.pm::Calc::Lexing::Lexer"
+    },
+    {
+      "source_ends": "lib/Calc/Functions/StandardLibrary.pm",
+      "relation": "imports",
+      "target_ends": "TrigFunctions.pm::Calc::Functions::TrigFunctions"
+    },
+    {
+      "source_ends": "lib/Calc/Repl/ReplContext.pm",
+      "relation": "imports",
+      "target_ends": "StandardLibrary.pm::Calc::Functions::StandardLibrary"
+    },
+    {
+      "source_ends": "calc.pl",
+      "relation": "imports",
+      "target_ends": "Repl.pm::Calc::Repl::Repl"
+    }
+  ]
+}

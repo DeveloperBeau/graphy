@@ -1,0 +1,21 @@
+/* bundle: tables */
+@import "table-frame.css";
+@import "table-head.css";
+@import "table-row.css";
+@import "table-cell.css";
+@import "table-sort.css";
+@import "table-sticky.css";
+@import "table-zebra.css";
+@import "table-compact.css";
+@import "table-numeric.css";
+@import "table-delta.css";
+@import "table-footnote.css";
+@import "table-loading.css";
+@import "table-empty.css";
+@import "table-pager.css";
+@import "table-caption.css";
+@import "table-selection.css";
+@import "table-pinned.css";
+@import "table-units.css";
+@import "table-overflow.css";
+@import "table-export.css";

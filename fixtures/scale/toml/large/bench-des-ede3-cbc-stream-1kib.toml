@@ -1,0 +1,20 @@
+schema_rev = 3
+suite = "cipher-matrix"
+
+[run.des_ede3_cbc_stream_1kib]
+primitive = "des-ede3-cbc"
+kind_of_primitive = "cipher"
+workload = "stream-1kib"
+payload_bytes = 1024
+iterations = 200000
+warmup_iterations = 2000
+
+[keying]
+key_bits = 256
+rotate_interval = 10000
+zeroize_after = true
+
+[recording]
+database = "results/crypto.db"
+table_name = "runs"
+flush_every = 500

@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 5000
+  cool_down_secs: 2
+
+sha3-512-stream-64b:
+  setup:
+    <<: *defaults
+    cipher: sha3-512
+    key_bits: 512
+    payload_bytes: 64
+  execute:
+    <<: *defaults
+    iterations: 500000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: sha3-512-stream-64b

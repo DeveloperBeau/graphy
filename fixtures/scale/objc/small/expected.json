@@ -1,0 +1,56 @@
+{
+  "min_nodes": 40,
+  "nodes": [
+    {
+      "label": "TPOptions",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "TPArgParser",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "TPRenderer",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "TPBorder",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "defaults",
+      "kind": "method?ambiguous"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "TPArgParser.h",
+      "relation": "imports",
+      "target_ends": "extern::TPOptions.h"
+    },
+    {
+      "source_ends": "TPRenderer.m",
+      "relation": "imports",
+      "target_ends": "extern::TPBorder.h"
+    },
+    {
+      "source_ends": "main.m",
+      "relation": "imports",
+      "target_ends": "extern::TPRenderer.h"
+    },
+    {
+      "source_ends": "TPOptions.m",
+      "relation": "contains",
+      "target_ends": "TPOptions.m::defaults"
+    },
+    {
+      "source_ends": "main.m",
+      "relation": "contains",
+      "target_ends": "main.m::main"
+    }
+  ]
+}

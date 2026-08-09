@@ -1,0 +1,11 @@
+/* accent grain */
+.accent-grain {
+  --cipher-accent: hsl(201, 55%, 48%);
+}
+.accent-grain .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-grain .legend-swatch {
+  background: var(--cipher-accent);
+}

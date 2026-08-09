@@ -1,0 +1,12 @@
+/* table sticky */
+.table-sticky {
+  display: block;
+  --tone: hsl(159, 18%, 40%);
+}
+.table-sticky > * + * {
+  margin-top: 0.35rem;
+}
+.table-sticky[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

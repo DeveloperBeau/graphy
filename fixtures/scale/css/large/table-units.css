@@ -1,0 +1,12 @@
+/* table units */
+.table-units {
+  display: block;
+  --tone: hsl(315, 18%, 40%);
+}
+.table-units > * + * {
+  margin-top: 0.35rem;
+}
+.table-units[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

@@ -1,0 +1,83 @@
+{
+  "min_nodes": 130,
+  "nodes": [
+    {
+      "label": "tokenize",
+      "kind": "function"
+    },
+    {
+      "label": "apply_op",
+      "kind": "function"
+    },
+    {
+      "label": "evaluate",
+      "kind": "function"
+    },
+    {
+      "label": "History",
+      "kind": "class"
+    },
+    {
+      "label": "run_batch",
+      "kind": "function"
+    },
+    {
+      "label": "trig_sine",
+      "kind": "function"
+    },
+    {
+      "label": "guard_number",
+      "kind": "function"
+    },
+    {
+      "label": "apply_named",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "parser.py::to_rpn",
+      "relation": "calls",
+      "target_ends": "lexer.py::tokenize"
+    },
+    {
+      "source_ends": "evaluator.py::evaluate",
+      "relation": "calls",
+      "target_ends": "dispatch.py::apply_op"
+    },
+    {
+      "source_ends": "repl.py::run_batch",
+      "relation": "calls",
+      "target_ends": "evaluator.py::evaluate"
+    },
+    {
+      "source_ends": "functions/trig_sine.py::trig_sine",
+      "relation": "calls",
+      "target_ends": "mathutil.py::guard_number"
+    },
+    {
+      "source_ends": "functions/log_natural.py::log_natural",
+      "relation": "calls",
+      "target_ends": "mathutil.py::guard_positive"
+    },
+    {
+      "source_ends": "funcs.py::full_table",
+      "relation": "calls",
+      "target_ends": "registry_trig.py::trig_table"
+    },
+    {
+      "source_ends": "registry/registry_trig.py",
+      "relation": "imports",
+      "target_ends": "functions/trig_sine.py::trig_sine"
+    },
+    {
+      "source_ends": "main.py::main",
+      "relation": "calls",
+      "target_ends": "funcs.py::apply_named"
+    }
+  ]
+}

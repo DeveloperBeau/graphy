@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 200
+  cool_down_secs: 2
+
+salsa20-bulk-64kib:
+  setup:
+    <<: *defaults
+    cipher: salsa20
+    key_bits: 256
+    payload_bytes: 65536
+  execute:
+    <<: *defaults
+    iterations: 20000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: salsa20-bulk-64kib

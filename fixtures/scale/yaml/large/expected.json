@@ -1,0 +1,64 @@
+{
+  "min_nodes": 3371,
+  "nodes": [
+    {
+      "label": "aes-128-gcm-bulk-4kib",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "chacha20-poly1305-stream-64b",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "sha3-256-bulk-1mib",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "blake3-bulk-64kib",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "serpent-cbc-bulk-4kib",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "hmac-sha512-stream-1kib",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "full_matrix",
+      "kind": "yaml_key"
+    },
+    {
+      "label": "primary_db",
+      "kind": "yaml_key"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "bench-aes-128-gcm-bulk-4kib.yaml::setup",
+      "relation": "references",
+      "target_ends": "bench-aes-128-gcm-bulk-4kib.yaml::defaults"
+    },
+    {
+      "source_ends": "bench-chacha20-poly1305-stream-64b.yaml::execute",
+      "relation": "references",
+      "target_ends": "bench-chacha20-poly1305-stream-64b.yaml::defaults"
+    },
+    {
+      "source_ends": "bench-blake3-bulk-64kib.yaml::record",
+      "relation": "references",
+      "target_ends": "bench-blake3-bulk-64kib.yaml::defaults"
+    },
+    {
+      "source_ends": "suite.yaml::full_matrix",
+      "relation": "references",
+      "target_ends": "suite.yaml::suite_defaults"
+    },
+    {
+      "source_ends": "results-db.yaml",
+      "relation": "contains",
+      "target_ends": "results-db.yaml::primary_db"
+    }
+  ]
+}

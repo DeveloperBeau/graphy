@@ -1,0 +1,11 @@
+/* accent present */
+.accent-present {
+  --cipher-accent: hsl(224, 55%, 48%);
+}
+.accent-present .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-present .legend-swatch {
+  background: var(--cipher-accent);
+}

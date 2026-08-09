@@ -1,0 +1,20 @@
+build_defaults: &build_defaults
+  runner: linux-amd64
+  timeout_minutes: 15
+  artifacts_dir: out/
+
+compile_cli:
+  <<: *build_defaults
+  script: make textprint
+  cache_key: obj-v4
+
+static_analysis:
+  <<: *build_defaults
+  script: make lint-strict
+  fail_on_warning: true
+
+package_tarball:
+  <<: *build_defaults
+  script: make dist
+  needs:
+    - compile_cli

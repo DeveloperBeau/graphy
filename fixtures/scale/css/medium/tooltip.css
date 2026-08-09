@@ -1,0 +1,14 @@
+/* component: tooltip */
+.key-tooltip {
+  position: absolute;
+  background: #000;
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+.key-tooltip::after {
+  content: '';
+  border: 4px solid transparent;
+  border-top-color: #000;
+}

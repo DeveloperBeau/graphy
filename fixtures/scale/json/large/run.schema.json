@@ -1,0 +1,32 @@
+{
+  "$id": "run.schema.json",
+  "title": "BenchmarkRun",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "primitive": {
+      "$ref": "cipher.schema.json"
+    },
+    "shape": {
+      "$ref": "workload.schema.json"
+    },
+    "host": {
+      "$ref": "environment.schema.json"
+    },
+    "sink": {
+      "$ref": "results-db.schema.json"
+    },
+    "iterations": {
+      "type": "integer"
+    },
+    "warmup": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "run_id",
+    "iterations"
+  ]
+}

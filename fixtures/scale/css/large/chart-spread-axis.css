@@ -1,0 +1,11 @@
+/* chart spread axis */
+.chart-spread-axis {
+  font-size: 0.75rem;
+  --chart-tone: hsl(307, 30%, 60%);
+}
+.chart-spread-axis .tick {
+  stroke: #2a3441;
+}
+.chart-spread-axis text {
+  fill: #9aa7b4;
+}

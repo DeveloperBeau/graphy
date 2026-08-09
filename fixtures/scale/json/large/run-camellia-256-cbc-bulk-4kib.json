@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "camellia-256-cbc-bulk-4kib",
+  "cipher": "camellia-256-cbc",
+  "kind_of_primitive": "cipher",
+  "keysize": 256,
+  "workload": "bulk-4kib",
+  "payload_bytes": 4096,
+  "iterations": 100000,
+  "warmup": 1000,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

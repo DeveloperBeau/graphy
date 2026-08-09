@@ -1,0 +1,64 @@
+{
+  "min_nodes": 140,
+  "nodes": [
+    {
+      "label": "wrap",
+      "kind": "table"
+    },
+    {
+      "label": "margins",
+      "kind": "table"
+    },
+    {
+      "label": "banner",
+      "kind": "table"
+    },
+    {
+      "label": "pdf",
+      "kind": "table"
+    },
+    {
+      "label": "monospace",
+      "kind": "table"
+    },
+    {
+      "label": "wrap_width",
+      "kind": "pair"
+    },
+    {
+      "label": "default_theme",
+      "kind": "pair"
+    },
+    {
+      "label": "color_depth",
+      "kind": "pair"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "layout.toml",
+      "relation": "contains",
+      "target_ends": "layout.toml::wrap"
+    },
+    {
+      "source_ends": "layout.toml",
+      "relation": "contains",
+      "target_ends": "layout.toml::wrap_width"
+    },
+    {
+      "source_ends": "printer.toml",
+      "relation": "contains",
+      "target_ends": "printer.toml::banner"
+    },
+    {
+      "source_ends": "export.toml",
+      "relation": "contains",
+      "target_ends": "export.toml::pdf"
+    },
+    {
+      "source_ends": "fonts.toml",
+      "relation": "contains",
+      "target_ends": "fonts.toml::monospace"
+    }
+  ]
+}

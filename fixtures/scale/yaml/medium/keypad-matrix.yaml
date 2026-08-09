@@ -1,0 +1,12 @@
+keypad_defaults: &keypad_defaults
+  runner: linux-small
+  timeout_minutes: 5
+  layouts: qwerty numpad
+
+binding_conflicts:
+  <<: *keypad_defaults
+  script: calc keys --conflicts
+
+reachability_map:
+  <<: *keypad_defaults
+  script: calc keys --map

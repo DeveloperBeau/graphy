@@ -1,0 +1,48 @@
+{
+  "min_nodes": 63,
+  "nodes": [
+    {
+      "label": "applyPreset",
+      "kind": "function"
+    },
+    {
+      "label": "choose",
+      "kind": "function"
+    },
+    {
+      "label": "severityOf",
+      "kind": "function"
+    },
+    {
+      "label": "flipScheme",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "App.svelte",
+      "relation": "imports",
+      "target_ends": "AppHeader.svelte/AppHeader"
+    },
+    {
+      "source_ends": "App.svelte",
+      "relation": "imports",
+      "target_ends": "Toolbar.svelte/Toolbar"
+    },
+    {
+      "source_ends": "Toolbar.svelte",
+      "relation": "imports",
+      "target_ends": "PresetPicker.svelte/PresetPicker"
+    },
+    {
+      "source_ends": "AppHeader.svelte",
+      "relation": "imports",
+      "target_ends": "ThemeToggle.svelte/ThemeToggle"
+    },
+    {
+      "source_ends": "PreviewPane.svelte",
+      "relation": "imports",
+      "target_ends": "OutputLine.svelte/OutputLine"
+    }
+  ]
+}

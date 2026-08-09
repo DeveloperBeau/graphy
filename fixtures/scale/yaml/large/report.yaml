@@ -1,0 +1,17 @@
+report_defaults: &report_defaults
+  source_db: results/crypto.db
+  baseline_branch: main
+
+render_html:
+  <<: *report_defaults
+  template: report/matrix.html
+  sparklines: true
+
+render_csv:
+  <<: *report_defaults
+  columns: cipher workload mean_ns p99_ns
+
+regression_gate:
+  <<: *report_defaults
+  threshold_percent: 5
+  fail_build: true

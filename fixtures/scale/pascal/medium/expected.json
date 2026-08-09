@@ -1,0 +1,69 @@
+{
+  "min_nodes": 128,
+  "nodes": [
+    {
+      "label": "EvalAst",
+      "kind": "function"
+    },
+    {
+      "label": "Dispatch",
+      "kind": "function"
+    },
+    {
+      "label": "Scan",
+      "kind": "function"
+    },
+    {
+      "label": "ParseTokens",
+      "kind": "function"
+    },
+    {
+      "label": "StepRepl",
+      "kind": "function"
+    },
+    {
+      "label": "OpLevel",
+      "kind": "function"
+    },
+    {
+      "label": "FormatNumber",
+      "kind": "function"
+    },
+    {
+      "label": "FnHypot",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "UEvaluator.pas",
+      "relation": "imports",
+      "target_ends": "extern::UAst, UEnvironment, URegistry"
+    },
+    {
+      "source_ends": "UParser.pas",
+      "relation": "imports",
+      "target_ends": "extern::UToken, UScanner, UAst, UPrecedence, UGrammar"
+    },
+    {
+      "source_ends": "URepl.pas",
+      "relation": "imports",
+      "target_ends": "extern::UScanner, UParser, UAst, UEnvironment, UEvaluator, UHistory"
+    },
+    {
+      "source_ends": "URegistry.pas",
+      "relation": "imports",
+      "target_ends": "extern::UFnSqrt, UFnSin, UFnCos, UFnExp, UFnLn, UFnPow"
+    },
+    {
+      "source_ends": "UEvaluator.pas",
+      "relation": "contains",
+      "target_ends": "UEvaluator.pas::EvalAst"
+    },
+    {
+      "source_ends": "URegistry.pas",
+      "relation": "contains",
+      "target_ends": "URegistry.pas::Dispatch"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "min_nodes": 209,
+  "nodes": [
+    {
+      "label": "users",
+      "kind": "table"
+    },
+    {
+      "label": "sessions",
+      "kind": "table"
+    },
+    {
+      "label": "registers",
+      "kind": "table"
+    },
+    {
+      "label": "expressions",
+      "kind": "table"
+    },
+    {
+      "label": "tape_entries",
+      "kind": "table"
+    },
+    {
+      "label": "active_sessions",
+      "kind": "view"
+    },
+    {
+      "label": "fn_notes_add",
+      "kind": "table"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "sessions.sql::sessions",
+      "relation": "references",
+      "target_ends": "::users"
+    },
+    {
+      "source_ends": "registers.sql::registers",
+      "relation": "references",
+      "target_ends": "::users"
+    },
+    {
+      "source_ends": "expressions.sql::expressions",
+      "relation": "references",
+      "target_ends": "::sessions"
+    },
+    {
+      "source_ends": "tape_entries.sql::tape_entries",
+      "relation": "references",
+      "target_ends": "::expressions"
+    },
+    {
+      "source_ends": "fn_notes_add.sql::fn_notes_add",
+      "relation": "references",
+      "target_ends": "::functions"
+    },
+    {
+      "source_ends": "reporting.sql",
+      "relation": "contains",
+      "target_ends": "reporting.sql::active_sessions"
+    }
+  ]
+}

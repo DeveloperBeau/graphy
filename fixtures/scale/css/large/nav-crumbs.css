@@ -1,0 +1,12 @@
+/* nav crumbs */
+.nav-crumbs {
+  display: block;
+  --tone: hsl(240, 18%, 40%);
+}
+.nav-crumbs > * + * {
+  margin-top: 0.35rem;
+}
+.nav-crumbs[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

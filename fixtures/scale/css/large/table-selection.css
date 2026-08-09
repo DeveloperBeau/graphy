@@ -1,0 +1,12 @@
+/* table selection */
+.table-selection {
+  display: block;
+  --tone: hsl(289, 18%, 40%);
+}
+.table-selection > * + * {
+  margin-top: 0.35rem;
+}
+.table-selection[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

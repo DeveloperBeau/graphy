@@ -1,0 +1,11 @@
+/* chart memory gridlines */
+.chart-memory-gridlines {
+  font-size: 0.75rem;
+  --chart-tone: hsl(190, 30%, 60%);
+}
+.chart-memory-gridlines .tick {
+  stroke: #2a3441;
+}
+.chart-memory-gridlines text {
+  fill: #9aa7b4;
+}

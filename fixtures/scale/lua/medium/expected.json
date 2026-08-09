@@ -1,0 +1,79 @@
+{
+  "min_nodes": 40,
+  "nodes": [
+    {
+      "label": "tokenize",
+      "kind": "function"
+    },
+    {
+      "label": "apply_op",
+      "kind": "function"
+    },
+    {
+      "label": "to_rpn",
+      "kind": "function"
+    },
+    {
+      "label": "evaluate",
+      "kind": "function"
+    },
+    {
+      "label": "run_batch",
+      "kind": "function"
+    },
+    {
+      "label": "trig_sine",
+      "kind": "function"
+    },
+    {
+      "label": "guard_number",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "lexer.lua::tokenize",
+      "relation": "calls",
+      "target_ends": "tokens.lua::make_token"
+    },
+    {
+      "source_ends": "parser.lua::to_rpn",
+      "relation": "calls",
+      "target_ends": "lexer.lua::tokenize"
+    },
+    {
+      "source_ends": "parser.lua::to_rpn",
+      "relation": "calls",
+      "target_ends": "dispatch.lua::precedence"
+    },
+    {
+      "source_ends": "evaluator.lua::evaluate",
+      "relation": "calls",
+      "target_ends": "parser.lua::to_rpn"
+    },
+    {
+      "source_ends": "evaluator.lua::evaluate",
+      "relation": "calls",
+      "target_ends": "dispatch.lua::apply_op"
+    },
+    {
+      "source_ends": "repl.lua::run_batch",
+      "relation": "calls",
+      "target_ends": "evaluator.lua::evaluate"
+    },
+    {
+      "source_ends": "trig_sine.lua::trig_sine",
+      "relation": "calls",
+      "target_ends": "mathutil.lua::guard_number"
+    },
+    {
+      "source_ends": "main.lua::main",
+      "relation": "calls",
+      "target_ends": "repl.lua::run_batch"
+    }
+  ]
+}

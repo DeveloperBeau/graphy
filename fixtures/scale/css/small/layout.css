@@ -1,0 +1,14 @@
+/* page layout */
+.page-column {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+}
+.two-up {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.flag-table-wrap {
+  overflow-x: auto;
+}

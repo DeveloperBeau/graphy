@@ -1,0 +1,78 @@
+{
+  "min_nodes": 120,
+  "nodes": [
+    {
+      "label": "tokenize",
+      "kind": "function"
+    },
+    {
+      "label": "applyOp",
+      "kind": "function"
+    },
+    {
+      "label": "evaluate",
+      "kind": "function"
+    },
+    {
+      "label": "History",
+      "kind": "class"
+    },
+    {
+      "label": "runBatch",
+      "kind": "function"
+    },
+    {
+      "label": "trigSine",
+      "kind": "function"
+    },
+    {
+      "label": "guardNumber",
+      "kind": "function"
+    },
+    {
+      "label": "applyNamed",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "parser.js::toRpn",
+      "relation": "calls",
+      "target_ends": "lexer.js::tokenize"
+    },
+    {
+      "source_ends": "evaluator.js::evaluate",
+      "relation": "calls",
+      "target_ends": "dispatch.js::applyOp"
+    },
+    {
+      "source_ends": "repl.js::runBatch",
+      "relation": "calls",
+      "target_ends": "evaluator.js::evaluate"
+    },
+    {
+      "source_ends": "functions/trigSine.js::trigSine",
+      "relation": "calls",
+      "target_ends": "mathutil.js::guardNumber"
+    },
+    {
+      "source_ends": "functions/logNatural.js::logNatural",
+      "relation": "calls",
+      "target_ends": "mathutil.js::guardPositive"
+    },
+    {
+      "source_ends": "funcs.js::fullTable",
+      "relation": "calls",
+      "target_ends": "registryTrig.js::trigTable"
+    },
+    {
+      "source_ends": "main.js::main",
+      "relation": "calls",
+      "target_ends": "funcs.js::applyNamed"
+    }
+  ]
+}

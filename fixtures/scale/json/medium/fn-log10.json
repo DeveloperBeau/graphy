@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "log",
+  "arity": 1,
+  "category": "logarithmic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "log(0.5)"
+}

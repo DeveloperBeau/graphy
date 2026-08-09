@@ -1,0 +1,78 @@
+{
+  "min_nodes": 120,
+  "nodes": [
+    {
+      "label": "tokenize",
+      "kind": "method"
+    },
+    {
+      "label": "applyOp",
+      "kind": "method"
+    },
+    {
+      "label": "evaluate",
+      "kind": "method"
+    },
+    {
+      "label": "History",
+      "kind": "class"
+    },
+    {
+      "label": "runBatch",
+      "kind": "method"
+    },
+    {
+      "label": "fullTable",
+      "kind": "method"
+    },
+    {
+      "label": "guardNumber",
+      "kind": "method"
+    },
+    {
+      "label": "applyNamed",
+      "kind": "method"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "parser.ts::toRpn",
+      "relation": "calls",
+      "target_ends": "lexer.ts::tokenize"
+    },
+    {
+      "source_ends": "evaluator.ts::evaluate",
+      "relation": "calls",
+      "target_ends": "dispatch.ts::applyOp"
+    },
+    {
+      "source_ends": "repl.ts::runBatch",
+      "relation": "calls",
+      "target_ends": "evaluator.ts::evaluate"
+    },
+    {
+      "source_ends": "TrigSine.ts::apply",
+      "relation": "calls",
+      "target_ends": "mathutil.ts::guardNumber"
+    },
+    {
+      "source_ends": "TrigSine.ts",
+      "relation": "contains",
+      "target_ends": "TrigSine.ts::apply"
+    },
+    {
+      "source_ends": "main.ts::main",
+      "relation": "calls",
+      "target_ends": "funcs.ts::applyNamed"
+    },
+    {
+      "source_ends": "funcs.ts::applyNamed",
+      "relation": "calls",
+      "target_ends": "funcs.ts::fullTable"
+    }
+  ]
+}

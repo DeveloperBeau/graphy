@@ -1,0 +1,25 @@
+{
+  "min_nodes": 45,
+  "nodes": [
+    { "label": "Renderer", "kind": "class" },
+    { "label": "Document", "kind": "class" },
+    { "label": "RenderOptions", "kind": "class" },
+    { "label": "Aligner", "kind": "object" },
+    { "label": "Wrapper", "kind": "object" },
+    { "label": "TextUtil", "kind": "object" },
+    { "label": "wrap", "kind": "function" },
+    { "label": "align", "kind": "function" },
+    { "label": "byName", "kind": "function" },
+    { "label": "padTo", "kind": "function" }
+  ],
+  "edges": [
+    { "source_ends": "Renderer.scala::render", "relation": "calls", "target_ends": "Wrapper.scala::wrap" },
+    { "source_ends": "Renderer.scala::render", "relation": "calls", "target_ends": "Aligner.scala::align" },
+    { "source_ends": "Renderer.scala::render", "relation": "calls", "target_ends": "Frames.scala::byName" },
+    { "source_ends": "Main.scala::main", "relation": "calls", "target_ends": "Document.scala::fromText" },
+    { "source_ends": "Aligner.scala::alignCenter", "relation": "calls", "target_ends": "TextUtil.scala::padTo" },
+    { "source_ends": "Main.scala", "relation": "imports", "target_ends": "Renderer.scala::Renderer" },
+    { "source_ends": "cli/ArgParser.scala", "relation": "imports", "target_ends": "RenderOptions.scala::RenderOptions" },
+    { "source_ends": "render/Renderer.scala", "relation": "contains", "target_ends": "Renderer.scala::render" }
+  ]
+}

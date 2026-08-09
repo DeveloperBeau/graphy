@@ -1,0 +1,10 @@
+/* theme: amber */
+[data-theme='amber'] {
+  --bg: hsl(330, 15%, 19%);
+  --panel: hsl(330, 14%, 25%);
+  --accent: hsl(110, 45%, 52%);
+  --key: hsl(330, 12%, 31%);
+}
+[data-theme='amber'] .display-expression {
+  opacity: 0.66;
+}

@@ -1,0 +1,11 @@
+/* accent prince */
+.accent-prince {
+  --cipher-accent: hsl(302, 55%, 48%);
+}
+.accent-prince .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-prince .legend-swatch {
+  background: var(--cipher-accent);
+}

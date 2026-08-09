@@ -1,0 +1,19 @@
+calc_build_defaults: &calc_build_defaults
+  runner: linux-amd64
+  timeout_minutes: 15
+  cache: sccache
+
+compile_calc:
+  <<: *calc_build_defaults
+  script: cargo build --release
+  features: decimal128
+
+clippy_gate:
+  <<: *calc_build_defaults
+  script: cargo clippy -- -D warnings
+
+package_calc:
+  <<: *calc_build_defaults
+  script: cargo dist build
+  needs:
+    - compile_calc

@@ -1,0 +1,56 @@
+{
+  "min_nodes": 67,
+  "nodes": [
+    {
+      "label": "inkroll",
+      "kind": "heading"
+    },
+    {
+      "label": "Why another formatter",
+      "kind": "heading"
+    },
+    {
+      "label": "Installation",
+      "kind": "heading"
+    },
+    {
+      "label": "Wrapping",
+      "kind": "heading"
+    },
+    {
+      "label": "Built-in presets",
+      "kind": "heading"
+    },
+    {
+      "label": "Exit codes",
+      "kind": "heading"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "index.md",
+      "relation": "references",
+      "target_ends": "link::installation.md"
+    },
+    {
+      "source_ends": "installation.md",
+      "relation": "references",
+      "target_ends": "link::usage.md"
+    },
+    {
+      "source_ends": "usage.md",
+      "relation": "references",
+      "target_ends": "link::presets.md"
+    },
+    {
+      "source_ends": "styles.md",
+      "relation": "references",
+      "target_ends": "link::wrapping.md"
+    },
+    {
+      "source_ends": "faq.md",
+      "relation": "references",
+      "target_ends": "link::colour-rules.md"
+    }
+  ]
+}

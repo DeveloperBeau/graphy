@@ -1,0 +1,11 @@
+/* accent noekeon */
+.accent-noekeon {
+  --cipher-accent: hsl(193, 55%, 48%);
+}
+.accent-noekeon .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-noekeon .legend-swatch {
+  background: var(--cipher-accent);
+}

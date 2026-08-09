@@ -1,0 +1,14 @@
+/* site header */
+.site-header {
+  background: var(--navy);
+  padding: 0.6rem 1rem;
+}
+.site-header a {
+  color: #e8ecf5;
+  margin-right: 0.8rem;
+  text-decoration: none;
+}
+.site-header .version-tag {
+  color: var(--amber);
+  font-size: 0.8rem;
+}

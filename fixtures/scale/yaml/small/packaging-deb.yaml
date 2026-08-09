@@ -1,0 +1,20 @@
+deb_defaults: &deb_defaults
+  runner: debian-12
+  timeout_minutes: 20
+  arch_list: amd64 arm64
+
+deb_package:
+  <<: *deb_defaults
+  script: dpkg-buildpackage -b
+  sign_changes: false
+
+lintian_pass:
+  <<: *deb_defaults
+  script: lintian --fail-on error
+  needs:
+    - deb_package
+
+apt_upload:
+  <<: *deb_defaults
+  script: ./scripts/apt-publish.sh
+  repo: textprint-stable

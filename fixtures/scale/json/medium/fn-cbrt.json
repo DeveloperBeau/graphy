@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "cbrt",
+  "arity": 1,
+  "category": "arithmetic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "cbrt(0.5)"
+}

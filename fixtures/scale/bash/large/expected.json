@@ -1,0 +1,79 @@
+{
+  "min_nodes": 700,
+  "nodes": [
+    {
+      "label": "caesar_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "vigenere_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "fnv1a_digest",
+      "kind": "function"
+    },
+    {
+      "label": "railfence_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "store_append",
+      "kind": "function"
+    },
+    {
+      "label": "progress_tick",
+      "kind": "function"
+    },
+    {
+      "label": "register_cipher",
+      "kind": "function"
+    },
+    {
+      "label": "xorroll_next_key",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "ciphers/index_shift.sh",
+      "relation": "imports",
+      "target_ends": "extern::./ciphers/caesar/runner.sh"
+    },
+    {
+      "source_ends": "ciphers/caesar/runner.sh",
+      "relation": "imports",
+      "target_ends": "extern::./ciphers/caesar/cipher.sh"
+    },
+    {
+      "source_ends": "ciphers/fnv1a/cipher.sh::fnv1a_hex",
+      "relation": "calls",
+      "target_ends": "ciphers/fnv1a/cipher.sh::fnv1a_digest"
+    },
+    {
+      "source_ends": "ciphers/beaufort/cipher.sh::beaufort_decrypt",
+      "relation": "calls",
+      "target_ends": "ciphers/beaufort/cipher.sh::beaufort_encrypt"
+    },
+    {
+      "source_ends": "ciphers/xorroll/cipher.sh::xorroll_encrypt",
+      "relation": "calls",
+      "target_ends": "ciphers/xorroll/cipher.sh::xorroll_next_key"
+    },
+    {
+      "source_ends": "core/report.sh::report_summary",
+      "relation": "calls",
+      "target_ends": "core/report.sh::report_line"
+    },
+    {
+      "source_ends": "ciphbench.sh",
+      "relation": "imports",
+      "target_ends": "extern::./core/store.sh"
+    },
+    {
+      "source_ends": "ciphbench.sh",
+      "relation": "contains",
+      "target_ends": "ciphbench.sh::main"
+    }
+  ]
+}

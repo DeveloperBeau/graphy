@@ -1,0 +1,12 @@
+/* panel frame */
+.panel-frame {
+  display: block;
+  --tone: hsl(141, 18%, 40%);
+}
+.panel-frame > * + * {
+  margin-top: 0.35rem;
+}
+.panel-frame[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

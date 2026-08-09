@@ -1,0 +1,65 @@
+{
+  "min_nodes": 259,
+  "nodes": [
+    {
+      "label": "Expr",
+      "kind": "data_type"
+    },
+    {
+      "label": "Token",
+      "kind": "data_type"
+    },
+    {
+      "label": "eval",
+      "kind": "function"
+    },
+    {
+      "label": "dispatch",
+      "kind": "function"
+    },
+    {
+      "label": "scan",
+      "kind": "function"
+    },
+    {
+      "label": "parse",
+      "kind": "function"
+    },
+    {
+      "label": "step",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Eval/Evaluator.hs",
+      "relation": "imports",
+      "target_ends": "Functions.Registry (dispatch)"
+    },
+    {
+      "source_ends": "Eval/Evaluator.hs",
+      "relation": "imports",
+      "target_ends": "Parser.Ast (Expr(..))"
+    },
+    {
+      "source_ends": "Parser/Parser.hs",
+      "relation": "imports",
+      "target_ends": "Lexer.Token (Token(..))"
+    },
+    {
+      "source_ends": "Repl/Loop.hs",
+      "relation": "imports",
+      "target_ends": "Parser.Parser (parse)"
+    },
+    {
+      "source_ends": "Eval/Evaluator.hs",
+      "relation": "contains",
+      "target_ends": "Eval/Evaluator.hs::eval"
+    },
+    {
+      "source_ends": "Functions/Registry.hs",
+      "relation": "contains",
+      "target_ends": "Functions/Registry.hs::dispatch"
+    }
+  ]
+}

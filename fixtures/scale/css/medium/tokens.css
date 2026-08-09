@@ -1,0 +1,13 @@
+/* base: tokens */
+:root {
+  --bg: #101418;
+  --panel: #1b222a;
+  --accent: #2f9e78;
+  --key: #232c36;
+  --key-text: #e8edf2;
+  --radius: 8px;
+}
+.token-sample {
+  background: var(--panel);
+  color: var(--key-text);
+}

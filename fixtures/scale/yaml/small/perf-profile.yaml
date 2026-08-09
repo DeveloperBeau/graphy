@@ -1,0 +1,19 @@
+perf_defaults: &perf_defaults
+  runner: linux-metal
+  timeout_minutes: 30
+  cpu_governor: performance
+
+wrap_bench:
+  <<: *perf_defaults
+  script: textprint bench wrap corpus/large.txt
+  budget_ms: 120
+
+render_bench:
+  <<: *perf_defaults
+  script: textprint bench render corpus/table.txt
+  budget_ms: 80
+
+startup_time:
+  <<: *perf_defaults
+  script: hyperfine 'textprint --version'
+  budget_ms: 15

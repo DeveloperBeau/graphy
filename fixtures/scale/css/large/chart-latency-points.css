@@ -1,0 +1,11 @@
+/* chart latency points */
+.chart-latency-points {
+  font-size: 0.75rem;
+  --chart-tone: hsl(151, 30%, 60%);
+}
+.chart-latency-points .tick {
+  stroke: #2a3441;
+}
+.chart-latency-points text {
+  fill: #9aa7b4;
+}

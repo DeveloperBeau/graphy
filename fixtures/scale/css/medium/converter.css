@@ -1,0 +1,13 @@
+/* component: converter */
+.unit-converter {
+  display: grid;
+  gap: 0.5rem;
+}
+.unit-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.5rem;
+}
+.unit-row .arrow {
+  opacity: 0.5;
+}

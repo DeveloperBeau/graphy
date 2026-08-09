@@ -1,0 +1,15 @@
+default_precision = "decimal128"
+angle_default = "radians"
+
+[registry]
+functions_dir = "functions/"
+autoload = true
+
+[profiles.fast]
+precision = "float64"
+constant_folding = true
+
+[profiles.exact]
+precision = "bigint"
+constant_folding = false
+lazy_rationals = true

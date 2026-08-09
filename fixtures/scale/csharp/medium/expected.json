@@ -1,0 +1,73 @@
+{
+  "min_nodes": 180,
+  "nodes": [
+    {
+      "label": "Lexer",
+      "kind": "class"
+    },
+    {
+      "label": "TokenStream",
+      "kind": "class"
+    },
+    {
+      "label": "Evaluator",
+      "kind": "class"
+    },
+    {
+      "label": "FunctionRegistry",
+      "kind": "class"
+    },
+    {
+      "label": "BinaryOp",
+      "kind": "class"
+    },
+    {
+      "label": "HistoryLog",
+      "kind": "class"
+    },
+    {
+      "label": "Repl",
+      "kind": "class"
+    },
+    {
+      "label": "NextToken",
+      "kind": "method"
+    },
+    {
+      "label": "Append",
+      "kind": "method"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Lexing/Lexer.cs::NextToken",
+      "relation": "returns",
+      "target_ends": "Token.cs::Token"
+    },
+    {
+      "source_ends": "Parsing/Parser.cs::ParseStatement",
+      "relation": "returns",
+      "target_ends": "Ast/Node.cs::Node"
+    },
+    {
+      "source_ends": "Memory/HistoryLog.cs::Append",
+      "relation": "returns",
+      "target_ends": "HistoryEntry.cs::HistoryEntry"
+    },
+    {
+      "source_ends": "Eval/Evaluator.cs",
+      "relation": "imports",
+      "target_ends": "extern::Calc.Functions"
+    },
+    {
+      "source_ends": "Program.cs",
+      "relation": "imports",
+      "target_ends": "Repl/Repl.cs::Repl"
+    },
+    {
+      "source_ends": "Lexing/Lexer.cs",
+      "relation": "contains",
+      "target_ends": "Lexer.cs::Lexer"
+    }
+  ]
+}

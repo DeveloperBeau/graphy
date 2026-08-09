@@ -1,0 +1,12 @@
+/* component: tabs */
+.panel-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+.panel-tab {
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.panel-tab[aria-selected='true'] {
+  background: var(--panel);
+}

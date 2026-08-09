@@ -1,0 +1,14 @@
+default_format = "plaintext"
+
+[pdf]
+paper_size = "a4"
+embed_fonts = true
+compress_streams = true
+
+[html]
+inline_css = true
+dark_mode_media = true
+
+[plaintext]
+strip_ansi = true
+tab_expand = 4

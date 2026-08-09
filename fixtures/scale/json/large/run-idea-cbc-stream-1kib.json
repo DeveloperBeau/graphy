@@ -1,0 +1,13 @@
+{
+  "$ref": "run.schema.json",
+  "run_id": "idea-cbc-stream-1kib",
+  "cipher": "idea-cbc",
+  "kind_of_primitive": "cipher",
+  "keysize": 256,
+  "workload": "stream-1kib",
+  "payload_bytes": 1024,
+  "iterations": 200000,
+  "warmup": 2000,
+  "threads": 1,
+  "record_to": "results/crypto.db"
+}

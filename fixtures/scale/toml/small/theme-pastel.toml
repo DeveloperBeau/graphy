@@ -1,0 +1,12 @@
+display_name = "pastel"
+origin = "builtin"
+
+[colors]
+foreground = "#5b5f71"
+background = "#faf4ed"
+accent = "#d7827e"
+
+[border]
+style = "rounded"
+weight = 1
+shade_corners = false

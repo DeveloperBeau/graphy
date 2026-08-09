@@ -1,0 +1,64 @@
+{
+  "min_nodes": 52,
+  "nodes": [
+    {
+      "label": "tp_box",
+      "kind": "module"
+    },
+    {
+      "label": "tp_writer",
+      "kind": "module"
+    },
+    {
+      "label": "tp_document",
+      "kind": "module"
+    },
+    {
+      "label": "draw",
+      "kind": "function"
+    },
+    {
+      "label": "render",
+      "kind": "function"
+    },
+    {
+      "label": "align",
+      "kind": "function"
+    },
+    {
+      "label": "from_lines",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "tp_box.erl",
+      "relation": "imports",
+      "target_ends": "tp_line.erl::tp_line"
+    },
+    {
+      "source_ends": "tp_writer.erl",
+      "relation": "imports",
+      "target_ends": "tp_box.erl::tp_box"
+    },
+    {
+      "source_ends": "tp_main.erl",
+      "relation": "imports",
+      "target_ends": "tp_writer.erl::tp_writer"
+    },
+    {
+      "source_ends": "tp_line.erl",
+      "relation": "imports",
+      "target_ends": "tp_pad.erl::tp_pad"
+    },
+    {
+      "source_ends": "tp_box.erl",
+      "relation": "contains",
+      "target_ends": "tp_box.erl::draw"
+    }
+  ]
+}

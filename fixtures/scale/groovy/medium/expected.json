@@ -1,0 +1,22 @@
+{
+  "min_nodes": 170,
+  "nodes": [
+    { "label": "Lexer", "kind": "class" },
+    { "label": "Parser", "kind": "class" },
+    { "label": "Expr", "kind": "interface" },
+    { "label": "FunctionRegistry", "kind": "class" },
+    { "label": "Evaluator", "kind": "class" },
+    { "label": "CalcException", "kind": "class" },
+    { "label": "tokenize", "kind": "method" },
+    { "label": "evaluate", "kind": "method" }
+  ],
+  "edges": [
+    { "source_ends": "app/Calculator.groovy", "relation": "imports", "target_ends": "Lexer.groovy::Lexer" },
+    { "source_ends": "app/Calculator.groovy", "relation": "imports", "target_ends": "Evaluator.groovy::Evaluator" },
+    { "source_ends": "repl/Session.groovy", "relation": "imports", "target_ends": "FunctionRegistry.groovy::FunctionRegistry" },
+    { "source_ends": "repl/Session.groovy", "relation": "imports", "target_ends": "Installer.groovy::Installer" },
+    { "source_ends": "io/OutputFormatter.groovy", "relation": "imports", "target_ends": "NumberFormat.groovy::NumberFormat" },
+    { "source_ends": "NumberExpr.groovy::NumberExpr", "relation": "implements", "target_ends": "Expr.groovy::Expr" },
+    { "source_ends": "lexer/Lexer.groovy", "relation": "contains", "target_ends": "Lexer.groovy::tokenize" }
+  ]
+}

@@ -1,0 +1,17 @@
+color_depth = "256"
+respect_no_color = true
+
+[palette]
+black = "#000000"
+red = "#cc2b2b"
+green = "#2bcc47"
+yellow = "#ccb52b"
+blue = "#2b5fcc"
+magenta = "#b52bcc"
+cyan = "#2bccc4"
+white = "#e6e6e6"
+
+[effects]
+bold_enabled = true
+dim_enabled = true
+italic_enabled = false

@@ -1,0 +1,60 @@
+{
+  "min_nodes": 35,
+  "nodes": [
+    {
+      "label": "Options",
+      "kind": "struct"
+    },
+    {
+      "label": "ArgParser",
+      "kind": "enum"
+    },
+    {
+      "label": "Renderer",
+      "kind": "struct"
+    },
+    {
+      "label": "Theme",
+      "kind": "struct"
+    },
+    {
+      "label": "Border",
+      "kind": "struct"
+    },
+    {
+      "label": "parse",
+      "kind": "function"
+    },
+    {
+      "label": "named",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Cli/Options.swift",
+      "relation": "contains",
+      "target_ends": "Options.swift::Options"
+    },
+    {
+      "source_ends": "Cli/ArgParser.swift::parse",
+      "relation": "returns",
+      "target_ends": "Options.swift::Options"
+    },
+    {
+      "source_ends": "Style/Theme.swift::named",
+      "relation": "returns",
+      "target_ends": "Theme.swift::Theme"
+    },
+    {
+      "source_ends": "Render/Renderer.swift::Renderer",
+      "relation": "has_field",
+      "target_ends": "Theme.swift::Theme"
+    },
+    {
+      "source_ends": "main.swift",
+      "relation": "imports",
+      "target_ends": "extern::Foundation"
+    }
+  ]
+}

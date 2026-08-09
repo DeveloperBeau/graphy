@@ -1,0 +1,20 @@
+schema_rev = 3
+suite = "cipher-matrix"
+
+[run.sha3_512_stream_1kib]
+primitive = "sha3-512"
+kind_of_primitive = "digest"
+workload = "stream-1kib"
+payload_bytes = 1024
+iterations = 200000
+warmup_iterations = 2000
+
+[keying]
+key_bits = 512
+rotate_interval = 10000
+zeroize_after = true
+
+[recording]
+database = "results/crypto.db"
+table_name = "runs"
+flush_every = 500

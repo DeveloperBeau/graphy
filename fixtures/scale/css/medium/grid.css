@@ -1,0 +1,12 @@
+/* base: grid */
+.pad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+.pad-grid--narrow {
+  grid-template-columns: repeat(2, 1fr);
+}
+.span-two {
+  grid-column: span 2;
+}

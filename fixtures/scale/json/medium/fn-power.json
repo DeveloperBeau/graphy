@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "^",
+  "arity": 2,
+  "category": "arithmetic",
+  "domain": "real",
+  "precedence": 6,
+  "associativity": "right",
+  "example": "6 ^ 3"
+}

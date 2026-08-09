@@ -1,0 +1,14 @@
+/* component: history */
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0.2rem;
+}
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}

@@ -1,0 +1,12 @@
+/* table head */
+.table-head {
+  display: block;
+  --tone: hsl(107, 18%, 40%);
+}
+.table-head > * + * {
+  margin-top: 0.35rem;
+}
+.table-head[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

@@ -1,0 +1,74 @@
+{
+  "min_nodes": 618,
+  "nodes": [
+    {
+      "label": "SaveResult",
+      "kind": "function"
+    },
+    {
+      "label": "LoadCount",
+      "kind": "function"
+    },
+    {
+      "label": "Summary",
+      "kind": "function"
+    },
+    {
+      "label": "Catalog",
+      "kind": "function"
+    },
+    {
+      "label": "SampleVector",
+      "kind": "function"
+    },
+    {
+      "label": "ShowProgress",
+      "kind": "function"
+    },
+    {
+      "label": "RunBench",
+      "kind": "function"
+    },
+    {
+      "label": "DefaultConfig",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Aes128Impl.pas",
+      "relation": "imports",
+      "target_ends": "extern::Aes128Model"
+    },
+    {
+      "source_ends": "Aes128Runner.pas",
+      "relation": "imports",
+      "target_ends": "extern::Aes128Impl, Aes128Model, USupportResult"
+    },
+    {
+      "source_ends": "UCoreStore.pas",
+      "relation": "imports",
+      "target_ends": "extern::UCoreConfig, USupportResult"
+    },
+    {
+      "source_ends": "USupportVectors.pas",
+      "relation": "imports",
+      "target_ends": "extern::USupportRng"
+    },
+    {
+      "source_ends": "UCoreBenchmark.pas",
+      "relation": "imports",
+      "target_ends": "extern::USupportTimer"
+    },
+    {
+      "source_ends": "UCoreStore.pas",
+      "relation": "contains",
+      "target_ends": "UCoreStore.pas::SaveResult"
+    },
+    {
+      "source_ends": "USupportReport.pas",
+      "relation": "contains",
+      "target_ends": "USupportReport.pas::Summary"
+    }
+  ]
+}

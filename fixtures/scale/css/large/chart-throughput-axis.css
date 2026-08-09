@@ -1,0 +1,11 @@
+/* chart throughput axis */
+.chart-throughput-axis {
+  font-size: 0.75rem;
+  --chart-tone: hsl(47, 30%, 60%);
+}
+.chart-throughput-axis .tick {
+  stroke: #2a3441;
+}
+.chart-throughput-axis text {
+  fill: #9aa7b4;
+}

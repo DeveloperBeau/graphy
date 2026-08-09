@@ -1,0 +1,14 @@
+[function.power]
+symbol = "^"
+arity = 2
+category = "arithmetic"
+domain = "real"
+
+[accuracy]
+max_ulp_error = 2
+reference_impl = "mpfr"
+sample_count = 100000
+
+[performance]
+budget_ns = 250
+vectorized = true

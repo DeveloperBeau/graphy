@@ -1,0 +1,64 @@
+{
+  "min_nodes": 617,
+  "nodes": [
+    {
+      "label": "function.sin",
+      "kind": "table"
+    },
+    {
+      "label": "function.divide",
+      "kind": "table"
+    },
+    {
+      "label": "function.stddev",
+      "kind": "table"
+    },
+    {
+      "label": "decimal128",
+      "kind": "table"
+    },
+    {
+      "label": "gradians",
+      "kind": "table"
+    },
+    {
+      "label": "profiles.exact",
+      "kind": "table"
+    },
+    {
+      "label": "pi",
+      "kind": "pair"
+    },
+    {
+      "label": "tau",
+      "kind": "pair"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "fn-sin.toml",
+      "relation": "contains",
+      "target_ends": "fn-sin.toml::function.sin"
+    },
+    {
+      "source_ends": "precision.toml",
+      "relation": "contains",
+      "target_ends": "precision.toml::decimal128"
+    },
+    {
+      "source_ends": "constants.toml",
+      "relation": "contains",
+      "target_ends": "constants.toml::pi"
+    },
+    {
+      "source_ends": "workspace.toml",
+      "relation": "contains",
+      "target_ends": "workspace.toml::profiles.exact"
+    },
+    {
+      "source_ends": "angles.toml",
+      "relation": "contains",
+      "target_ends": "angles.toml::gradians"
+    }
+  ]
+}

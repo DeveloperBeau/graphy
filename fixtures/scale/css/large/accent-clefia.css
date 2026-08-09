@@ -1,0 +1,11 @@
+/* accent clefia */
+.accent-clefia {
+  --cipher-accent: hsl(107, 55%, 48%);
+}
+.accent-clefia .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-clefia .legend-swatch {
+  background: var(--cipher-accent);
+}

@@ -1,0 +1,19 @@
+dist_defaults: &dist_defaults
+  runner: linux-amd64
+  timeout_minutes: 10
+  bucket: downloads-cdn
+
+checksum_manifest:
+  <<: *dist_defaults
+  script: sha256sum out/* > SHA256SUMS
+
+mirror_sync:
+  <<: *dist_defaults
+  script: rclone sync out/ mirror:textprint/
+  retries: 3
+
+latest_symlink:
+  <<: *dist_defaults
+  script: ./scripts/point-latest.sh
+  needs:
+    - mirror_sync

@@ -1,0 +1,69 @@
+{
+  "min_nodes": 300,
+  "nodes": [
+    {
+      "label": "CLCipher",
+      "kind": "class"
+    },
+    {
+      "label": "CaesarCipher",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CLCorrectnessEngine",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CLBenchmarkEngine",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CLResultsStore",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CLFamilyCatalog",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "CLHarness",
+      "kind": "class?ambiguous"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Families/Caesar/CaesarCipher.h",
+      "relation": "imports",
+      "target_ends": "extern::CLCipher.h"
+    },
+    {
+      "source_ends": "Families/Caesar/CaesarDescriptor.m",
+      "relation": "imports",
+      "target_ends": "extern::CaesarCipher.h"
+    },
+    {
+      "source_ends": "Registry/CLFamilyCatalog.m",
+      "relation": "imports",
+      "target_ends": "extern::CaesarDescriptor.h"
+    },
+    {
+      "source_ends": "Engine/CLHarness.m",
+      "relation": "imports",
+      "target_ends": "extern::CLFamilyCatalog.h"
+    },
+    {
+      "source_ends": "main.m",
+      "relation": "imports",
+      "target_ends": "extern::CLResultsStore.h"
+    },
+    {
+      "source_ends": "main.m",
+      "relation": "contains",
+      "target_ends": "main.m::main"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "min_nodes": 244,
+  "nodes": [
+    {
+      "label": "wireApp",
+      "kind": "function"
+    },
+    {
+      "label": "headerTitle",
+      "kind": "function"
+    },
+    {
+      "label": "displayState",
+      "kind": "function"
+    },
+    {
+      "label": "layoutKeys",
+      "kind": "function"
+    },
+    {
+      "label": "persistSettings",
+      "kind": "function"
+    },
+    {
+      "label": "footerNote",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "App.svelte",
+      "relation": "imports",
+      "target_ends": "DisplayPanel.svelte/DisplayPanel"
+    },
+    {
+      "source_ends": "App.svelte",
+      "relation": "imports",
+      "target_ends": "Keypad.svelte/Keypad"
+    },
+    {
+      "source_ends": "App.svelte",
+      "relation": "imports",
+      "target_ends": "SidePanels.svelte/SidePanels"
+    },
+    {
+      "source_ends": "SidePanels.svelte",
+      "relation": "imports",
+      "target_ends": "HistoryPanel.svelte/HistoryPanel"
+    },
+    {
+      "source_ends": "AppFooter.svelte",
+      "relation": "imports",
+      "target_ends": "ErrorBanner.svelte/ErrorBanner"
+    }
+  ]
+}

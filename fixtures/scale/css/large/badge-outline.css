@@ -1,0 +1,12 @@
+/* badge outline */
+.badge-outline {
+  display: block;
+  --tone: hsl(52, 18%, 40%);
+}
+.badge-outline > * + * {
+  margin-top: 0.35rem;
+}
+.badge-outline[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

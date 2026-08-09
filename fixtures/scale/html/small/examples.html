@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Examples - inkroll</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<nav id="examples-nav">
+  <a href="index.html">Home</a>
+  <a href="faq.html">FAQ</a>
+</nav>
+<main id="examples-main">
+<h1>Worked examples</h1>
+<p>Three complete setups you can copy into a shell profile.</p>
+<section id="examples-compiler">
+<h2>Compiler output</h2>
+<p>gcc 2>&1 | inkroll --preset build --width 100 for wrapped, coloured diagnostics.</p>
+</section>
+<section id="examples-logs">
+<h2>Server logs</h2>
+<p>journalctl -f | inkroll --preset server, using rules from the <a href="colours.html">colours page</a>.</p>
+</section>
+<section id="examples-csv">
+<h2>Column data</h2>
+<p>inkroll --no-wrap keeps wide CSV rows intact; flags are listed in the <a href="flags.html">flag reference</a>.</p>
+</section>
+</main>
+</body>
+</html>

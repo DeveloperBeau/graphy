@@ -1,0 +1,13 @@
+level = "warn"
+
+[sinks]
+stderr_enabled = true
+file_path = "~/.calc/calc.log"
+
+[rotation]
+max_size_mb = 5
+keep_files = 3
+
+[format]
+include_timestamp = true
+include_module = false

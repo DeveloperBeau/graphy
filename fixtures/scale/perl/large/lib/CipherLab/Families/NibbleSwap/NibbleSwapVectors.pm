@@ -1,0 +1,15 @@
+package CipherLab::Families::NibbleSwap::NibbleSwapVectors;
+use strict;
+use warnings;
+use CipherLab::TestVector;
+
+# Known-answer test data captured from NibbleSwapCipher's own encode.
+sub all {
+    return (
+        CipherLab::TestVector->new("The quick brown fox jumps ov", "5d626e2c7c7b66737a3271667a6179387f75633c776b725052024c52"),
+        CipherLab::TestVector->new("cipher test corpus", "6a637b64687c2f6474616734767965686c69"),
+        CipherLab::TestVector->new("0123456789abcdef", "393b393f393b3927292b72767672727e"),
+    );
+}
+
+1;

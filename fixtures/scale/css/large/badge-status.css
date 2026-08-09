@@ -1,0 +1,12 @@
+/* badge status */
+.badge-status {
+  display: block;
+  --tone: hsl(295, 18%, 40%);
+}
+.badge-status > * + * {
+  margin-top: 0.35rem;
+}
+.badge-status[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

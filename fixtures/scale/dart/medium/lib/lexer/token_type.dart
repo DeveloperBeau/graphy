@@ -1,0 +1,15 @@
+enum TokenType {
+  number,
+  identifier,
+  plus,
+  minus,
+  star,
+  slash,
+  caret,
+  percent,
+  lparen,
+  rparen,
+  comma,
+  equals,
+  end,
+}

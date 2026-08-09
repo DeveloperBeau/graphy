@@ -1,0 +1,24 @@
+{
+  "min_nodes": 55,
+  "nodes": [
+    { "label": "Renderer", "kind": "class" },
+    { "label": "ArgParser", "kind": "class" },
+    { "label": "Document", "kind": "class" },
+    { "label": "RenderOptions", "kind": "class" },
+    { "label": "TextUtil", "kind": "class" },
+    { "label": "render", "kind": "method" },
+    { "label": "wrap", "kind": "method" },
+    { "label": "padTo", "kind": "method" },
+    { "label": "fromText", "kind": "method" },
+    { "label": "repeatChar", "kind": "method" }
+  ],
+  "edges": [
+    { "source_ends": "Main.java", "relation": "imports", "target_ends": "Renderer.java::Renderer" },
+    { "source_ends": "cli/ArgParser.java", "relation": "imports", "target_ends": "RenderOptions.java::RenderOptions" },
+    { "source_ends": "render/Renderer.java", "relation": "imports", "target_ends": "Aligner.java::Aligner" },
+    { "source_ends": "Main.java", "relation": "imports", "target_ends": "Document.java::Document" },
+    { "source_ends": "BorderPainter.java::paint", "relation": "calls", "target_ends": "TextUtil.java::repeatChar" },
+    { "source_ends": "Aligner.java::alignCenter", "relation": "calls", "target_ends": "TextUtil.java::padTo" },
+    { "source_ends": "render/Renderer.java", "relation": "contains", "target_ends": "Renderer.java::render" }
+  ]
+}

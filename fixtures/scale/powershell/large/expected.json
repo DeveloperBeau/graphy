@@ -1,0 +1,74 @@
+{
+  "min_nodes": 700,
+  "nodes": [
+    {
+      "label": "Invoke-CaesarEncrypt",
+      "kind": "function"
+    },
+    {
+      "label": "Invoke-VigenereEncrypt",
+      "kind": "function"
+    },
+    {
+      "label": "Get-Fnv1aDigest",
+      "kind": "function"
+    },
+    {
+      "label": "Invoke-RailFenceEncrypt",
+      "kind": "function"
+    },
+    {
+      "label": "Add-ResultRow",
+      "kind": "function"
+    },
+    {
+      "label": "Update-BenchProgress",
+      "kind": "function"
+    },
+    {
+      "label": "Register-Cipher",
+      "kind": "function"
+    },
+    {
+      "label": "Get-XorRollKeyByte",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "Ciphers/IndexShift.ps1",
+      "relation": "imports",
+      "target_ends": "Ciphers/Caesar/Runner.ps1"
+    },
+    {
+      "source_ends": "Ciphers/Caesar/Runner.ps1",
+      "relation": "imports",
+      "target_ends": "Ciphers/Caesar/Cipher.ps1"
+    },
+    {
+      "source_ends": "CiphBench.ps1",
+      "relation": "imports",
+      "target_ends": "Core/Store.ps1"
+    },
+    {
+      "source_ends": "CiphBench.ps1",
+      "relation": "imports",
+      "target_ends": "Ciphers/IndexHash.ps1"
+    },
+    {
+      "source_ends": "Ciphers/Fnv1a/Cipher.ps1",
+      "relation": "contains",
+      "target_ends": "Ciphers/Fnv1a/Cipher.ps1::Get-Fnv1aDigest"
+    },
+    {
+      "source_ends": "Core/Run.ps1",
+      "relation": "contains",
+      "target_ends": "Core/Run.ps1::Invoke-BenchAll"
+    },
+    {
+      "source_ends": "Ciphers/Beaufort/Check.ps1",
+      "relation": "imports",
+      "target_ends": "Ciphers/Beaufort/Cipher.ps1"
+    }
+  ]
+}

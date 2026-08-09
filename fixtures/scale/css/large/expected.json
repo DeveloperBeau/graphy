@@ -1,0 +1,61 @@
+{
+  "min_nodes": 887,
+  "nodes": [
+    {
+      "label": ".dashboard-root",
+      "kind": "selector"
+    },
+    {
+      "label": ".foundation-scope",
+      "kind": "selector"
+    },
+    {
+      "label": ".table-frame",
+      "kind": "selector"
+    },
+    {
+      "label": ".panel-title",
+      "kind": "selector"
+    },
+    {
+      "label": ".accent-aes",
+      "kind": "selector"
+    },
+    {
+      "label": ".chart-throughput-axis",
+      "kind": "selector"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "main.css",
+      "relation": "imports",
+      "target_ends": "css::foundation.css"
+    },
+    {
+      "source_ends": "main.css",
+      "relation": "imports",
+      "target_ends": "css::charts.css"
+    },
+    {
+      "source_ends": "main.css",
+      "relation": "imports",
+      "target_ends": "css::accents-modern.css"
+    },
+    {
+      "source_ends": "charts.css",
+      "relation": "imports",
+      "target_ends": "css::chart-throughput-axis.css"
+    },
+    {
+      "source_ends": "accents-modern.css",
+      "relation": "imports",
+      "target_ends": "css::accent-aes.css"
+    },
+    {
+      "source_ends": "tables.css",
+      "relation": "imports",
+      "target_ends": "css::table-frame.css"
+    }
+  ]
+}

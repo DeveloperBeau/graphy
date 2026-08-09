@@ -1,0 +1,23 @@
+{
+  "min_nodes": 150,
+  "nodes": [
+    {"label": "ParseAll", "kind": "function"},
+    {"label": "ParseLine", "kind": "function"},
+    {"label": "AboveLevel", "kind": "function"},
+    {"label": "Tally", "kind": "function"},
+    {"label": "RunAdvanced", "kind": "function"},
+    {"label": "RunAnalytics", "kind": "function"},
+    {"label": "Weight", "kind": "function"},
+    {"label": "Entry", "kind": "type"},
+    {"label": "Level", "kind": "type"}
+  ],
+  "edges": [
+    {"source_ends": "main.go::main", "relation": "calls", "target_ends": "pipeline/advanced.go::RunAdvanced"},
+    {"source_ends": "pipeline/advanced.go::RunAdvanced", "relation": "calls", "target_ends": "parse/parser.go::ParseAll"},
+    {"source_ends": "pipeline/advanced.go::RunAdvanced", "relation": "calls", "target_ends": "stats/counter.go::Tally"},
+    {"source_ends": "pipeline/analytics.go::RunAnalytics", "relation": "calls", "target_ends": "severity/weight.go::Weight"},
+    {"source_ends": "parse/parser.go::ParseAll", "relation": "calls", "target_ends": "parse/parser.go::ParseLine"},
+    {"source_ends": "parse/parser.go::ParseLine", "relation": "calls", "target_ends": "logline/level.go::ParseLevel"},
+    {"source_ends": "cli/cli.go::Run", "relation": "calls", "target_ends": "parse/parser.go::ParseAll"}
+  ]
+}

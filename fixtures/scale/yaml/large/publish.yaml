@@ -1,0 +1,16 @@
+publish_defaults: &publish_defaults
+  bucket: bench-artifacts
+  acl: private
+
+object_store_sync:
+  <<: *publish_defaults
+  script: rclone sync report/ store:crypto-bench/
+
+latest_pointer:
+  <<: *publish_defaults
+  script: ./scripts/point-latest.sh
+
+retention_sweep:
+  <<: *publish_defaults
+  keep_runs: 90
+  script: ./scripts/prune.sh

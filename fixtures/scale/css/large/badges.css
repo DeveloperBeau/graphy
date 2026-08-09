@@ -1,0 +1,13 @@
+/* bundle: badges */
+@import "badge-kind.css";
+@import "badge-status.css";
+@import "badge-machine.css";
+@import "badge-run.css";
+@import "badge-stable.css";
+@import "badge-unstable.css";
+@import "badge-new.css";
+@import "badge-retired.css";
+@import "badge-count.css";
+@import "badge-dot.css";
+@import "badge-outline.css";
+@import "badge-pill.css";

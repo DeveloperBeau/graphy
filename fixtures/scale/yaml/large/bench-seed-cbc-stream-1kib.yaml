@@ -1,0 +1,19 @@
+defaults: &defaults
+  harness: cryptobench
+  warmup_iterations: 2000
+  cool_down_secs: 2
+
+seed-cbc-stream-1kib:
+  setup:
+    <<: *defaults
+    cipher: seed-cbc
+    key_bits: 256
+    payload_bytes: 1024
+  execute:
+    <<: *defaults
+    iterations: 200000
+    cpu_pin: 2
+  record:
+    <<: *defaults
+    database: results/crypto.db
+    run_label: seed-cbc-stream-1kib

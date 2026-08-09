@@ -1,0 +1,12 @@
+/* form field */
+.form-field {
+  display: block;
+  --tone: hsl(235, 18%, 40%);
+}
+.form-field > * + * {
+  margin-top: 0.35rem;
+}
+.form-field[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

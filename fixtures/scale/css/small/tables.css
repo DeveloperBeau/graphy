@@ -1,0 +1,13 @@
+/* flag reference tables */
+.flag-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.flag-table td, .flag-table th {
+  border-bottom: 1px solid var(--rule);
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+}
+.flag-table .short-form {
+  white-space: nowrap;
+}

@@ -1,0 +1,12 @@
+display_name = "solarized"
+origin = "builtin"
+
+[colors]
+foreground = "#657b83"
+background = "#fdf6e3"
+accent = "#b58900"
+
+[border]
+style = "single"
+weight = 1
+shade_corners = false

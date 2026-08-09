@@ -1,0 +1,11 @@
+/* accent sm4 */
+.accent-sm4 {
+  --cipher-accent: hsl(81, 55%, 48%);
+}
+.accent-sm4 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-sm4 .legend-swatch {
+  background: var(--cipher-accent);
+}

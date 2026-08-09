@@ -1,0 +1,13 @@
+/* component: dropdown */
+.mode-dropdown {
+  position: relative;
+}
+.mode-dropdown-menu {
+  position: absolute;
+  background: var(--panel);
+  border-radius: var(--radius);
+  min-width: 10rem;
+}
+.mode-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}

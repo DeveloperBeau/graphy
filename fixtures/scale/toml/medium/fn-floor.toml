@@ -1,0 +1,14 @@
+[function.floor]
+symbol = "floor"
+arity = 1
+category = "rounding"
+domain = "real"
+
+[accuracy]
+max_ulp_error = 2
+reference_impl = "mpfr"
+sample_count = 100000
+
+[performance]
+budget_ns = 900
+vectorized = false

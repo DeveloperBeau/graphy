@@ -1,0 +1,87 @@
+{
+  "min_nodes": 500,
+  "nodes": [
+    {
+      "label": "caesar_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "gronsfeld_encrypt",
+      "kind": "function"
+    },
+    {
+      "label": "check_caesar",
+      "kind": "function"
+    },
+    {
+      "label": "fnvhash_digest",
+      "kind": "function"
+    },
+    {
+      "label": "additive_checks",
+      "kind": "function"
+    },
+    {
+      "label": "round_trip",
+      "kind": "function"
+    },
+    {
+      "label": "run_all",
+      "kind": "function"
+    },
+    {
+      "label": "run_checks",
+      "kind": "function"
+    },
+    {
+      "label": "corpus_hash",
+      "kind": "function"
+    },
+    {
+      "label": "main",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "ciphers/caesar.py::caesar_encrypt",
+      "relation": "calls",
+      "target_ends": "bytes_ops.py::from_codes"
+    },
+    {
+      "source_ends": "checks/check_caesar.py::check_caesar",
+      "relation": "calls",
+      "target_ends": "ciphers/caesar.py::caesar_encrypt"
+    },
+    {
+      "source_ends": "checks/check_gronsfeld.py::check_gronsfeld",
+      "relation": "calls",
+      "target_ends": "specs/gronsfeld_spec.py::gronsfeld_spec"
+    },
+    {
+      "source_ends": "checks/check_fnvhash.py::check_fnvhash",
+      "relation": "calls",
+      "target_ends": "corpus_hash.py::corpus_hash"
+    },
+    {
+      "source_ends": "check_runner.py::run_checks",
+      "relation": "calls",
+      "target_ends": "registry_additive.py::additive_checks"
+    },
+    {
+      "source_ends": "pipeline.py::round_trip",
+      "relation": "calls",
+      "target_ends": "registry.py::get_cipher"
+    },
+    {
+      "source_ends": "runner.py::run_all",
+      "relation": "calls",
+      "target_ends": "pipeline.py::round_trip"
+    },
+    {
+      "source_ends": "main.py::main",
+      "relation": "calls",
+      "target_ends": "check_runner.py::run_checks"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+/* component: statusbar */
+.status-bar {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.75rem;
+  background: #0b0e12;
+}
+.status-bar .sep {
+  opacity: 0.3;
+}

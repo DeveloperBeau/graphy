@@ -1,0 +1,60 @@
+{
+  "min_nodes": 58,
+  "nodes": [
+    {
+      "label": "Model.Cell",
+      "kind": "module"
+    },
+    {
+      "label": "Model.Document",
+      "kind": "module"
+    },
+    {
+      "label": "Render.Box",
+      "kind": "module"
+    },
+    {
+      "label": "draw",
+      "kind": "function"
+    },
+    {
+      "label": "emit",
+      "kind": "function"
+    },
+    {
+      "label": "read_lines",
+      "kind": "function"
+    },
+    {
+      "label": "from_lines",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "lib/render/box.ex",
+      "relation": "imports",
+      "target_ends": "extern::Render.Line"
+    },
+    {
+      "source_ends": "lib/output/writer.ex",
+      "relation": "imports",
+      "target_ends": "extern::Render.Box"
+    },
+    {
+      "source_ends": "lib/printer.ex",
+      "relation": "imports",
+      "target_ends": "extern::Output.Writer"
+    },
+    {
+      "source_ends": "lib/cli.ex",
+      "relation": "imports",
+      "target_ends": "lib/printer.ex::Printer"
+    },
+    {
+      "source_ends": "lib/render/box.ex",
+      "relation": "contains",
+      "target_ends": "lib/render/box.ex::draw"
+    }
+  ]
+}

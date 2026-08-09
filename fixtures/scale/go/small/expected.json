@@ -1,0 +1,21 @@
+{
+  "min_nodes": 50,
+  "nodes": [
+    {"label": "New", "kind": "function"},
+    {"label": "Shorten", "kind": "function"},
+    {"label": "Seed", "kind": "function"},
+    {"label": "Report", "kind": "function"},
+    {"label": "ValidateURL", "kind": "function"},
+    {"label": "Service", "kind": "type"},
+    {"label": "clickCounter", "kind": "type"}
+  ],
+  "edges": [
+    {"source_ends": "main.go::main", "relation": "calls", "target_ends": "shortener/service.go::New"},
+    {"source_ends": "main.go::main", "relation": "calls", "target_ends": "cli/cli.go::Seed"},
+    {"source_ends": "main.go::main", "relation": "calls", "target_ends": "cli/report.go::Report"},
+    {"source_ends": "shortener/base62.go::encode", "relation": "calls", "target_ends": "shortener/base62.go::reverse"},
+    {"source_ends": "shortener/service.go::Service", "relation": "has_field", "target_ends": "shortener/clicks.go::clickCounter"},
+    {"source_ends": "shortener/service.go::Service", "relation": "has_field", "target_ends": "shortener/expiry.go::expiryTracker"},
+    {"source_ends": "main.go", "relation": "imports", "target_ends": "extern::example.com/shortlink/cli"}
+  ]
+}

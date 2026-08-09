@@ -1,0 +1,12 @@
+engine = "sqlite"
+
+[sqlite]
+path = "results/crypto.db"
+journal_mode = "wal"
+synchronous = "normal"
+busy_timeout_ms = 5000
+
+[retention]
+keep_runs = 90
+archive_path = "results/archive.db"
+compress = "zstd"

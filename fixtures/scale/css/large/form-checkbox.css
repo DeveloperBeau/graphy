@@ -1,0 +1,12 @@
+/* form checkbox */
+.form-checkbox {
+  display: block;
+  --tone: hsl(261, 18%, 40%);
+}
+.form-checkbox > * + * {
+  margin-top: 0.35rem;
+}
+.form-checkbox[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

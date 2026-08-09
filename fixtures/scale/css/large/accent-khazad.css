@@ -1,0 +1,11 @@
+/* accent khazad */
+.accent-khazad {
+  --cipher-accent: hsl(219, 55%, 48%);
+}
+.accent-khazad .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-khazad .legend-swatch {
+  background: var(--cipher-accent);
+}

@@ -1,0 +1,15 @@
+{
+  "$ref": "angle.schema.json",
+  "radians": {
+    "full_turn": 6.28318530717959,
+    "suffix": "rad"
+  },
+  "degrees": {
+    "full_turn": 360,
+    "suffix": "deg"
+  },
+  "gradians": {
+    "full_turn": 400,
+    "suffix": "gon"
+  }
+}

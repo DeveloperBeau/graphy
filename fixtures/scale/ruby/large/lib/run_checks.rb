@@ -1,0 +1,130 @@
+require_relative 'check_caesar'
+require_relative 'check_gronsfeld'
+require_relative 'check_trithemius'
+require_relative 'check_shiftreel'
+require_relative 'check_stairstep'
+require_relative 'check_augustus'
+require_relative 'check_keypad'
+require_relative 'check_ordinal'
+require_relative 'check_affine'
+require_relative 'check_decimation'
+require_relative 'check_promoter'
+require_relative 'check_modwheel'
+require_relative 'check_linearmix'
+require_relative 'check_skewmap'
+require_relative 'check_xorkey'
+require_relative 'check_maskbyte'
+require_relative 'check_paritymix'
+require_relative 'check_bitfold'
+require_relative 'check_veilmask'
+require_relative 'check_dualmask'
+require_relative 'check_nibblexor'
+require_relative 'check_staticpad'
+require_relative 'check_lcgstream'
+require_relative 'check_driftstream'
+require_relative 'check_pulsestream'
+require_relative 'check_cascadestream'
+require_relative 'check_orbitstream'
+require_relative 'check_emberstream'
+require_relative 'check_riverstream'
+require_relative 'check_sparkstream'
+require_relative 'check_blockrotate'
+require_relative 'check_ringshift'
+require_relative 'check_carousel'
+require_relative 'check_conveyor'
+require_relative 'check_turnstile'
+require_relative 'check_windmill'
+require_relative 'check_ferris'
+require_relative 'check_lattice'
+require_relative 'check_fnvhash'
+require_relative 'check_djbhash'
+require_relative 'check_sdbmhash'
+require_relative 'check_jenkinshash'
+require_relative 'check_pearsonhash'
+require_relative 'check_foldsum'
+require_relative 'check_mixcrc'
+require_relative 'check_tallyhash'
+require_relative 'check_chainhash'
+require_relative 'check_weavehash'
+require_relative 'check_hexpack'
+require_relative 'check_nibbleswap'
+require_relative 'check_byteflip'
+require_relative 'check_pairswap'
+require_relative 'check_mirrorpack'
+require_relative 'check_zigzagpack'
+require_relative 'check_splitpack'
+require_relative 'check_laddercode'
+require_relative 'check_weavecode'
+require_relative 'check_stridecode'
+require_relative 'format_check'
+require_relative 'write_result'
+
+def run_checks
+  outcomes = []
+  checks = [
+    ["caesar", method(:check_caesar)],
+    ["gronsfeld", method(:check_gronsfeld)],
+    ["trithemius", method(:check_trithemius)],
+    ["shiftreel", method(:check_shiftreel)],
+    ["stairstep", method(:check_stairstep)],
+    ["augustus", method(:check_augustus)],
+    ["keypad", method(:check_keypad)],
+    ["ordinal", method(:check_ordinal)],
+    ["affine", method(:check_affine)],
+    ["decimation", method(:check_decimation)],
+    ["promoter", method(:check_promoter)],
+    ["modwheel", method(:check_modwheel)],
+    ["linearmix", method(:check_linearmix)],
+    ["skewmap", method(:check_skewmap)],
+    ["xorkey", method(:check_xorkey)],
+    ["maskbyte", method(:check_maskbyte)],
+    ["paritymix", method(:check_paritymix)],
+    ["bitfold", method(:check_bitfold)],
+    ["veilmask", method(:check_veilmask)],
+    ["dualmask", method(:check_dualmask)],
+    ["nibblexor", method(:check_nibblexor)],
+    ["staticpad", method(:check_staticpad)],
+    ["lcgstream", method(:check_lcgstream)],
+    ["driftstream", method(:check_driftstream)],
+    ["pulsestream", method(:check_pulsestream)],
+    ["cascadestream", method(:check_cascadestream)],
+    ["orbitstream", method(:check_orbitstream)],
+    ["emberstream", method(:check_emberstream)],
+    ["riverstream", method(:check_riverstream)],
+    ["sparkstream", method(:check_sparkstream)],
+    ["blockrotate", method(:check_blockrotate)],
+    ["ringshift", method(:check_ringshift)],
+    ["carousel", method(:check_carousel)],
+    ["conveyor", method(:check_conveyor)],
+    ["turnstile", method(:check_turnstile)],
+    ["windmill", method(:check_windmill)],
+    ["ferris", method(:check_ferris)],
+    ["lattice", method(:check_lattice)],
+    ["fnvhash", method(:check_fnvhash)],
+    ["djbhash", method(:check_djbhash)],
+    ["sdbmhash", method(:check_sdbmhash)],
+    ["jenkinshash", method(:check_jenkinshash)],
+    ["pearsonhash", method(:check_pearsonhash)],
+    ["foldsum", method(:check_foldsum)],
+    ["mixcrc", method(:check_mixcrc)],
+    ["tallyhash", method(:check_tallyhash)],
+    ["chainhash", method(:check_chainhash)],
+    ["weavehash", method(:check_weavehash)],
+    ["hexpack", method(:check_hexpack)],
+    ["nibbleswap", method(:check_nibbleswap)],
+    ["byteflip", method(:check_byteflip)],
+    ["pairswap", method(:check_pairswap)],
+    ["mirrorpack", method(:check_mirrorpack)],
+    ["zigzagpack", method(:check_zigzagpack)],
+    ["splitpack", method(:check_splitpack)],
+    ["laddercode", method(:check_laddercode)],
+    ["weavecode", method(:check_weavecode)],
+    ["stridecode", method(:check_stridecode)],
+  ]
+  checks.each do |name, check|
+    ok = check.call
+    write_result("checks", format_check(name, ok))
+    outcomes << [name, ok]
+  end
+  outcomes
+end

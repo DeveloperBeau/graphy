@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "trunc",
+  "arity": 1,
+  "category": "rounding",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "trunc(0.5)"
+}

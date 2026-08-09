@@ -1,0 +1,19 @@
+{
+  "$id": "results-db.schema.json",
+  "title": "ResultsDatabase",
+  "type": "object",
+  "properties": {
+    "db_path": {
+      "type": "string"
+    },
+    "retention_runs": {
+      "type": "integer"
+    },
+    "flush_interval_ms": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "db_path"
+  ]
+}

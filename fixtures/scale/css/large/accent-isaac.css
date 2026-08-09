@@ -1,0 +1,11 @@
+/* accent isaac */
+.accent-isaac {
+  --cipher-accent: hsl(2, 55%, 48%);
+}
+.accent-isaac .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-isaac .legend-swatch {
+  background: var(--cipher-accent);
+}

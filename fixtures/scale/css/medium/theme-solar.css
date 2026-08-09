@@ -1,0 +1,10 @@
+/* theme: solar */
+[data-theme='solar'] {
+  --bg: hsl(90, 15%, 11%);
+  --panel: hsl(90, 14%, 17%);
+  --accent: hsl(230, 45%, 52%);
+  --key: hsl(90, 12%, 23%);
+}
+[data-theme='solar'] .display-expression {
+  opacity: 0.58;
+}

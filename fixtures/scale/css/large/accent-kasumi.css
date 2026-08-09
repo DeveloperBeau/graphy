@@ -1,0 +1,11 @@
+/* accent kasumi */
+.accent-kasumi {
+  --cipher-accent: hsl(180, 55%, 48%);
+}
+.accent-kasumi .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-kasumi .legend-swatch {
+  background: var(--cipher-accent);
+}

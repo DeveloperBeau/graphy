@@ -1,0 +1,12 @@
+/* foundation spacing */
+.foundation-spacing {
+  display: block;
+  --tone: hsl(13, 18%, 40%);
+}
+.foundation-spacing > * + * {
+  margin-top: 0.35rem;
+}
+.foundation-spacing[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

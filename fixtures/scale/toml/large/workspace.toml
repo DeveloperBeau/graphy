@@ -1,0 +1,12 @@
+suite_name = "cipher-matrix"
+harness_version = "1.7.2"
+
+[matrix]
+shard_count = 8
+randomize_order = true
+seed = 4022
+
+[scheduling]
+max_parallel = 1
+cool_down_secs = 2
+retry_failed = 1

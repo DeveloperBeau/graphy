@@ -1,0 +1,14 @@
+baseline_branch = "main"
+
+[html]
+template = "report/matrix.html"
+sparklines = true
+dark_mode = true
+
+[csv]
+columns = ["cipher", "workload", "mean_ns", "p99_ns"]
+delimiter = ","
+
+[gates]
+regression_threshold_percent = 5
+fail_on_regression = true

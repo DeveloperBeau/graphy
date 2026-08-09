@@ -1,0 +1,11 @@
+/* chart keyschedule points */
+.chart-keyschedule-points {
+  font-size: 0.75rem;
+  --chart-tone: hsl(281, 30%, 60%);
+}
+.chart-keyschedule-points .tick {
+  stroke: #2a3441;
+}
+.chart-keyschedule-points text {
+  fill: #9aa7b4;
+}

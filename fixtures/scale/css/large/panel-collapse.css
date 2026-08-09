@@ -1,0 +1,12 @@
+/* panel collapse */
+.panel-collapse {
+  display: block;
+  --tone: hsl(219, 18%, 40%);
+}
+.panel-collapse > * + * {
+  margin-top: 0.35rem;
+}
+.panel-collapse[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

@@ -1,0 +1,10 @@
+{
+  "$ref": "function.schema.json",
+  "symbol": "median",
+  "arity": 1,
+  "category": "statistic",
+  "domain": "real",
+  "precedence": 9,
+  "associativity": "left",
+  "example": "median(0.5)"
+}

@@ -1,0 +1,12 @@
+/* print links */
+.print-links {
+  display: block;
+  --tone: hsl(34, 18%, 40%);
+}
+.print-links > * + * {
+  margin-top: 0.35rem;
+}
+.print-links[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

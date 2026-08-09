@@ -1,0 +1,16 @@
+job_defaults: &job_defaults
+  runner: linux-amd64
+  timeout_minutes: 10
+  precision: decimal128
+
+cos_accuracy:
+  <<: *job_defaults
+  command: calc bench accuracy cos 0.5
+  samples: 100000
+  max_ulp_error: 2
+
+cos_latency:
+  <<: *job_defaults
+  command: calc bench latency cos 0.5
+  samples: 500000
+  budget_ns: 900

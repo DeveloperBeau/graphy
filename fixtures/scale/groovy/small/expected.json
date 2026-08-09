@@ -1,0 +1,24 @@
+{
+  "min_nodes": 40,
+  "nodes": [
+    { "label": "Renderer", "kind": "class" },
+    { "label": "Document", "kind": "class" },
+    { "label": "RenderOptions", "kind": "class" },
+    { "label": "Aligner", "kind": "class" },
+    { "label": "Wrapper", "kind": "class" },
+    { "label": "TextUtil", "kind": "class" },
+    { "label": "align", "kind": "method" },
+    { "label": "wrap", "kind": "method" },
+    { "label": "padTo", "kind": "method" },
+    { "label": "render", "kind": "method" }
+  ],
+  "edges": [
+    { "source_ends": "Main.groovy", "relation": "imports", "target_ends": "Renderer.groovy::Renderer" },
+    { "source_ends": "cli/ArgParser.groovy", "relation": "imports", "target_ends": "RenderOptions.groovy::RenderOptions" },
+    { "source_ends": "render/Renderer.groovy", "relation": "imports", "target_ends": "Aligner.groovy::Aligner" },
+    { "source_ends": "render/Renderer.groovy", "relation": "imports", "target_ends": "Wrapper.groovy::Wrapper" },
+    { "source_ends": "layout/Aligner.groovy", "relation": "imports", "target_ends": "TextUtil.groovy::TextUtil" },
+    { "source_ends": "render/Renderer.groovy", "relation": "contains", "target_ends": "Renderer.groovy::render" },
+    { "source_ends": "border/Frame.groovy", "relation": "contains", "target_ends": "Frame.groovy::rule" }
+  ]
+}

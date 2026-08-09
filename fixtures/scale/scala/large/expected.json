@@ -1,0 +1,24 @@
+{
+  "min_nodes": 750,
+  "nodes": [
+    { "label": "Cipher", "kind": "trait" },
+    { "label": "CipherSuite", "kind": "trait" },
+    { "label": "HashFunction", "kind": "trait" },
+    { "label": "BenchmarkRunner", "kind": "class" },
+    { "label": "ProgressReporter", "kind": "class" },
+    { "label": "FeistelNetwork", "kind": "class" },
+    { "label": "PlayfairCipher", "kind": "class" },
+    { "label": "Rc4Cipher", "kind": "class" },
+    { "label": "runAll", "kind": "function" }
+  ],
+  "edges": [
+    { "source_ends": "CaesarSuite.scala::run", "relation": "calls", "target_ends": "RoundTrip.scala::check" },
+    { "source_ends": "Fnv1aSuite.scala::run", "relation": "calls", "target_ends": "Determinism.scala::stable" },
+    { "source_ends": "Main.scala::main", "relation": "calls", "target_ends": "SuiteCatalog.scala::allSuites" },
+    { "source_ends": "bench/BenchmarkRunner.scala", "relation": "imports", "target_ends": "ResultStore.scala::ResultStore" },
+    { "source_ends": "adfgvx/AdfgvxCipher.scala", "relation": "imports", "target_ends": "ColumnarCipher.scala::ColumnarCipher" },
+    { "source_ends": "cbc/CbcModeCipher.scala", "relation": "imports", "target_ends": "FeistelNetwork.scala::FeistelNetwork" },
+    { "source_ends": "caesar/CaesarSuite.scala", "relation": "imports", "target_ends": "CipherSuite.scala::CipherSuite" },
+    { "source_ends": "bench/BenchmarkRunner.scala", "relation": "contains", "target_ends": "BenchmarkRunner.scala::runAll" }
+  ]
+}

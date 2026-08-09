@@ -1,0 +1,65 @@
+{
+  "min_nodes": 40,
+  "nodes": [
+    {
+      "label": "Invoke-TextPrint",
+      "kind": "function"
+    },
+    {
+      "label": "Invoke-BannerCommand",
+      "kind": "function"
+    },
+    {
+      "label": "Format-Colored",
+      "kind": "function"
+    },
+    {
+      "label": "Format-Centered",
+      "kind": "function"
+    },
+    {
+      "label": "Format-Wrapped",
+      "kind": "function"
+    },
+    {
+      "label": "Write-TextPrintLog",
+      "kind": "function"
+    },
+    {
+      "label": "Get-TextPrintSetting",
+      "kind": "function"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "TextPrint.ps1",
+      "relation": "imports",
+      "target_ends": "Commands/Banner.ps1"
+    },
+    {
+      "source_ends": "Commands/Banner.ps1",
+      "relation": "imports",
+      "target_ends": "Lib/Colors.ps1"
+    },
+    {
+      "source_ends": "Commands/Table.ps1",
+      "relation": "imports",
+      "target_ends": "Lib/Align.ps1"
+    },
+    {
+      "source_ends": "TextPrint.ps1",
+      "relation": "contains",
+      "target_ends": "TextPrint.ps1::Invoke-TextPrint"
+    },
+    {
+      "source_ends": "Lib/Wrap.ps1",
+      "relation": "contains",
+      "target_ends": "Lib/Wrap.ps1::Split-LongLine"
+    },
+    {
+      "source_ends": "Commands/Banner.ps1",
+      "relation": "contains",
+      "target_ends": "Commands/Banner.ps1::Get-BannerPreview"
+    }
+  ]
+}

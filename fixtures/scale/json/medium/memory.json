@@ -1,0 +1,10 @@
+{
+  "slots": 10,
+  "persist_path": "~/.calc/memory.dat",
+  "recall_shortcut": "MR",
+  "store_shortcut": "MS",
+  "clear_on_exit": false,
+  "overwrite_warning": true,
+  "cycle_slots": true,
+  "sync_across_sessions": false
+}

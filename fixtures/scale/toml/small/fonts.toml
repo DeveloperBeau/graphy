@@ -1,0 +1,12 @@
+[monospace]
+family = "JetBrains Mono"
+fallback = ["Fira Code", "DejaVu Sans Mono", "Courier New"]
+size_pt = 11
+
+[ligatures]
+enabled = false
+exceptions = ["->", "=>"]
+
+[metrics]
+cell_advance = 0.6
+line_height = 1.2

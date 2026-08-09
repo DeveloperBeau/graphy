@@ -1,0 +1,19 @@
+{
+  "$id": "color.schema.json",
+  "title": "Color",
+  "type": "object",
+  "properties": {
+    "ansi_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "hex_value": {
+      "type": "string",
+      "pattern": "^#[0-9a-f]{6}$"
+    },
+    "bold": {
+      "type": "boolean"
+    }
+  }
+}

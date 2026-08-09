@@ -1,0 +1,11 @@
+/* accent misty1 */
+.accent-misty1 {
+  --cipher-accent: hsl(167, 55%, 48%);
+}
+.accent-misty1 .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-misty1 .legend-swatch {
+  background: var(--cipher-accent);
+}

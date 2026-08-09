@@ -1,0 +1,60 @@
+{
+  "min_nodes": 67,
+  "nodes": [
+    {
+      "label": "queues",
+      "kind": "table"
+    },
+    {
+      "label": "sources",
+      "kind": "table"
+    },
+    {
+      "label": "jobs",
+      "kind": "table"
+    },
+    {
+      "label": "job_lines",
+      "kind": "table"
+    },
+    {
+      "label": "running_jobs",
+      "kind": "view"
+    },
+    {
+      "label": "rule_effectiveness",
+      "kind": "view"
+    },
+    {
+      "label": "queues_preset_idx",
+      "kind": "index"
+    }
+  ],
+  "edges": [
+    {
+      "source_ends": "sources.sql::sources",
+      "relation": "references",
+      "target_ends": "::queues"
+    },
+    {
+      "source_ends": "jobs.sql::jobs",
+      "relation": "references",
+      "target_ends": "::queues"
+    },
+    {
+      "source_ends": "jobs.sql::jobs",
+      "relation": "references",
+      "target_ends": "::sources"
+    },
+    {
+      "source_ends": "job_lines.sql::job_lines",
+      "relation": "references",
+      "target_ends": "::jobs"
+    },
+    {
+      "source_ends": "reporting.sql",
+      "relation": "contains",
+      "target_ends": "reporting.sql::running_jobs"
+    }
+  ]
+}

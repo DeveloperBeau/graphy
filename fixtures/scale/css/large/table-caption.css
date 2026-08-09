@@ -1,0 +1,12 @@
+/* table caption */
+.table-caption {
+  display: block;
+  --tone: hsl(276, 18%, 40%);
+}
+.table-caption > * + * {
+  margin-top: 0.35rem;
+}
+.table-caption[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

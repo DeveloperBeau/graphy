@@ -1,0 +1,10 @@
+section[id="calculator-pad"] {
+  background: #1b222a;
+  border-radius: 10px;
+  padding: 1rem;
+}
+section[id="calculator-bindings"] kbd {
+  background: #232c36;
+  border-radius: 4px;
+  padding: 0 0.3rem;
+}

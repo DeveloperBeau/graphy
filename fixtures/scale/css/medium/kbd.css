@@ -1,0 +1,10 @@
+/* component: kbd */
+.kbd-hint kbd {
+  background: var(--key);
+  border-radius: 4px;
+  padding: 0 0.35rem;
+  font-size: 0.8rem;
+}
+.kbd-hint kbd + kbd {
+  margin-left: 0.2rem;
+}

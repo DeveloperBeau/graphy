@@ -1,0 +1,32 @@
+# Load and register the shift cipher family.
+
+source("ciphers/caesar/runner.r")
+source("ciphers/caesar/check.r")
+source("ciphers/rot13/runner.r")
+source("ciphers/rot13/check.r")
+source("ciphers/rot47/runner.r")
+source("ciphers/rot47/check.r")
+source("ciphers/shift5/runner.r")
+source("ciphers/shift5/check.r")
+source("ciphers/atbash/runner.r")
+source("ciphers/atbash/check.r")
+source("ciphers/affine/runner.r")
+source("ciphers/affine/check.r")
+source("ciphers/decimation/runner.r")
+source("ciphers/decimation/check.r")
+source("ciphers/addmod/runner.r")
+source("ciphers/addmod/check.r")
+source("ciphers/rotmix/runner.r")
+source("ciphers/rotmix/check.r")
+
+shift_register_all <- function() {
+  register_cipher("caesar")
+  register_cipher("rot13")
+  register_cipher("rot47")
+  register_cipher("shift5")
+  register_cipher("atbash")
+  register_cipher("affine")
+  register_cipher("decimation")
+  register_cipher("addmod")
+  register_cipher("rotmix")
+}

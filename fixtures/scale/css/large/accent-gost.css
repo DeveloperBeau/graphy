@@ -1,0 +1,11 @@
+/* accent gost */
+.accent-gost {
+  --cipher-accent: hsl(141, 55%, 48%);
+}
+.accent-gost .series-line {
+  stroke: var(--cipher-accent);
+  stroke-width: 1.5px;
+}
+.accent-gost .legend-swatch {
+  background: var(--cipher-accent);
+}

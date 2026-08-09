@@ -1,0 +1,39 @@
+{
+  "$id": "function.schema.json",
+  "title": "CalculatorFunction",
+  "type": "object",
+  "properties": {
+    "symbol": {
+      "type": "string"
+    },
+    "arity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2
+    },
+    "category": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "precedence": {
+      "type": "integer"
+    },
+    "associativity": {
+      "type": "string",
+      "enum": [
+        "left",
+        "right"
+      ]
+    },
+    "example": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "symbol",
+    "arity",
+    "category"
+  ]
+}

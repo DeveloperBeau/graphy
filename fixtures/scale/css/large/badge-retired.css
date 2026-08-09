@@ -1,0 +1,12 @@
+/* badge retired */
+.badge-retired {
+  display: block;
+  --tone: hsl(13, 18%, 40%);
+}
+.badge-retired > * + * {
+  margin-top: 0.35rem;
+}
+.badge-retired[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

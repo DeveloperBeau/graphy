@@ -1,0 +1,12 @@
+/* panel grid */
+.panel-grid {
+  display: block;
+  --tone: hsl(206, 18%, 40%);
+}
+.panel-grid > * + * {
+  margin-top: 0.35rem;
+}
+.panel-grid[data-state='busy'] {
+  opacity: 0.6;
+  pointer-events: none;
+}

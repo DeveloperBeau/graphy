@@ -1,0 +1,24 @@
+{
+  "min_nodes": 520,
+  "nodes": [
+    {"label": "main", "kind": "function"},
+    {"label": "registry_run_all", "kind": "function"},
+    {"label": "registry_run_sorting", "kind": "function"},
+    {"label": "quicksort_lomuto_sort", "kind": "function"},
+    {"label": "mergesort_topdown_sort", "kind": "function"},
+    {"label": "heapsort_sort", "kind": "function"},
+    {"label": "binary_search_search", "kind": "function"},
+    {"label": "hash_chaining_table_insert", "kind": "function"},
+    {"label": "union_find_find", "kind": "function"},
+    {"label": "linked_list_reverse_apply", "kind": "function"}
+  ],
+  "edges": [
+    {"source_ends": "src/main.c", "relation": "imports", "target_ends": "registry/registry.h"},
+    {"source_ends": "src/registry/registry.c", "relation": "imports", "target_ends": "registry_sorting.h"},
+    {"source_ends": "src/registry/registry_sorting.c", "relation": "imports", "target_ends": "quicksort_lomuto/quicksort_lomuto.h"},
+    {"source_ends": "src/registry/registry_hashing.c", "relation": "imports", "target_ends": "hash_chaining/hash_chaining.h"},
+    {"source_ends": "src/algos/hash_chaining/hash_chaining.c::hash_chaining_table_insert", "relation": "calls", "target_ends": "hash_chaining.c::hash_chaining_hash"},
+    {"source_ends": "src/algos/bucket_sort/bucket_sort.c::bucket_sort_sort", "relation": "calls", "target_ends": "bucket_sort.c::bucket_sort_insertion"},
+    {"source_ends": "src/algos/bst_ops/bst_ops.c", "relation": "contains", "target_ends": "bst_ops.c::bst_ops_insert"}
+  ]
+}

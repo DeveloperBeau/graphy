@@ -1,0 +1,12 @@
+display_name = "highcontrast"
+origin = "builtin"
+
+[colors]
+foreground = "#ffffff"
+background = "#000000"
+accent = "#ffff00"
+
+[border]
+style = "heavy"
+weight = 2
+shade_corners = false

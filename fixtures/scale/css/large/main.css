@@ -1,0 +1,22 @@
+/* cipherbench dashboard entry stylesheet */
+@import "foundation.css";
+@import "charts.css";
+@import "tables.css";
+@import "panels.css";
+@import "nav.css";
+@import "forms.css";
+@import "badges.css";
+@import "print.css";
+@import "accents-modern.css";
+@import "accents-legacy.css";
+@import "accents-stream.css";
+
+.dashboard-root {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 15rem 1fr;
+}
+::selection {
+  background: #2f9e78;
+  color: #fff;
+}
