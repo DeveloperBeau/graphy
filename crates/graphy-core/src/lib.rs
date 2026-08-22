@@ -17,6 +17,7 @@ pub mod loader;
 pub mod manifest;
 pub mod pipeline;
 pub mod report;
+pub mod resolve;
 pub mod scc;
 pub mod schema;
 pub mod security;
