@@ -25,7 +25,24 @@ use crate::schema::ExtractionOutput;
 const CACHE_DIR: &str = ".cache";
 const MANIFEST_FILE: &str = "manifest.json";
 
-pub const CACHE_ABI: u32 = 2;
+pub const CACHE_ABI: u32 = 3;
+
+/// True when a cache manifest exists at `out_root` and was written by a
+/// different `CACHE_ABI`. The prior `graph.json` is then untrustworthy too
+/// (it was built from the poisoned keys), so callers must force a full rebuild.
+pub fn manifest_is_stale(out_root: &Path) -> bool {
+    let manifest_path = out_root
+        .join("graphy-out")
+        .join(CACHE_DIR)
+        .join(MANIFEST_FILE);
+    let Ok(text) = fs::read_to_string(&manifest_path) else {
+        return false;
+    };
+    let Ok(manifest) = serde_json::from_str::<Manifest>(&text) else {
+        return false;
+    };
+    manifest.abi_version != CACHE_ABI
+}
 
 /// (cached outputs, files needing fresh extraction).
 #[derive(Debug, Default)]
@@ -61,11 +78,16 @@ impl Cache {
         let root = out_root.join("graphy-out").join(CACHE_DIR);
         fs::create_dir_all(&root).with_context(|| format!("mkdir {}", root.display()))?;
         let manifest_path = root.join(MANIFEST_FILE);
-        let manifest = if manifest_path.exists() {
+        let manifest: Manifest = if manifest_path.exists() {
             let text = fs::read_to_string(&manifest_path)?;
             serde_json::from_str(&text).unwrap_or_default()
         } else {
             Manifest::default()
+        };
+        let manifest = if manifest.abi_version != CACHE_ABI {
+            Manifest::default()
+        } else {
+            manifest
         };
         Ok(Self {
             root,

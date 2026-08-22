@@ -152,6 +152,57 @@ fn watch_subcommand_runs_initial_build_then_blocks() {
 }
 
 #[test]
+fn dot_root_and_absolute_root_share_one_cache_manifest() {
+    // `tempdir()` on macOS returns a path under a symlinked `/var/folders`;
+    // spawning a child with that as `current_dir` and letting it resolve
+    // `.` produces the real `/private/var/...` form (see getcwd(3)).
+    // Canonicalize up front so both invocations name the same root the
+    // same way — otherwise this test would fail on an OS/tempdir artifact
+    // rather than the defect under test.
+    let dir = tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    fs::write(root.join("a.rs"), "pub fn f(){}\n").unwrap();
+    fs::write(root.join("b.rs"), "pub fn g(){}\n").unwrap();
+
+    let dot_run = Command::new(graphy_bin())
+        .arg("run")
+        .arg(".")
+        .arg("--out")
+        .arg(&root)
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert!(
+        dot_run.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&dot_run.stderr)
+    );
+
+    let abs_run = Command::new(graphy_bin())
+        .arg("run")
+        .arg(&root)
+        .arg("--out")
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert!(
+        abs_run.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&abs_run.stderr)
+    );
+
+    let manifest_path = root.join("graphy-out").join(".cache").join("manifest.json");
+    let manifest: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&manifest_path).unwrap()).unwrap();
+    let entries = manifest["entries"].as_object().unwrap();
+    assert_eq!(
+        entries.len(),
+        2,
+        "expected one cache entry per file, got {entries:?}"
+    );
+}
+
+#[test]
 fn serve_tolerates_missing_graph_and_returns_empty_stats() {
     // First-session UX: the MCP server is started before any graph has been
     // built. `graphy serve` must not exit — it should hang on stdin and

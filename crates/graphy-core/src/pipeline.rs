@@ -39,7 +39,16 @@ pub struct PipelineConfig {
 
 impl PipelineConfig {
     pub fn new(root: impl Into<PathBuf>) -> Self {
-        let root = root.into();
+        let root: PathBuf = root.into();
+        // One file must have exactly one node id and one cache key. `graphy .`
+        // and the plugin hook's `$CLAUDE_PROJECT_DIR` used to mint two of each
+        // for every file, doubling the cache manifest and splitting the graph
+        // into two disconnected halves. `absolute` is lexical: it never touches
+        // the filesystem and leaves an already-absolute path byte-identical, so
+        // tempdir-rooted callers are unaffected.
+        // ponytail: two symlink paths to one tree still differ; swap in
+        // fs::canonicalize (with a Windows UNC guard) if that ever bites.
+        let root = std::path::absolute(&root).unwrap_or(root);
         Self {
             out_root: root.clone(),
             root,
@@ -76,7 +85,7 @@ impl Pipeline {
         // has not opted out, apply a delta instead of rebuilding from
         // scratch. `update_graph` falls through to a full build itself
         // when there is no prior graph.
-        if self.cfg.incremental {
+        if self.cfg.incremental && !crate::cache::manifest_is_stale(&self.cfg.out_root) {
             let prior_exists = self
                 .cfg
                 .out_root
