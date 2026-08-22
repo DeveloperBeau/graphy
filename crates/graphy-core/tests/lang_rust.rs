@@ -285,58 +285,26 @@ fn pipeline_resolves_service_imports_helpers_format_name() {
 #[test]
 fn pipeline_resolves_cross_file_call_run_to_format_name() {
     let (g, _guard) = run_pipeline(&fixture_dir(LANG));
-    // Service::run calls format_name (defined in helpers.rs). The Rust
-    // extractor's `add_call_edges` only descends into top-level `function_item`
-    // nodes (not methods inside `impl` blocks), and the pipeline does NOT add
-    // cross-file `calls` edges via a separate resolution pass — calls are
-    // extract-time only. So we anchor on a generic cross-file signal: at
-    // least one edge of relation "imports" or "calls" must connect two
-    // distinct source files.
-    //
-    // The pipeline dedups imports such that the import edge source is a
-    // synthetic file-scoped node (its `label` is the importing file path,
-    // `source_file` is None) and the target is the resolved cross-file symbol
-    // (its `source_file` points at the file where the symbol is defined).
-    // Detect cross-file by comparing the import-source's *label* (a file
-    // path) against the target's `source_file` field.
-    let has_cross_file_edge = g.graph.edge_references().any(|e| {
-        let src_label = &g.graph[e.source()].label;
-        let dst = &g.graph[e.target()];
-        let relation = &e.weight().relation;
-        if relation != "imports" && relation != "calls" {
-            return false;
-        }
-        match dst.source_file.as_deref() {
-            Some(dst_file) => {
-                // src is a file-scoped import facade; its label is a file path.
-                // Cross-file means dst was resolved into a node defined elsewhere.
-                src_label != dst_file
-            }
-            None => false,
-        }
+    // Service::run calls format_name (defined in helpers.rs). The
+    // project-wide resolution pass (crate::resolve::CallIndex, wired into
+    // Pipeline::run) retargets the extractor's unresolved-call sentinel at
+    // the real definition, so this must be a direct `calls` edge from
+    // service.rs::run to helpers.rs::format_name, not merely "some
+    // cross-file signal".
+    let json = g.to_json_value();
+    let edges = json["edges"].as_array().unwrap();
+    let has_edge = edges.iter().any(|e| {
+        e["relation"] == "calls"
+            && e["source"].as_str().unwrap().ends_with("service.rs::run")
+            && e["target"]
+                .as_str()
+                .unwrap()
+                .ends_with("helpers.rs::format_name")
     });
-    if !has_cross_file_edge {
-        // (relation, source label, target label, source file, target file)
-        type EdgeRow = (String, String, String, Option<String>, Option<String>);
-        let edges: Vec<EdgeRow> = g
-            .graph
-            .edge_references()
-            .map(|e| {
-                (
-                    e.weight().relation.clone(),
-                    g.graph[e.source()].label.clone(),
-                    g.graph[e.target()].label.clone(),
-                    g.graph[e.source()].source_file.clone(),
-                    g.graph[e.target()].source_file.clone(),
-                )
-            })
-            .collect();
-        panic!(
-            "pipeline produced no cross-file imports or calls; \
-             expected at least one edge connecting two distinct source files. \
-             edges = {edges:#?}"
-        );
-    }
+    assert!(
+        has_edge,
+        "expected a calls edge from service.rs::run to helpers.rs::format_name; edges = {edges:#?}"
+    );
 }
 
 #[test]

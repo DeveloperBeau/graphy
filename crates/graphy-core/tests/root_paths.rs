@@ -2,15 +2,23 @@
 //!
 //! `set_current_dir` is process-global, so this file holds every test that
 //! touches it and nothing else, keeping cargo's per-binary process isolation
-//! from racing other test binaries.
+//! from racing other test binaries. Two of those tests still run as separate
+//! `#[test]` functions *within* this one binary, and cargo's default harness
+//! runs functions in one binary concurrently on a thread pool — so both also
+//! take `CWD_LOCK` for the span during which they mutate the process's cwd,
+//! to keep them from racing each other.
 
 use std::fs;
+use std::sync::Mutex;
 
 use graphy_core::{Pipeline, PipelineConfig};
 use tempfile::tempdir;
 
+static CWD_LOCK: Mutex<()> = Mutex::new(());
+
 #[test]
 fn relative_and_absolute_roots_produce_identical_node_ids() {
+    let _guard = CWD_LOCK.lock().unwrap();
     // `tempdir()` on macOS returns a path under a symlinked `/var/folders`,
     // while `std::env::current_dir()` after a `chdir` into it resolves to
     // the real `/private/var/...` form. `std::path::absolute` is lexical by
@@ -53,6 +61,7 @@ fn relative_and_absolute_roots_produce_identical_node_ids() {
 
 #[test]
 fn node_ids_are_absolute_for_a_dot_root() {
+    let _guard = CWD_LOCK.lock().unwrap();
     let dir = tempdir().unwrap();
     let root = dir.path().canonicalize().unwrap();
     fs::write(root.join("a.rs"), "pub fn f(){}\n").unwrap();
