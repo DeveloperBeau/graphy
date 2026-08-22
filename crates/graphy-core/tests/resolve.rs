@@ -322,10 +322,20 @@ fn ambiguous_kind_suffix_still_counts_as_code() {
 
 #[test]
 fn receiver_calls_are_skipped() {
+    // Candidate nodes literally labelled `self`/`this`/`cls`/`super`, each
+    // in the same file as `run`/`init`, make the receiver-keyword gate
+    // observable: without it, the qualified-lookup path would find a
+    // unique head candidate and successfully resolve the call, rather than
+    // merely falling through a `by_label` miss that a keyword with no
+    // matching node would produce regardless of the gate.
     let defs = out(
         vec![
             node("service.rs::run", "run", "function", "service.rs"),
             node("service.rs::init", "init", "function", "service.rs"),
+            node("service.rs::self", "self", "class", "service.rs"),
+            node("service.rs::this", "this", "class", "service.rs"),
+            node("service.rs::cls", "cls", "class", "service.rs"),
+            node("service.rs::super", "super", "class", "service.rs"),
         ],
         vec![],
     );

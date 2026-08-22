@@ -84,6 +84,46 @@ fn warm_incremental_run_matches_the_cold_run() {
 }
 
 #[test]
+fn warm_incremental_run_resolves_a_newly_added_files_call() {
+    // `warm_incremental_run_matches_the_cold_run` above re-runs the pipeline
+    // over an *unchanged* file set, so its second run's `part.uncached` (and
+    // therefore `fresh`) is empty and never exercises the resolve pass over
+    // freshly extracted files in `incremental::update_graph`. This test adds
+    // a new file between runs so the warm path's `fresh` is non-empty.
+    let dir = tempdir().unwrap();
+    fs::write(
+        dir.path().join("helpers.rs"),
+        "pub fn format_name(s: &str) -> String { s.to_string() }\n",
+    )
+    .unwrap();
+    let cfg = PipelineConfig::new(dir.path());
+    let _ = Pipeline::new(cfg.clone()).run().unwrap();
+
+    fs::write(
+        dir.path().join("service.rs"),
+        "pub fn run() { format_name(\"x\"); }\n",
+    )
+    .unwrap();
+    let result = Pipeline::new(cfg).run().unwrap();
+
+    let json = result.graph.to_json_value();
+    let edges = json["edges"].as_array().unwrap();
+    let has_edge = edges.iter().any(|e| {
+        e["relation"] == "calls"
+            && e["source"].as_str().unwrap().ends_with("service.rs::run")
+            && e["target"]
+                .as_str()
+                .unwrap()
+                .ends_with("helpers.rs::format_name")
+    });
+    assert!(
+        has_edge,
+        "newly added file's cross-file call did not resolve on the warm \
+         incremental run; edges = {edges:#?}"
+    );
+}
+
+#[test]
 fn run_full_path_resolves() {
     let out = tempdir().unwrap();
     let mut cfg = PipelineConfig::new(fixture("rust"));
