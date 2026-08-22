@@ -117,7 +117,7 @@ impl Pipeline {
             None
         };
 
-        let (extractions, files_cached) = if let Some(ref mut cache) = cache {
+        let (mut extractions, files_cached) = if let Some(ref mut cache) = cache {
             let part = cache.partition(&files);
             let cached_count = part.cached.len();
             let mut all: Vec<(PathBuf, _)> = part.cached;
@@ -133,6 +133,22 @@ impl Pipeline {
             let paired: Vec<(PathBuf, _)> = files.iter().cloned().zip(outputs).collect();
             (paired, 0)
         };
+
+        // Cross-file call resolution: retarget or drop every calls?unresolved
+        // sentinel the extractors emitted. Runs before anything downstream
+        // consumes `extractions` so every path sees one consistent edge set.
+        let index = crate::resolve::CallIndex::build(extractions.iter().map(|(_, o)| o));
+        let mut resolve_stats = crate::resolve::ResolveStats::default();
+        for (_, out) in extractions.iter_mut() {
+            let s = index.resolve_in(out);
+            resolve_stats.resolved += s.resolved;
+            resolve_stats.dropped += s.dropped;
+        }
+        info!(
+            resolved = resolve_stats.resolved,
+            dropped = resolve_stats.dropped,
+            "cross-file call resolution"
+        );
 
         // Build a file → extern-ids index before consuming the extractions.
         // This is used after dedup to fan-out each resolved redirect to EVERY

@@ -72,6 +72,38 @@ fn edges_referencing_undeclared_nodes_create_them() {
 }
 
 #[test]
+fn a_node_record_arriving_after_its_edge_stub_still_carries_its_kind() {
+    // An edge can reference a node id before the extraction that defines
+    // that node has been processed (e.g. a cross-file `calls` edge from a
+    // resolution pass, where extraction order is not definition order).
+    // `add_edge_record` mints a placeholder node for an unseen endpoint;
+    // the real node record that shows up later must overwrite that
+    // placeholder, not be silently dropped because the id already exists.
+    let caller = ExtractionOutput {
+        nodes: vec![],
+        edges: vec![e("b.sh::main", "a.sh::colorize")],
+    };
+    let callee = ExtractionOutput {
+        nodes: vec![Node {
+            id: "a.sh::colorize".into(),
+            label: "colorize".into(),
+            source_file: Some("a.sh".into()),
+            source_location: Some("L3".into()),
+            kind: Some("function".into()),
+            signature: None,
+        }],
+        edges: vec![],
+    };
+    // `caller` is processed first, so its edge creates the stub before
+    // `callee`'s authoritative node record arrives.
+    let g = build_graph(vec![caller, callee]);
+    let idx = g.by_id["a.sh::colorize"];
+    let data = &g.graph[idx];
+    assert_eq!(data.kind.as_deref(), Some("function"));
+    assert_eq!(data.source_file.as_deref(), Some("a.sh"));
+}
+
+#[test]
 fn large_merge_completes_quickly() {
     let big: Vec<ExtractionOutput> = (0..200)
         .map(|i| ExtractionOutput {

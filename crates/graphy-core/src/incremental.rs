@@ -116,7 +116,7 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         graph.graph.remove_edge(e);
     }
 
-    let fresh = extract_all(&part.uncached);
+    let mut fresh = extract_all(&part.uncached);
     for (path, output) in part.uncached.iter().zip(&fresh) {
         cache.save(path, output).ok();
     }
@@ -178,6 +178,18 @@ pub fn update_graph(cfg: &PipelineConfig) -> Result<PipelineOutputs> {
         for (_, out) in part.cached.iter_mut() {
             crate::dedup::map::apply_dedup_map(out, &merged);
         }
+    }
+
+    // Cross-file call resolution. Must run after the dedup-map apply above:
+    // the index must be built from post-dedup-map extractions, or it indexes
+    // ids that apply_dedup_map has already dropped.
+    let index =
+        crate::resolve::CallIndex::build(part.cached.iter().map(|(_, o)| o).chain(fresh.iter()));
+    for (_, out) in part.cached.iter_mut() {
+        index.resolve_in(out);
+    }
+    for out in fresh.iter_mut() {
+        index.resolve_in(out);
     }
 
     // Splice cached extractions first (nodes dedupe; edges accumulate).
@@ -552,6 +564,11 @@ fn run_full(
     }
     cache.flush().ok();
     extractions.extend(fresh);
+
+    let index = crate::resolve::CallIndex::build(extractions.iter());
+    for out in extractions.iter_mut() {
+        index.resolve_in(out);
+    }
 
     // Build a file → extern-ids index before the extractions are consumed,
     // so we can fan out each resolved redirect to every file that contributed
