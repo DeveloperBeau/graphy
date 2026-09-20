@@ -39,7 +39,16 @@ pub struct PipelineConfig {
 
 impl PipelineConfig {
     pub fn new(root: impl Into<PathBuf>) -> Self {
-        let root = root.into();
+        let root: PathBuf = root.into();
+        // One file must have exactly one node id and one cache key. `graphy .`
+        // and the plugin hook's `$CLAUDE_PROJECT_DIR` used to mint two of each
+        // for every file, doubling the cache manifest and splitting the graph
+        // into two disconnected halves. `absolute` is lexical: it never touches
+        // the filesystem and leaves an already-absolute path byte-identical, so
+        // tempdir-rooted callers are unaffected.
+        // ponytail: two symlink paths to one tree still differ; swap in
+        // fs::canonicalize (with a Windows UNC guard) if that ever bites.
+        let root = std::path::absolute(&root).unwrap_or(root);
         Self {
             out_root: root.clone(),
             root,
@@ -76,7 +85,7 @@ impl Pipeline {
         // has not opted out, apply a delta instead of rebuilding from
         // scratch. `update_graph` falls through to a full build itself
         // when there is no prior graph.
-        if self.cfg.incremental {
+        if self.cfg.incremental && !crate::cache::manifest_is_stale(&self.cfg.out_root) {
             let prior_exists = self
                 .cfg
                 .out_root
@@ -108,7 +117,7 @@ impl Pipeline {
             None
         };
 
-        let (extractions, files_cached) = if let Some(ref mut cache) = cache {
+        let (mut extractions, files_cached) = if let Some(ref mut cache) = cache {
             let part = cache.partition(&files);
             let cached_count = part.cached.len();
             let mut all: Vec<(PathBuf, _)> = part.cached;
@@ -124,6 +133,22 @@ impl Pipeline {
             let paired: Vec<(PathBuf, _)> = files.iter().cloned().zip(outputs).collect();
             (paired, 0)
         };
+
+        // Cross-file call resolution: retarget or drop every calls?unresolved
+        // sentinel the extractors emitted. Runs before anything downstream
+        // consumes `extractions` so every path sees one consistent edge set.
+        let index = crate::resolve::CallIndex::build(extractions.iter().map(|(_, o)| o));
+        let mut resolve_stats = crate::resolve::ResolveStats::default();
+        for (_, out) in extractions.iter_mut() {
+            let s = index.resolve_in(out);
+            resolve_stats.resolved += s.resolved;
+            resolve_stats.dropped += s.dropped;
+        }
+        info!(
+            resolved = resolve_stats.resolved,
+            dropped = resolve_stats.dropped,
+            "cross-file call resolution"
+        );
 
         // Build a file → extern-ids index before consuming the extractions.
         // This is used after dedup to fan-out each resolved redirect to EVERY

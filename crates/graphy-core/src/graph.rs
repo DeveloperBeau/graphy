@@ -62,6 +62,28 @@ impl KnowledgeGraph {
     }
 
     pub fn add_node_record(&mut self, n: Node) {
+        // An edge processed before its endpoint's own node record (e.g. a
+        // cross-file `calls` edge, where extraction order is not definition
+        // order) mints a placeholder via `ensure_node` with `kind: None`.
+        // No extractor ever emits a real node record with `kind: None`, so
+        // that's an unambiguous stub marker: upgrade it in place instead of
+        // leaving the id permanently kind-less because `ensure_node` treats
+        // an existing id as already populated.
+        if let Some(&idx) = self.by_id.get(&n.id)
+            && self.graph[idx].kind.is_none()
+            && n.kind.is_some()
+        {
+            self.graph[idx] = NodeData {
+                label: n.label,
+                source_file: n.source_file,
+                source_location: n.source_location,
+                kind: n.kind,
+                community: None,
+                aliases: Vec::new(),
+                signature: n.signature,
+            };
+            return;
+        }
         self.ensure_node(
             &n.id,
             NodeData {

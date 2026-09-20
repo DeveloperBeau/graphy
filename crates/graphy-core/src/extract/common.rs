@@ -178,6 +178,44 @@ pub fn emit_call(
             confidence: Confidence::Inferred,
             attr: None,
         });
+        return;
+    }
+    // Nothing in this file resolves the callee. Record it so the project-wide
+    // pass in `crate::resolve` can try; it either retargets this edge at a real
+    // definition or removes it before the graph is built.
+    out.edges.push(Edge {
+        source: caller_id.to_string(),
+        target: format!("{}{callee_text}", crate::resolve::UNRESOLVED_PREFIX),
+        relation: crate::resolve::UNRESOLVED_CALL.to_string(),
+        confidence: Confidence::Inferred,
+        attr: None,
+    });
+}
+
+/// Emit a call edge only when the callee is declared in this file.
+///
+/// Ruby treats a bare `identifier` statement as a method invocation, so
+/// `ruby.rs` feeds every identifier in a method body here — including locals
+/// and parameters. Those must never become project-wide resolution
+/// candidates, so this variant records nothing when the lookup misses.
+pub fn emit_call_if_local(
+    out: &mut ExtractionOutput,
+    symbols: &HashMap<String, String>,
+    caller_id: &str,
+    callee_text: &str,
+) {
+    let leaf = callee_text
+        .rsplit(['.', ':', '>', ' '])
+        .next()
+        .unwrap_or(callee_text);
+    if let Some(target_id) = symbols.get(leaf) {
+        out.edges.push(Edge {
+            source: caller_id.to_string(),
+            target: target_id.clone(),
+            relation: "calls".into(),
+            confidence: Confidence::Inferred,
+            attr: None,
+        });
     }
 }
 

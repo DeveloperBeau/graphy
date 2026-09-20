@@ -479,6 +479,14 @@ fn collect_calls_in(
                     confidence: Confidence::Inferred,
                     attr: None,
                 });
+            } else {
+                out.edges.push(Edge {
+                    source: caller_id.to_string(),
+                    target: format!("{}{callee}", crate::resolve::UNRESOLVED_PREFIX),
+                    relation: crate::resolve::UNRESOLVED_CALL.to_string(),
+                    confidence: Confidence::Inferred,
+                    attr: None,
+                });
             }
         }
         collect_calls_in(child, src, caller_id, out, symbols);

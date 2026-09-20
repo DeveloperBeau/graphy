@@ -11,7 +11,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tree_sitter::{Node as TsNode, Parser};
 
-use super::common::{attach_signature, emit_call, emit_def, emit_import};
+use super::common::{attach_signature, emit_call, emit_call_if_local, emit_def, emit_import};
 use crate::schema::{ExtractionOutput, ParamSig, Signature};
 
 pub fn extract(path: &Path) -> Result<ExtractionOutput> {
@@ -155,7 +155,7 @@ fn collect_calls(
                 // call in Ruby. We only attribute it when the identifier
                 // resolves to a defined symbol; otherwise it might be a local.
                 let text = child.utf8_text(src.as_bytes()).expect("utf8 source");
-                emit_call(out, symbols, caller_id, text);
+                emit_call_if_local(out, symbols, caller_id, text);
             }
             _ => {}
         }
